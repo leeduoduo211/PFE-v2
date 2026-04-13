@@ -1,5 +1,9 @@
 """PFE-v2 Streamlit entry point — tab-based layout with sidebar."""
 
+import sys
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
+
 import streamlit as st
 
 st.set_page_config(
