@@ -1,0 +1,442 @@
+"""PFE-v2 UI Theme: Clean Finance Light.
+
+Provides CSS injection and Plotly chart templates for a professional
+light-mode quantitative finance aesthetic.
+"""
+
+import streamlit as st
+import plotly.graph_objects as go
+import plotly.io as pio
+
+
+# ---------------------------------------------------------------------------
+# Color palette
+# ---------------------------------------------------------------------------
+
+COLORS = {
+    "bg_page": "#f8fafc",
+    "bg_card": "#ffffff",
+    "bg_surface": "#f1f5f9",
+    "bg_hover": "#f8fafc",
+    "border": "#e2e8f0",
+    "border_focus": "#3b82f6",
+    "text_primary": "#1e293b",
+    "text_secondary": "#64748b",
+    "text_muted": "#94a3b8",
+    "blue": "#3b82f6",
+    "blue_dim": "rgba(59,130,246,0.1)",
+    "red": "#ef4444",
+    "red_dim": "rgba(239,68,68,0.12)",
+    "green": "#22c55e",
+    "green_dim": "rgba(34,197,94,0.1)",
+    "amber": "#f59e0b",
+    "amber_dim": "rgba(245,158,11,0.1)",
+    "purple": "#8b5cf6",
+}
+
+# Chart trace colors
+PFE_COLOR = "#ef4444"
+PFE_COLOR_DIM = "rgba(239,68,68,0.10)"
+EPE_COLOR = "#3b82f6"
+EPE_COLOR_DIM = "rgba(59,130,246,0.10)"
+MEDIAN_COLOR = "#f59e0b"
+FAN_COLORS = [
+    "rgba(239,68,68,0.05)",
+    "rgba(239,68,68,0.12)",
+    "rgba(239,68,68,0.22)",
+]
+
+
+# ---------------------------------------------------------------------------
+# Custom CSS
+# ---------------------------------------------------------------------------
+
+_CSS = """
+<style>
+/* ── Fonts ─────────────────────────────────────────────────────────── */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+/* ── Global overrides ─────────────────────────────────────────────── */
+html, body, [class*="css"] {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+}
+
+/* Hide default Streamlit header chrome */
+header[data-testid="stHeader"] {
+    background: transparent !important;
+    height: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+}
+#MainMenu, footer {
+    visibility: hidden !important;
+}
+
+.block-container {
+    padding-top: 2.5rem !important;
+    padding-bottom: 1rem !important;
+    max-width: 1200px !important;
+}
+
+/* ── Sidebar ──────────────────────────────────────────────────────── */
+section[data-testid="stSidebar"] {
+    background: #ffffff !important;
+    border-right: 1px solid #e2e8f0 !important;
+}
+
+section[data-testid="stSidebar"] [data-testid="stMarkdown"] h1 {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 700 !important;
+    color: #1e293b !important;
+    font-size: 1.4rem !important;
+}
+
+/* ── Headers ──────────────────────────────────────────────────────── */
+h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
+    font-family: 'Inter', sans-serif !important;
+    font-weight: 600 !important;
+    color: #1e293b !important;
+}
+
+/* ── Metric cards ─────────────────────────────────────────────────── */
+[data-testid="stMetric"] {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    padding: 0.8rem 1rem !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+}
+
+[data-testid="stMetric"]:hover {
+    border-color: #cbd5e1 !important;
+}
+
+[data-testid="stMetric"] label {
+    color: #64748b !important;
+    font-size: 0.7rem !important;
+    text-transform: uppercase !important;
+    letter-spacing: 0.06em !important;
+    font-weight: 500 !important;
+}
+
+[data-testid="stMetric"] [data-testid="stMetricValue"] {
+    color: #1e293b !important;
+    font-family: 'JetBrains Mono', monospace !important;
+    font-weight: 600 !important;
+    font-size: 1.3rem !important;
+}
+
+/* ── Buttons ──────────────────────────────────────────────────────── */
+button[kind="primary"],
+.stButton > button[kind="primary"] {
+    background: #3b82f6 !important;
+    color: #ffffff !important;
+    font-weight: 500 !important;
+    border: none !important;
+    border-radius: 7px !important;
+    font-size: 0.85rem !important;
+    transition: all 0.15s ease !important;
+}
+
+button[kind="primary"]:hover {
+    background: #2563eb !important;
+}
+
+button[kind="secondary"],
+.stButton > button:not([kind="primary"]) {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    color: #475569 !important;
+    border-radius: 7px !important;
+    font-size: 0.8rem !important;
+    transition: all 0.15s ease !important;
+}
+
+button[kind="secondary"]:hover,
+.stButton > button:not([kind="primary"]):hover {
+    border-color: #cbd5e1 !important;
+    background: #f8fafc !important;
+}
+
+/* ── Expanders ────────────────────────────────────────────────────── */
+details[data-testid="stExpander"] {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 10px !important;
+    margin-bottom: 0.5rem !important;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
+}
+
+details[data-testid="stExpander"][open] {
+    border-color: #cbd5e1 !important;
+}
+
+/* ── Inputs ───────────────────────────────────────────────────────── */
+[data-testid="stNumberInput"] input,
+[data-testid="stTextInput"] input {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+    color: #1e293b !important;
+    font-family: 'JetBrains Mono', monospace !important;
+}
+
+[data-testid="stNumberInput"] input:focus,
+[data-testid="stTextInput"] input:focus {
+    border-color: #3b82f6 !important;
+    box-shadow: 0 0 0 3px rgba(59,130,246,0.1) !important;
+}
+
+[data-baseweb="select"] > div {
+    background: #ffffff !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: 6px !important;
+}
+
+/* ── Dividers ─────────────────────────────────────────────────────── */
+hr {
+    border-color: #e2e8f0 !important;
+    margin: 1rem 0 !important;
+}
+
+/* ── Tabs ─────────────────────────────────────────────────────────── */
+.stTabs [data-baseweb="tab-list"] {
+    gap: 0 !important;
+    border-bottom: 1px solid #e2e8f0 !important;
+}
+
+.stTabs [data-baseweb="tab"] {
+    font-family: 'Inter', sans-serif !important;
+    font-size: 0.85rem !important;
+    font-weight: 500 !important;
+    padding: 0.6rem 1.2rem !important;
+    color: #94a3b8 !important;
+}
+
+.stTabs [data-baseweb="tab"][aria-selected="true"] {
+    color: #3b82f6 !important;
+    border-bottom: 2px solid #3b82f6 !important;
+}
+
+/* ── Progress bar ─────────────────────────────────────────────────── */
+[data-testid="stProgress"] > div > div {
+    background: #3b82f6 !important;
+    border-radius: 4px !important;
+}
+
+/* ── Plotly chart container ───────────────────────────────────────── */
+[data-testid="stPlotlyChart"] {
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* ── File uploader ───────────────────────────────────────────────── */
+[data-testid="stFileUploader"] {
+    border: 1px dashed #e2e8f0 !important;
+    border-radius: 8px !important;
+}
+
+/* ── Section label ────────────────────────────────────────────────── */
+.pfe-section-label {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    margin: 1rem 0 0.5rem 0;
+    font-family: 'Inter', sans-serif;
+    font-weight: 600;
+    border-bottom: 1px solid #f1f5f9;
+    padding-bottom: 0.3rem;
+}
+
+/* ── KPI cards (results) ─────────────────────────────────────────── */
+.pfe-kpi {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    margin-bottom: 10px;
+}
+
+.pfe-kpi-accent { border-left: 3px solid #3b82f6; }
+.pfe-kpi-red    { border-left: 3px solid #ef4444; }
+.pfe-kpi-green  { border-left: 3px solid #22c55e; }
+.pfe-kpi-amber  { border-left: 3px solid #f59e0b; }
+
+.pfe-kpi-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    margin-bottom: 4px;
+}
+
+.pfe-kpi-value {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #1e293b;
+    font-family: 'JetBrains Mono', monospace;
+}
+
+.pfe-kpi-sub {
+    font-size: 0.68rem;
+    color: #94a3b8;
+    margin-top: 2px;
+    font-family: 'Inter', sans-serif;
+}
+
+/* ── Sidebar portfolio items ─────────────────────────────────────── */
+.pfe-sidebar-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-size: 0.75rem;
+    margin-bottom: 2px;
+}
+
+.pfe-sidebar-item:hover {
+    background: #f8fafc;
+}
+
+.pfe-tag-long {
+    background: #dcfce7;
+    color: #16a34a;
+    font-size: 0.6rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.pfe-tag-short {
+    background: #fef2f2;
+    color: #ef4444;
+    font-size: 0.6rem;
+    padding: 1px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+/* ── Scrollbar ────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #f1f5f9;
+}
+::-webkit-scrollbar-thumb {
+    background: #cbd5e1;
+    border-radius: 3px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #94a3b8;
+}
+</style>
+"""
+
+
+# ---------------------------------------------------------------------------
+# Plotly template
+# ---------------------------------------------------------------------------
+
+_PLOTLY_TEMPLATE = go.layout.Template(
+    layout=go.Layout(
+        paper_bgcolor="#ffffff",
+        plot_bgcolor="#ffffff",
+        font=dict(
+            family="Inter, -apple-system, sans-serif",
+            color="#64748b",
+            size=12,
+        ),
+        title=dict(
+            font=dict(size=14, color="#1e293b"),
+            x=0,
+            xanchor="left",
+        ),
+        xaxis=dict(
+            gridcolor="#f1f5f9",
+            gridwidth=1,
+            zerolinecolor="#e2e8f0",
+            zerolinewidth=1,
+            linecolor="#e2e8f0",
+            linewidth=1,
+            tickfont=dict(size=10, color="#94a3b8"),
+            title_font=dict(size=11, color="#64748b"),
+        ),
+        yaxis=dict(
+            gridcolor="#f1f5f9",
+            gridwidth=1,
+            zerolinecolor="#e2e8f0",
+            zerolinewidth=1,
+            linecolor="#e2e8f0",
+            linewidth=1,
+            tickfont=dict(size=10, color="#94a3b8"),
+            title_font=dict(size=11, color="#64748b"),
+        ),
+        legend=dict(
+            bgcolor="rgba(255,255,255,0.9)",
+            bordercolor="#e2e8f0",
+            borderwidth=1,
+            font=dict(size=10, color="#475569"),
+        ),
+        hoverlabel=dict(
+            bgcolor="#1e293b",
+            bordercolor="#334155",
+            font=dict(
+                family="JetBrains Mono, monospace",
+                size=11,
+                color="#f8fafc",
+            ),
+        ),
+        margin=dict(l=40, r=15, t=30, b=40),
+        colorway=["#ef4444", "#3b82f6", "#22c55e", "#f59e0b", "#8b5cf6", "#06b6d4"],
+    ),
+)
+
+
+# ---------------------------------------------------------------------------
+# Public API
+# ---------------------------------------------------------------------------
+
+def apply_theme():
+    """Inject custom CSS and register Plotly template. Call once in app.py."""
+    st.markdown(_CSS, unsafe_allow_html=True)
+    pio.templates["pfe_light"] = _PLOTLY_TEMPLATE
+    pio.templates.default = "pfe_light"
+
+
+def section_label(text: str):
+    """Render an uppercase section divider label."""
+    st.markdown(f'<div class="pfe-section-label">{text}</div>', unsafe_allow_html=True)
+
+
+def kpi_card(label: str, value: str, sub: str = "", css_class: str = ""):
+    """Render a single KPI card via HTML."""
+    html = (
+        f'<div class="pfe-kpi {css_class}">'
+        f'<div class="pfe-kpi-label">{label}</div>'
+        f'<div class="pfe-kpi-value">{value}</div>'
+        f'<div class="pfe-kpi-sub">{sub}</div>'
+        f'</div>'
+    )
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def sidebar_portfolio_item(name: str, direction: str, mtm: str = ""):
+    """Render a sidebar portfolio summary item."""
+    tag_cls = "pfe-tag-long" if direction == "long" else "pfe-tag-short"
+    tag_text = "L" if direction == "long" else "S"
+    mtm_html = f'<span style="font-family:JetBrains Mono,monospace;font-size:0.7rem;color:#64748b;">{mtm}</span>' if mtm else ""
+    html = (
+        f'<div class="pfe-sidebar-item">'
+        f'<span style="color:#334155;font-weight:500;">{name}</span>'
+        f'<span><span class="{tag_cls}">{tag_text}</span> {mtm_html}</span>'
+        f'</div>'
+    )
+    st.markdown(html, unsafe_allow_html=True)

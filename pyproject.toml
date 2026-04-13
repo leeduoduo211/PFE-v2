@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=68.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pfev2"
+version = "0.1.0"
+description = "Nested Monte Carlo PFE engine for light exotic derivatives"
+requires-python = ">=3.9"
+dependencies = ["numpy>=1.24"]
+
+[project.optional-dependencies]
+numba = ["numba>=0.59"]
+plot = ["matplotlib>=3.7"]
+ui = ["streamlit>=1.30", "plotly>=5.18"]
+dev = ["pytest>=7.0", "scipy>=1.10"]
+
+[tool.setuptools.packages.find]
+include = ["pfev2*"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

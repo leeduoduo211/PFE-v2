@@ -1,0 +1,107 @@
+# ui/components/portfolio_table.py
+"""Editable portfolio table with add/edit/clone/delete actions."""
+
+import copy
+import streamlit as st
+from ui.components.payoff_display import payoff_formula, payoff_sparkline
+from ui.components.trade_economics import render_trade_economics
+
+
+def render_portfolio_table(key_prefix: str = "pt"):
+    """Render the portfolio table from session_state['portfolio'].
+    Returns the index of a trade to edit (or None).
+    """
+    portfolio = st.session_state["portfolio"]
+
+    st.subheader(f"Portfolio ({len(portfolio)} trades)")
+
+    if not portfolio:
+        st.info("No trades yet. Use the trade builder to add instruments.")
+        return None
+
+    # Check if t=0 MtM data is available
+    latest = st.session_state.get("latest_result", {})
+    t0_mtm_list = latest.get("per_trade_t0_mtm", [])
+    has_t0 = len(t0_mtm_list) == len(portfolio)
+
+    if has_t0:
+        cols = st.columns([2, 0.5, 1.8, 1.2, 1.2, 1.2, 0.8, 0.8, 0.8])
+    else:
+        cols = st.columns([2, 0.5, 2, 1.5, 1.5, 1, 1, 1])
+    cols[0].write("**Trade ID**")
+    cols[1].write("**Dir**")
+    cols[2].write("**Type**")
+    cols[3].write("**Maturity**")
+    cols[4].write("**Notional**")
+    if has_t0:
+        cols[5].write("**t=0 MtM**")
+        cols[6].write("**Edit**")
+        cols[7].write("**Clone**")
+        cols[8].write("**Delete**")
+    else:
+        cols[5].write("**Edit**")
+        cols[6].write("**Clone**")
+        cols[7].write("**Delete**")
+
+    edit_idx = None
+    for i, trade in enumerate(portfolio):
+        if has_t0:
+            cols = st.columns([2, 0.5, 1.8, 1.2, 1.2, 1.2, 0.8, 0.8, 0.8])
+        else:
+            cols = st.columns([2, 0.5, 2, 1.5, 1.5, 1, 1, 1])
+        cols[0].write(trade["trade_id"])
+
+        direction = trade.get("direction", "long")
+        if direction == "short":
+            cols[1].write(":red[S]")
+        else:
+            cols[1].write(":green[L]")
+
+        type_str = trade["instrument_type"]
+        if trade.get("modifiers"):
+            mod_names = [m["type"] for m in trade["modifiers"]]
+            type_str = " \u2192 ".join(mod_names) + " \u2192 " + type_str
+        cols[2].write(type_str)
+        cols[3].write(f"{trade['params']['maturity']:.2f}Y")
+        cols[4].write(f"{trade['params']['notional']:,.0f}")
+
+        if has_t0:
+            mtm_val = t0_mtm_list[i]
+            if mtm_val > 0:
+                cols[5].write(f":green[{mtm_val:,.0f}]")
+            elif mtm_val < 0:
+                cols[5].write(f":red[{mtm_val:,.0f}]")
+            else:
+                cols[5].write("0")
+            edit_col, clone_col, del_col = cols[6], cols[7], cols[8]
+        else:
+            edit_col, clone_col, del_col = cols[5], cols[6], cols[7]
+
+        if edit_col.button("Edit", key=f"{key_prefix}_edit_{i}"):
+            edit_idx = i
+
+        if clone_col.button("Clone", key=f"{key_prefix}_clone_{i}"):
+            clone = copy.deepcopy(trade)
+            clone["trade_id"] = f"{trade['trade_id']}_copy"
+            portfolio.append(clone)
+            st.rerun()
+
+        if del_col.button("Del", key=f"{key_prefix}_del_{i}"):
+            portfolio.pop(i)
+            st.rerun()
+
+        # Payoff display + economics
+        with st.expander(f"Payoff: {trade['trade_id']}", expanded=False):
+            asset_names_list = st.session_state.get("market", {}).get("asset_names", [])
+            market_spots = st.session_state.get("market", {}).get("spots", [])
+            # Economics explanation with scenario table
+            if asset_names_list:
+                render_trade_economics(trade, asset_names_list, market_spots)
+            st.caption(payoff_formula(trade))
+            if asset_names_list:
+                fig = payoff_sparkline(trade, asset_names_list)
+                st.plotly_chart(fig, use_container_width=True,
+                                config={"displayModeBar": False},
+                                key=f"{key_prefix}_payoff_chart_{i}")
+
+    return edit_idx
