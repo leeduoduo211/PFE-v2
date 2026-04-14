@@ -168,7 +168,10 @@ with tab_portfolio:
             next_id = f"{prefix}{int(num) + 1:0{len(num)}d}"
         else:
             next_id = f"{last_id}_2"
-        st.session_state["tab_tb_trade_id"] = next_id
+        # Stash in a pending slot; the trade builder consumes it before
+        # instantiating its trade_id widget next run (Streamlit forbids
+        # modifying a widget's session_state key after instantiation).
+        st.session_state["_pending_next_trade_id"] = next_id
 
         st.rerun()
 

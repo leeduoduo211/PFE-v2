@@ -292,6 +292,11 @@ def render_trade_builder(key_prefix="tb"):
     if _pending is not None:
         seed_builder_from_trade(_pending, key_prefix)
 
+    # Consume a pending next trade_id (set by app.py after a successful add).
+    _pending_next_id = st.session_state.pop("_pending_next_trade_id", None)
+    if _pending_next_id is not None:
+        st.session_state[f"{key_prefix}_trade_id"] = _pending_next_id
+
     asset_names = get_asset_names()
 
     # -----------------------------------------------------------------------
