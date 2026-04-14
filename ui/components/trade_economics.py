@@ -182,6 +182,172 @@ _ECONOMICS_TEXT: dict = {
 
 
 # ---------------------------------------------------------------------------
+# Extended narrative — 1-2 paragraph explanation per instrument
+# Covers: economic intent, typical use case, key risks, P&L profile.
+# ---------------------------------------------------------------------------
+
+_INSTRUMENT_NARRATIVE: dict = {
+    "VanillaCall": (
+        "A vanilla call gives the holder the right (but not the obligation) to buy the underlying at the strike "
+        "on the maturity date. The long position pays an upfront premium in exchange for unlimited upside above "
+        "the strike, while downside is capped at the premium paid. It is the simplest expression of a bullish view "
+        "with leverage \u2014 a small premium controls a large notional exposure to upward moves.\n\n"
+        "From a risk perspective, the long is exposed to time decay (theta) and changes in implied volatility (vega), "
+        "and benefits from realized moves above the strike. The short side collects the premium but takes on unlimited "
+        "tail risk if the underlying rallies sharply, which is why short calls drive the largest counterparty exposures "
+        "in PFE calculations."
+    ),
+
+    "VanillaPut": (
+        "A vanilla put gives the holder the right to sell the underlying at the strike on the maturity date. "
+        "Long puts are the textbook hedge against downside risk \u2014 portfolio managers buy them as insurance "
+        "against equity drawdowns or to express a bearish directional view with limited downside (the premium paid). "
+        "The maximum profit is bounded by the strike (assuming the underlying can't go negative).\n\n"
+        "Short puts are functionally equivalent to selling insurance: you collect a premium and accept the obligation "
+        "to buy at the strike if assigned. This generates carry in calm markets but exposes the writer to large losses "
+        "in a crash, making short put PFE profiles particularly sensitive to skew and tail-event scenarios."
+    ),
+
+    "Digital": (
+        "A digital (or binary) option pays a fixed cash amount if the underlying finishes on the right side of the "
+        "strike at maturity \u2014 and zero otherwise. The payoff is discontinuous: a one-cent move across the strike "
+        "is the difference between full payout and nothing. Digitals are popular for expressing precise event views "
+        "(e.g. \u201cwill stock close above $100 at year-end?\u201d) without paying for the convex tail of a vanilla option.\n\n"
+        "Risk-wise, digitals concentrate gamma and delta around the strike near expiry, making them difficult to hedge "
+        "and inherently exposed to pin risk. Sellers face binary outcomes that can flip the entire P&L on small spot "
+        "moves close to maturity, which shows up as sharp local spikes in the PFE profile."
+    ),
+
+    "DualDigital": (
+        "A dual digital pays a fixed amount only if both reference assets satisfy their respective barrier conditions "
+        "at maturity. It is a compact way to express a joint-event view across two markets \u2014 for example, "
+        "\u201cEUR/USD above 1.10 AND S&P above 4500\u201d \u2014 at a fraction of the cost of two separate digitals, "
+        "since the joint probability is lower than either marginal probability.\n\n"
+        "Pricing depends heavily on the correlation between the two underlyings: a long dual digital benefits from "
+        "high positive correlation (when conditions naturally co-move), while the short side is most exposed under "
+        "those same correlation regimes. This makes the trade an implicit correlation play as much as a directional one."
+    ),
+
+    "TripleDigital": (
+        "A triple digital extends the dual digital concept to three reference assets: payment occurs only when all "
+        "three barrier conditions are simultaneously satisfied at maturity. This is a deeply out-of-the-money joint "
+        "event play, used to monetise convictions about cross-asset co-movement \u2014 e.g. simultaneous moves across "
+        "FX, rates, and equities.\n\n"
+        "Because the payoff requires three independent (or partially correlated) events to align, premium is very low "
+        "but sensitivity to the full correlation matrix is extreme. Small mis-estimates of correlation can cause large "
+        "MtM swings, and the joint barrier structure produces lumpy, non-monotonic exposure profiles."
+    ),
+
+    "WorstOfCall": (
+        "A worst-of call pays the upside of the worst-performing asset in a basket relative to its strike. From the "
+        "buyer's perspective, this is much cheaper than a basket of individual calls because you only get paid on the "
+        "weakest performer \u2014 the seller benefits from any divergence in the basket. Investors use worst-of structures "
+        "to express bullish views on a sector while accepting limited dispersion risk in exchange for a lower entry cost.\n\n"
+        "The trade is short correlation: the lower the correlation between basket members, the cheaper it is, because "
+        "low correlation increases the chance that at least one asset will underperform. Worst-of calls are common "
+        "ingredients in autocallables and structured equity notes, and their PFE exposure tends to grow as basket "
+        "dispersion increases."
+    ),
+
+    "WorstOfPut": (
+        "A worst-of put pays out based on the decline of the worst-performing asset in a basket. It is the canonical "
+        "downside-protection wrapper inside autocallable notes: it gives the structure issuer cheap basket protection "
+        "because the put activates on whichever asset falls the most, regardless of the basket's average performance.\n\n"
+        "Buyers (often retail-note issuers hedging their books) are long correlation \u2014 high correlation makes the "
+        "basket move together, reducing the chance that any single name falls catastrophically. Sellers face significant "
+        "tail risk in dispersion-heavy crashes, where one stock collapses while the others hold up, and this asymmetry "
+        "drives the bulk of the exposure in many structured-product portfolios."
+    ),
+
+    "BestOfCall": (
+        "A best-of call pays the upside of the best-performing asset in a basket. Unlike a worst-of, the buyer captures "
+        "whichever asset rallies the most, making it strictly more expensive than any individual call in the basket. "
+        "It is used when an investor wants exposure to a theme but doesn't want to pick a winner \u2014 the structure "
+        "automatically rotates into the strongest performer.\n\n"
+        "From a risk angle, the trade is long dispersion (short correlation): low correlation between basket members "
+        "increases the chance that at least one will rally strongly, raising the premium. Best-of calls are popular in "
+        "thematic notes (e.g. \u201cbest-of three EV manufacturers\u201d) and their PFE profile reflects strong upside "
+        "convexity, particularly in low-correlation regimes."
+    ),
+
+    "BestOfPut": (
+        "A best-of put pays based on the decline of the best-performing asset in a basket. It is an unusual structure "
+        "because it requires the basket's strongest member to still finish below its strike for any payoff to occur \u2014 "
+        "effectively a deep-OTM bearish bet on the entire basket. As a result, premiums are low and the trade is rarely "
+        "used outside of bespoke hedging contexts.\n\n"
+        "The trade is structurally short tail risk on broad market crashes, since a payoff requires every asset in the "
+        "basket to be down hard. Sellers can be hurt only in severe correlated drawdowns, which is exactly when liquidity "
+        "and recovery are also impaired \u2014 the PFE profile reflects this fat-tail asymmetry."
+    ),
+
+    "DoubleNoTouch": (
+        "A double no-touch pays a fixed amount only if the underlying stays strictly inside a defined range "
+        "[lower, upper] for the entire life of the trade. The first time spot touches either barrier, the option is "
+        "extinguished. It is a pure short-volatility, range-bound play: holders profit from quiet, mean-reverting "
+        "markets and lose if any volatility spike pushes spot to a barrier.\n\n"
+        "Because the payoff is binary and path-dependent, sellers face very large gap risk near the barriers \u2014 a "
+        "single intraday spike can wipe out the entire position. The trade is most popular in FX markets during "
+        "low-vol regimes, and its PFE profile typically shows sharp localized spikes as spot approaches either edge "
+        "of the range."
+    ),
+
+    "Accumulator": (
+        "An accumulator (also known as a target redemption forward or, infamously, an \u2018I-kill-you-later\u2019) is "
+        "a periodic forward contract: at each observation date, the buyer accumulates a fixed quantity of the underlying "
+        "at a discounted strike. If spot is above the strike, accumulation continues at single size; if spot is below, "
+        "leverage kicks in and the buyer is forced to take a multiple of the standard quantity (typically 2x). "
+        "Some accumulators include a knock-out that terminates the structure once the buyer is sufficiently in the money.\n\n"
+        "Buyers love accumulators because the strike is below current spot \u2014 they get a discount in calm or rising "
+        "markets. The danger is asymmetric: in a sharp decline, the leveraged-buying clause forces the holder to keep "
+        "buying into a falling market at twice the notional, generating large mark-to-market losses. This asymmetry "
+        "produced the famous 2008 Hong Kong accumulator losses and is why the structure dominates the long tail of "
+        "exotic-derivative PFE."
+    ),
+
+    "Decumulator": (
+        "A decumulator is the mirror image of an accumulator: the holder periodically sells a fixed quantity of the "
+        "underlying at a strike that is above current spot, with leverage kicking in if spot rises above the strike "
+        "(forced selling at 2x size). It is used by holders of concentrated long positions to monetise gradually "
+        "above market \u2014 typical clients are corporates or strategic shareholders unwinding a stake.\n\n"
+        "The risk is symmetric to the accumulator: in a sharp rally, the leverage clause forces the seller to deliver "
+        "double quantity at a price well below market, generating large opportunity-cost losses. Decumulator PFE profiles "
+        "are dominated by upside scenarios and grow worst in trending bull markets."
+    ),
+
+    "ForwardStartingOption": (
+        "A forward-starting option is one whose strike is not fixed today but is set at a future date \u2014 typically "
+        "as a percentage (e.g. 100%) of the spot observed on that date. This effectively decouples the trade from "
+        "today's level and gives pure exposure to the realized volatility and behaviour of the underlying between the "
+        "strike-setting date and maturity.\n\n"
+        "Forward starts are a building block in cliquet structures and employee stock plans, where the strike resets "
+        "periodically. Their pricing depends on the forward volatility surface rather than spot vol, and their PFE "
+        "profile is notable for being roughly flat at inception (no strike yet) and only ramping up after the strike "
+        "fixing date."
+    ),
+
+    "RestrikeOption": (
+        "A restrike (or ratchet) option is one whose strike is reset on a specified date \u2014 typically locking in "
+        "any favourable spot move to that point. If spot has rallied, the long restrike call captures the interim move "
+        "and then continues with a higher strike for the remaining life. This is a way to monetise interim performance "
+        "without needing to close and re-open positions.\n\n"
+        "The structure trades a higher upfront premium for the convenience of an automatic profit lock-in, and is most "
+        "common in retail structured products marketed as \u201cguaranteed profit lock\u201d notes. PFE profiles show a "
+        "characteristic step at the restrike date as the option's intrinsic value crystallises into the new strike."
+    ),
+
+    "ContingentOption": (
+        "A contingent option pays out a target payoff (usually a vanilla call or put) only if a separate trigger asset "
+        "satisfies a barrier condition at maturity. The two assets are independent: the trigger acts purely as a switch, "
+        "while the target asset determines the payoff size. Investors use it to express conditional views \u2014 "
+        "e.g. \u201cI want upside on Stock A, but only if oil is above $80\u201d.\n\n"
+        "The trade is much cheaper than the equivalent unconditional vanilla because the trigger condition reduces the "
+        "probability of payoff. Pricing is sensitive to the correlation between trigger and target assets, and PFE "
+        "profiles can be lumpy because the conditional structure introduces a discrete dependence on the trigger path."
+    ),
+}
+
+
+# ---------------------------------------------------------------------------
 # Modifier economics text
 # ---------------------------------------------------------------------------
 
@@ -316,6 +482,10 @@ def render_trade_economics(
     else:
         econ_text = f"{inst_type} — no economics description available."
 
+    # --- Extended narrative (1-2 paragraphs) ---
+    narrative = _INSTRUMENT_NARRATIVE.get(inst_type, "")
+    narrative_paragraphs = [p.strip() for p in narrative.split("\n\n") if p.strip()]
+
     # --- Modifier texts ---
     modifier_lines: list = []
     for mod in spec.get("modifiers", []):
@@ -373,9 +543,16 @@ def render_trade_economics(
             f"</tr>"
         )
 
+    narrative_html = "".join(
+        f'<p style="color:#475569; font-size:0.78rem; line-height:1.55; '
+        f'margin:0 0 0.55rem 0;">{p}</p>'
+        for p in narrative_paragraphs
+    )
+
     html = f"""
 <div style="padding:0.3rem 0;">
-  <p style="color:#64748b; font-size:0.72rem; margin-bottom:0.4rem; margin-top:0;">{econ_text}</p>
+  {narrative_html}
+  <p style="color:#64748b; font-size:0.72rem; font-style:italic; margin-bottom:0.4rem; margin-top:0;">{econ_text}</p>
   {modifier_html}
   <table style="width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:0.72rem; margin-top:0.4rem;">
     <thead>
