@@ -1,4 +1,4 @@
-"""Trade economics: one-liner explanations and scenario analysis for trade specs."""
+"""Trade economics: term-sheet style descriptions and scenario analysis."""
 
 from __future__ import annotations
 
@@ -17,333 +17,300 @@ from ui.components.payoff_display import (
 
 
 # ---------------------------------------------------------------------------
-# Economics text — one-sentence descriptions per instrument type
+# Formatting helpers
 # ---------------------------------------------------------------------------
 
-def _econ_vanilla_call(params: dict, spot: float, direction: str) -> str:
-    strike = params.get("strike", 0.0)
+def _fmt_money(n: float) -> str:
+    return f"{n:,.0f}"
+
+
+def _fmt_yrs(t: float) -> str:
+    if t >= 1.0:
+        return f"{t:.2f}y"
+    return f"{t * 12:.1f}m"
+
+
+def _fmt_num(x: float) -> str:
+    return f"{x:.4g}"
+
+
+def _asset_phrase(params: dict) -> str:
+    assets = params.get("assets") or []
+    if not assets:
+        return "the underlying"
+    if len(assets) == 1:
+        return assets[0]
+    if len(assets) == 2:
+        return f"{assets[0]} and {assets[1]}"
+    return ", ".join(assets[:-1]) + f", and {assets[-1]}"
+
+
+def _strikes_phrase(params: dict) -> str:
+    ks = params.get("strikes") or []
+    return ", ".join(_fmt_num(k) for k in ks)
+
+
+def _header(direction: str, label: str, params: dict) -> str:
+    side = "Long" if direction == "long" else "Short"
+    notional = _fmt_money(params.get("notional", 0.0))
+    maturity = _fmt_yrs(params.get("maturity", 0.0))
+    asset = _asset_phrase(params)
+    return f"<b>{side} {label}</b> on <b>{asset}</b> &mdash; notional {notional}, maturity {maturity}"
+
+
+# ---------------------------------------------------------------------------
+# Term-sheet builders — one per instrument type.
+# Each function returns a multi-sentence description that combines the
+# trade's actual attributes with a brief economic interpretation.
+# ---------------------------------------------------------------------------
+
+def _ts_vanilla_call(params: dict, direction: str) -> str:
+    K = _fmt_num(params.get("strike", 0.0))
+    asset = _asset_phrase(params)
+    head = _header(direction, "vanilla call", params) + f", strike {K}."
     if direction == "long":
-        return (
-            f"Long: pays notional \u00d7 max(spot \u2212 {strike:.4g}, 0) at maturity. "
-            f"Profits when spot rises above {strike:.4g}."
+        body = (
+            f" The long pays an upfront premium and receives notional &times; max(S<sub>T</sub> &minus; {K}, 0) "
+            f"at maturity, capturing unlimited upside above {K} with the maximum loss bounded by the premium. "
+            f"Risk is dominated by delta and vega; the position bleeds theta in calm markets."
         )
-    return (
-        f"Short: receives premium and pays notional \u00d7 max(spot \u2212 {strike:.4g}, 0) at maturity. "
-        f"Profits when spot stays below {strike:.4g}."
-    )
+    else:
+        body = (
+            f" The short collects the premium today and is obliged to pay notional &times; max(S<sub>T</sub> &minus; {K}, 0) "
+            f"at maturity, profiting if {asset} stays at or below {K}. The exposure is unbounded if {asset} rallies, "
+            f"which is why short calls dominate the upside tail of the PFE profile."
+        )
+    return head + body
 
 
-def _econ_vanilla_put(params: dict, spot: float, direction: str) -> str:
-    strike = params.get("strike", 0.0)
+def _ts_vanilla_put(params: dict, direction: str) -> str:
+    K = _fmt_num(params.get("strike", 0.0))
+    asset = _asset_phrase(params)
+    head = _header(direction, "vanilla put", params) + f", strike {K}."
     if direction == "long":
-        return (
-            f"Long: pays notional \u00d7 max({strike:.4g} \u2212 spot, 0) at maturity. "
-            f"Profits when spot falls below {strike:.4g}."
+        body = (
+            f" The long pays a premium and receives notional &times; max({K} &minus; S<sub>T</sub>, 0) at maturity &mdash; "
+            f"a textbook hedge against {asset} drawdowns, with maximum profit bounded by {K} (assuming a non-negative spot)."
         )
-    return (
-        f"Short: receives premium and pays notional \u00d7 max({strike:.4g} \u2212 spot, 0) at maturity. "
-        f"Profits when spot stays above {strike:.4g}."
+    else:
+        body = (
+            f" The short collects premium and accepts the obligation to pay notional &times; max({K} &minus; S<sub>T</sub>, 0). "
+            f"Equivalent to selling crash insurance: comfortable carry in calm markets, large losses in a sharp decline of {asset}."
+        )
+    return head + body
+
+
+def _ts_digital(params: dict, direction: str) -> str:
+    K = _fmt_num(params.get("strike", 0.0))
+    opt = params.get("option_type", "call")
+    cmp_word = "above" if opt == "call" else "below"
+    cmp_sym = "&gt;" if opt == "call" else "&lt;"
+    asset = _asset_phrase(params)
+    notional = _fmt_money(params.get("notional", 0.0))
+    head = _header(direction, f"digital {opt}", params) + f", strike {K}."
+    side = "long receives" if direction == "long" else "short pays"
+    body = (
+        f" At maturity the {side} the fixed amount {notional} if {asset} finishes {cmp_word} {K} "
+        f"(S<sub>T</sub> {cmp_sym} {K}) and zero otherwise. The payoff is binary, so the trade concentrates "
+        f"sharp gamma and pin risk near {K} at expiry &mdash; small spot moves can flip the entire P&amp;L."
     )
+    return head + body
 
 
-def _econ_digital(params: dict, spot: float, direction: str) -> str:
-    strike = params.get("strike", 0.0)
-    opt_type = params.get("option_type", "call")
-    condition = f"exceeds {strike:.4g}" if opt_type == "call" else f"falls below {strike:.4g}"
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: pays fixed amount if spot {condition} at maturity. "
-        f"Binary outcome \u2014 all or nothing."
+def _ts_dual_digital(params: dict, direction: str) -> str:
+    assets = params.get("assets") or []
+    a1 = assets[0] if len(assets) > 0 else "asset 1"
+    a2 = assets[1] if len(assets) > 1 else "asset 2"
+    strikes = params.get("strikes") or []
+    types = params.get("option_types") or []
+    k1 = _fmt_num(strikes[0]) if len(strikes) > 0 else "K1"
+    k2 = _fmt_num(strikes[1]) if len(strikes) > 1 else "K2"
+    op1 = "&gt;" if (types[0] if len(types) > 0 else "call") == "call" else "&lt;"
+    op2 = "&gt;" if (types[1] if len(types) > 1 else "call") == "call" else "&lt;"
+    notional = _fmt_money(params.get("notional", 0.0))
+    head = _header(direction, "dual digital", params) + "."
+    body = (
+        f" Pays the fixed amount {notional} only if both legs satisfy their barrier conditions at maturity "
+        f"({a1} {op1} {k1} <i>and</i> {a2} {op2} {k2}). The trade is implicitly long correlation: higher "
+        f"co-movement between {a1} and {a2} raises the joint probability of payoff, lifting the premium."
     )
+    return head + body
 
 
-def _econ_dual_digital(params: dict, spot: float, direction: str) -> str:
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: pays if both assets satisfy their respective barrier conditions at maturity. "
-        f"Joint probability play."
+def _ts_triple_digital(params: dict, direction: str) -> str:
+    assets = params.get("assets") or []
+    strikes = params.get("strikes") or []
+    types = params.get("option_types") or []
+    parts = []
+    for i in range(min(3, len(assets))):
+        a = assets[i]
+        k = _fmt_num(strikes[i]) if i < len(strikes) else "K"
+        op = "&gt;" if (types[i] if i < len(types) else "call") == "call" else "&lt;"
+        parts.append(f"{a} {op} {k}")
+    cond = " <i>and</i> ".join(parts)
+    notional = _fmt_money(params.get("notional", 0.0))
+    head = _header(direction, "triple digital", params) + "."
+    body = (
+        f" Pays {notional} at maturity only if all three legs are simultaneously satisfied ({cond}). "
+        f"Premium is low because the joint event is rare, but sensitivity to the full correlation matrix is "
+        f"extreme &mdash; small mis-estimates of co-movement produce large MtM swings."
     )
+    return head + body
 
 
-def _econ_triple_digital(params: dict, spot: float, direction: str) -> str:
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: pays if all three assets satisfy their conditions. "
-        f"Multi-asset correlation bet."
+def _ts_worst_of_call(params: dict, direction: str) -> str:
+    head = _header(direction, "worst-of call", params) + f", strikes {_strikes_phrase(params)}."
+    body = (
+        " Terminal payoff is notional &times; max(min<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>) &minus; 1, 0) "
+        "&mdash; only the weakest performer in the basket drives the payout. The long captures basket upside "
+        "cheaply versus a strip of individual calls but is short dispersion: low correlation increases the chance "
+        "the worst leg disappoints, hurting the buyer and benefiting the seller."
     )
+    return head + body
 
 
-def _econ_worst_of_call(params: dict, spot: float, direction: str) -> str:
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: call on the worst-performing asset in the basket. "
-        f"Cheaper than individual calls but exposed to the weakest link."
+def _ts_worst_of_put(params: dict, direction: str) -> str:
+    head = _header(direction, "worst-of put", params) + f", strikes {_strikes_phrase(params)}."
+    body = (
+        " Pays notional &times; max(1 &minus; min<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>), 0) &mdash; the canonical "
+        "downside-protection wrapper inside autocallable notes, since the put activates on whichever asset falls the most. "
+        "The long is long correlation; the short carries the dispersion-crash tail (one stock collapses while the others hold up)."
     )
+    return head + body
 
 
-def _econ_worst_of_put(params: dict, spot: float, direction: str) -> str:
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: put on the worst-performing asset. "
-        f"Protects against broad basket decline."
+def _ts_best_of_call(params: dict, direction: str) -> str:
+    head = _header(direction, "best-of call", params) + f", strikes {_strikes_phrase(params)}."
+    body = (
+        " Pays notional &times; max(max<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>) &minus; 1, 0) &mdash; only the best "
+        "performer matters, so the structure automatically rotates into the strongest leg. The long is long dispersion: "
+        "low correlation raises the chance that at least one asset rallies hard, lifting the premium."
     )
+    return head + body
 
 
-def _econ_best_of_call(params: dict, spot: float, direction: str) -> str:
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: call on the best-performing asset. "
-        f"Captures upside from the strongest performer."
+def _ts_best_of_put(params: dict, direction: str) -> str:
+    head = _header(direction, "best-of put", params) + f", strikes {_strikes_phrase(params)}."
+    body = (
+        " Pays notional &times; max(1 &minus; max<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>), 0) &mdash; a deep-OTM bearish "
+        "bet that requires every basket member, including the strongest, to finish below its strike. Premium is low and "
+        "sellers are exposed only in severe correlated drawdowns, which produces a fat-tail asymmetry in the PFE profile."
     )
+    return head + body
 
 
-def _econ_best_of_put(params: dict, spot: float, direction: str) -> str:
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: put on the best-performing asset. "
-        f"Protects the strongest asset\u2019s gains."
+def _ts_double_no_touch(params: dict, direction: str) -> str:
+    lo = _fmt_num(params.get("lower", 0.0))
+    hi = _fmt_num(params.get("upper", 0.0))
+    asset = _asset_phrase(params)
+    notional = _fmt_money(params.get("notional", 0.0))
+    head = _header(direction, "double no-touch", params) + f", corridor [{lo}, {hi}]."
+    body = (
+        f" Pays {notional} at maturity only if {asset} stays strictly inside [{lo}, {hi}] for the entire life &mdash; "
+        f"the first touch of either barrier extinguishes the trade. The long is short volatility and short gamma: a quiet, "
+        f"range-bound market wins, any spike loses everything. Sellers face large gap risk near the barriers."
     )
+    return head + body
 
 
-def _econ_double_no_touch(params: dict, spot: float, direction: str) -> str:
-    lower = params.get("lower", 0.0)
-    upper = params.get("upper", 0.0)
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: pays if spot stays within [{lower:.4g}, {upper:.4g}] throughout the life. "
-        f"A volatility-selling strategy."
+def _ts_accumulator(params: dict, direction: str) -> str:
+    K = _fmt_num(params.get("strike", 0.0))
+    lev = _fmt_num(params.get("leverage", 1.0))
+    side = params.get("side", "buy")
+    asset = _asset_phrase(params)
+    head = _header(direction, "accumulator", params) + f", strike {K}, leverage {lev}&times; ({side} side)."
+    body = (
+        f" At each observation date the buyer accumulates {asset} at {K}; if spot prints below {K} the leverage clause "
+        f"forces buying at {lev}&times; the standard quantity. Profitable in calm or rising markets above the strike, "
+        f"but in a sharp decline the leveraged-buying clause forces continued purchases into a falling market &mdash; the "
+        f"asymmetry that produced the famous 2008 Hong Kong accumulator losses and that dominates the long tail of exotic PFE."
     )
+    return head + body
 
 
-def _econ_accumulator(params: dict, spot: float, direction: str) -> str:
-    strike = params.get("strike", 0.0)
-    leverage = params.get("leverage", 1.0)
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: periodically buys at {strike:.4g} with {leverage:.4g}x leverage. "
-        f"Accumulates below strike, forced accumulation above. Profits in range-bound markets."
+def _ts_decumulator(params: dict, direction: str) -> str:
+    K = _fmt_num(params.get("strike", 0.0))
+    lev = _fmt_num(params.get("leverage", 1.0))
+    asset = _asset_phrase(params)
+    head = _header(direction, "decumulator", params) + f", strike {K}, leverage {lev}&times;."
+    body = (
+        f" Mirror image of an accumulator: the holder periodically sells {asset} at {K}, with the leverage clause forcing "
+        f"sales at {lev}&times; size if spot rises above {K}. Used by holders of concentrated long positions to monetise "
+        f"gradually above market; the risk shows up in trending bull markets where forced selling at {K} crystallises a "
+        f"large opportunity-cost loss."
     )
+    return head + body
 
 
-def _econ_decumulator(params: dict, spot: float, direction: str) -> str:
-    strike = params.get("strike", 0.0)
-    leverage = params.get("leverage", 1.0)
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: periodically sells at {strike:.4g} with {leverage:.4g}x leverage. "
-        f"Mirror of accumulator for sellers."
+def _ts_forward_starting(params: dict, direction: str) -> str:
+    t0 = _fmt_num(params.get("start_time", 0.0))
+    opt = params.get("option_type", "call")
+    asset = _asset_phrase(params)
+    sign = "&minus;" if opt == "call" else "(reversed for puts)"
+    head = _header(direction, f"forward-starting {opt}", params) + f", strike fixed at t = {t0}y."
+    body = (
+        f" The strike is set to the spot of {asset} observed at t = {t0}y; the option then pays "
+        f"notional &times; max(S<sub>T</sub> {sign} S<sub>{t0}</sub>, 0) at maturity. Today's exposure is to the forward "
+        f"volatility surface rather than spot level &mdash; the PFE profile is roughly flat at inception and only ramps up "
+        f"once the strike is fixed."
     )
+    return head + body
 
 
-def _econ_forward_starting(params: dict, spot: float, direction: str) -> str:
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: option whose strike is set at a future date. "
-        f"Exposure to future realized vol rather than current spot level."
+def _ts_restrike(params: dict, direction: str) -> str:
+    tr = _fmt_num(params.get("reset_time", 0.0))
+    opt = params.get("option_type", "call")
+    head = _header(direction, f"restrike {opt}", params) + f", reset at t = {tr}y."
+    body = (
+        f" At t = {tr}y the strike resets to the prevailing spot, locking in any interim move and continuing with a fresh "
+        f"strike for the remaining life of the trade. The long pays a higher premium for an automatic profit lock-in &mdash; "
+        f"the structure is most common in retail \u201cguaranteed lock\u201d notes."
     )
+    return head + body
 
 
-def _econ_restrike(params: dict, spot: float, direction: str) -> str:
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: option whose strike resets at a specified date. "
-        f"Locks in interim moves."
+def _ts_contingent(params: dict, direction: str) -> str:
+    assets = params.get("assets") or []
+    trig_idx = int(params.get("trigger_asset_idx", 0) or 0)
+    targ_idx = int(params.get("target_asset_idx", 0) or 0)
+    trig = assets[trig_idx] if trig_idx < len(assets) else "trigger asset"
+    targ = assets[targ_idx] if targ_idx < len(assets) else "target asset"
+    tb = _fmt_num(params.get("trigger_barrier", 0.0))
+    tdir = params.get("trigger_direction", "up")
+    breach = "breaches above" if tdir == "up" else "falls below"
+    targ_type = params.get("target_type", "call")
+    targ_K = _fmt_num(params.get("target_strike", 0.0))
+    side = "Long" if direction == "long" else "Short"
+    notional = _fmt_money(params.get("notional", 0.0))
+    maturity = _fmt_yrs(params.get("maturity", 0.0))
+    head = (
+        f"<b>{side} contingent {targ_type}</b> on <b>{targ}</b> (strike {targ_K}), "
+        f"triggered by <b>{trig}</b> &mdash; notional {notional}, maturity {maturity}."
     )
-
-
-def _econ_contingent(params: dict, spot: float, direction: str) -> str:
-    trigger_barrier = params.get("trigger_barrier", 0.0)
-    trigger_dir = params.get("trigger_direction", "up")
-    action = "breaches above" if trigger_dir == "up" else "falls below"
-    prefix = "Long" if direction == "long" else "Short"
-    return (
-        f"{prefix}: target payoff activates only if trigger asset {action} {trigger_barrier:.4g}. "
-        f"Cross-asset conditional exposure."
+    body = (
+        f" The {targ_type} payoff on {targ} activates only if {trig} {breach} {tb} at maturity; the trigger asset acts as "
+        f"an on/off switch while {targ} determines the payoff size. Pricing is driven by the correlation between {trig} and "
+        f"{targ}, and the trade is much cheaper than the unconditional vanilla because the trigger reduces the probability of payoff."
     )
+    return head + body
 
 
-_ECONOMICS_TEXT: dict = {
-    "VanillaCall":           _econ_vanilla_call,
-    "VanillaPut":            _econ_vanilla_put,
-    "Digital":               _econ_digital,
-    "DualDigital":           _econ_dual_digital,
-    "TripleDigital":         _econ_triple_digital,
-    "WorstOfCall":           _econ_worst_of_call,
-    "WorstOfPut":            _econ_worst_of_put,
-    "BestOfCall":            _econ_best_of_call,
-    "BestOfPut":             _econ_best_of_put,
-    "DoubleNoTouch":         _econ_double_no_touch,
-    "Accumulator":           _econ_accumulator,
-    "Decumulator":           _econ_decumulator,
-    "ForwardStartingOption": _econ_forward_starting,
-    "RestrikeOption":        _econ_restrike,
-    "ContingentOption":      _econ_contingent,
-}
-
-
-# ---------------------------------------------------------------------------
-# Extended narrative — 1-2 paragraph explanation per instrument
-# Covers: economic intent, typical use case, key risks, P&L profile.
-# ---------------------------------------------------------------------------
-
-_INSTRUMENT_NARRATIVE: dict = {
-    "VanillaCall": (
-        "A vanilla call gives the holder the right (but not the obligation) to buy the underlying at the strike "
-        "on the maturity date. The long position pays an upfront premium in exchange for unlimited upside above "
-        "the strike, while downside is capped at the premium paid. It is the simplest expression of a bullish view "
-        "with leverage \u2014 a small premium controls a large notional exposure to upward moves.\n\n"
-        "From a risk perspective, the long is exposed to time decay (theta) and changes in implied volatility (vega), "
-        "and benefits from realized moves above the strike. The short side collects the premium but takes on unlimited "
-        "tail risk if the underlying rallies sharply, which is why short calls drive the largest counterparty exposures "
-        "in PFE calculations."
-    ),
-
-    "VanillaPut": (
-        "A vanilla put gives the holder the right to sell the underlying at the strike on the maturity date. "
-        "Long puts are the textbook hedge against downside risk \u2014 portfolio managers buy them as insurance "
-        "against equity drawdowns or to express a bearish directional view with limited downside (the premium paid). "
-        "The maximum profit is bounded by the strike (assuming the underlying can't go negative).\n\n"
-        "Short puts are functionally equivalent to selling insurance: you collect a premium and accept the obligation "
-        "to buy at the strike if assigned. This generates carry in calm markets but exposes the writer to large losses "
-        "in a crash, making short put PFE profiles particularly sensitive to skew and tail-event scenarios."
-    ),
-
-    "Digital": (
-        "A digital (or binary) option pays a fixed cash amount if the underlying finishes on the right side of the "
-        "strike at maturity \u2014 and zero otherwise. The payoff is discontinuous: a one-cent move across the strike "
-        "is the difference between full payout and nothing. Digitals are popular for expressing precise event views "
-        "(e.g. \u201cwill stock close above $100 at year-end?\u201d) without paying for the convex tail of a vanilla option.\n\n"
-        "Risk-wise, digitals concentrate gamma and delta around the strike near expiry, making them difficult to hedge "
-        "and inherently exposed to pin risk. Sellers face binary outcomes that can flip the entire P&L on small spot "
-        "moves close to maturity, which shows up as sharp local spikes in the PFE profile."
-    ),
-
-    "DualDigital": (
-        "A dual digital pays a fixed amount only if both reference assets satisfy their respective barrier conditions "
-        "at maturity. It is a compact way to express a joint-event view across two markets \u2014 for example, "
-        "\u201cEUR/USD above 1.10 AND S&P above 4500\u201d \u2014 at a fraction of the cost of two separate digitals, "
-        "since the joint probability is lower than either marginal probability.\n\n"
-        "Pricing depends heavily on the correlation between the two underlyings: a long dual digital benefits from "
-        "high positive correlation (when conditions naturally co-move), while the short side is most exposed under "
-        "those same correlation regimes. This makes the trade an implicit correlation play as much as a directional one."
-    ),
-
-    "TripleDigital": (
-        "A triple digital extends the dual digital concept to three reference assets: payment occurs only when all "
-        "three barrier conditions are simultaneously satisfied at maturity. This is a deeply out-of-the-money joint "
-        "event play, used to monetise convictions about cross-asset co-movement \u2014 e.g. simultaneous moves across "
-        "FX, rates, and equities.\n\n"
-        "Because the payoff requires three independent (or partially correlated) events to align, premium is very low "
-        "but sensitivity to the full correlation matrix is extreme. Small mis-estimates of correlation can cause large "
-        "MtM swings, and the joint barrier structure produces lumpy, non-monotonic exposure profiles."
-    ),
-
-    "WorstOfCall": (
-        "A worst-of call pays the upside of the worst-performing asset in a basket relative to its strike. From the "
-        "buyer's perspective, this is much cheaper than a basket of individual calls because you only get paid on the "
-        "weakest performer \u2014 the seller benefits from any divergence in the basket. Investors use worst-of structures "
-        "to express bullish views on a sector while accepting limited dispersion risk in exchange for a lower entry cost.\n\n"
-        "The trade is short correlation: the lower the correlation between basket members, the cheaper it is, because "
-        "low correlation increases the chance that at least one asset will underperform. Worst-of calls are common "
-        "ingredients in autocallables and structured equity notes, and their PFE exposure tends to grow as basket "
-        "dispersion increases."
-    ),
-
-    "WorstOfPut": (
-        "A worst-of put pays out based on the decline of the worst-performing asset in a basket. It is the canonical "
-        "downside-protection wrapper inside autocallable notes: it gives the structure issuer cheap basket protection "
-        "because the put activates on whichever asset falls the most, regardless of the basket's average performance.\n\n"
-        "Buyers (often retail-note issuers hedging their books) are long correlation \u2014 high correlation makes the "
-        "basket move together, reducing the chance that any single name falls catastrophically. Sellers face significant "
-        "tail risk in dispersion-heavy crashes, where one stock collapses while the others hold up, and this asymmetry "
-        "drives the bulk of the exposure in many structured-product portfolios."
-    ),
-
-    "BestOfCall": (
-        "A best-of call pays the upside of the best-performing asset in a basket. Unlike a worst-of, the buyer captures "
-        "whichever asset rallies the most, making it strictly more expensive than any individual call in the basket. "
-        "It is used when an investor wants exposure to a theme but doesn't want to pick a winner \u2014 the structure "
-        "automatically rotates into the strongest performer.\n\n"
-        "From a risk angle, the trade is long dispersion (short correlation): low correlation between basket members "
-        "increases the chance that at least one will rally strongly, raising the premium. Best-of calls are popular in "
-        "thematic notes (e.g. \u201cbest-of three EV manufacturers\u201d) and their PFE profile reflects strong upside "
-        "convexity, particularly in low-correlation regimes."
-    ),
-
-    "BestOfPut": (
-        "A best-of put pays based on the decline of the best-performing asset in a basket. It is an unusual structure "
-        "because it requires the basket's strongest member to still finish below its strike for any payoff to occur \u2014 "
-        "effectively a deep-OTM bearish bet on the entire basket. As a result, premiums are low and the trade is rarely "
-        "used outside of bespoke hedging contexts.\n\n"
-        "The trade is structurally short tail risk on broad market crashes, since a payoff requires every asset in the "
-        "basket to be down hard. Sellers can be hurt only in severe correlated drawdowns, which is exactly when liquidity "
-        "and recovery are also impaired \u2014 the PFE profile reflects this fat-tail asymmetry."
-    ),
-
-    "DoubleNoTouch": (
-        "A double no-touch pays a fixed amount only if the underlying stays strictly inside a defined range "
-        "[lower, upper] for the entire life of the trade. The first time spot touches either barrier, the option is "
-        "extinguished. It is a pure short-volatility, range-bound play: holders profit from quiet, mean-reverting "
-        "markets and lose if any volatility spike pushes spot to a barrier.\n\n"
-        "Because the payoff is binary and path-dependent, sellers face very large gap risk near the barriers \u2014 a "
-        "single intraday spike can wipe out the entire position. The trade is most popular in FX markets during "
-        "low-vol regimes, and its PFE profile typically shows sharp localized spikes as spot approaches either edge "
-        "of the range."
-    ),
-
-    "Accumulator": (
-        "An accumulator (also known as a target redemption forward or, infamously, an \u2018I-kill-you-later\u2019) is "
-        "a periodic forward contract: at each observation date, the buyer accumulates a fixed quantity of the underlying "
-        "at a discounted strike. If spot is above the strike, accumulation continues at single size; if spot is below, "
-        "leverage kicks in and the buyer is forced to take a multiple of the standard quantity (typically 2x). "
-        "Some accumulators include a knock-out that terminates the structure once the buyer is sufficiently in the money.\n\n"
-        "Buyers love accumulators because the strike is below current spot \u2014 they get a discount in calm or rising "
-        "markets. The danger is asymmetric: in a sharp decline, the leveraged-buying clause forces the holder to keep "
-        "buying into a falling market at twice the notional, generating large mark-to-market losses. This asymmetry "
-        "produced the famous 2008 Hong Kong accumulator losses and is why the structure dominates the long tail of "
-        "exotic-derivative PFE."
-    ),
-
-    "Decumulator": (
-        "A decumulator is the mirror image of an accumulator: the holder periodically sells a fixed quantity of the "
-        "underlying at a strike that is above current spot, with leverage kicking in if spot rises above the strike "
-        "(forced selling at 2x size). It is used by holders of concentrated long positions to monetise gradually "
-        "above market \u2014 typical clients are corporates or strategic shareholders unwinding a stake.\n\n"
-        "The risk is symmetric to the accumulator: in a sharp rally, the leverage clause forces the seller to deliver "
-        "double quantity at a price well below market, generating large opportunity-cost losses. Decumulator PFE profiles "
-        "are dominated by upside scenarios and grow worst in trending bull markets."
-    ),
-
-    "ForwardStartingOption": (
-        "A forward-starting option is one whose strike is not fixed today but is set at a future date \u2014 typically "
-        "as a percentage (e.g. 100%) of the spot observed on that date. This effectively decouples the trade from "
-        "today's level and gives pure exposure to the realized volatility and behaviour of the underlying between the "
-        "strike-setting date and maturity.\n\n"
-        "Forward starts are a building block in cliquet structures and employee stock plans, where the strike resets "
-        "periodically. Their pricing depends on the forward volatility surface rather than spot vol, and their PFE "
-        "profile is notable for being roughly flat at inception (no strike yet) and only ramping up after the strike "
-        "fixing date."
-    ),
-
-    "RestrikeOption": (
-        "A restrike (or ratchet) option is one whose strike is reset on a specified date \u2014 typically locking in "
-        "any favourable spot move to that point. If spot has rallied, the long restrike call captures the interim move "
-        "and then continues with a higher strike for the remaining life. This is a way to monetise interim performance "
-        "without needing to close and re-open positions.\n\n"
-        "The structure trades a higher upfront premium for the convenience of an automatic profit lock-in, and is most "
-        "common in retail structured products marketed as \u201cguaranteed profit lock\u201d notes. PFE profiles show a "
-        "characteristic step at the restrike date as the option's intrinsic value crystallises into the new strike."
-    ),
-
-    "ContingentOption": (
-        "A contingent option pays out a target payoff (usually a vanilla call or put) only if a separate trigger asset "
-        "satisfies a barrier condition at maturity. The two assets are independent: the trigger acts purely as a switch, "
-        "while the target asset determines the payoff size. Investors use it to express conditional views \u2014 "
-        "e.g. \u201cI want upside on Stock A, but only if oil is above $80\u201d.\n\n"
-        "The trade is much cheaper than the equivalent unconditional vanilla because the trigger condition reduces the "
-        "probability of payoff. Pricing is sensitive to the correlation between trigger and target assets, and PFE "
-        "profiles can be lumpy because the conditional structure introduces a discrete dependence on the trigger path."
-    ),
+_TERM_SHEETS: dict = {
+    "VanillaCall":           _ts_vanilla_call,
+    "VanillaPut":            _ts_vanilla_put,
+    "Digital":               _ts_digital,
+    "DualDigital":           _ts_dual_digital,
+    "TripleDigital":         _ts_triple_digital,
+    "WorstOfCall":           _ts_worst_of_call,
+    "WorstOfPut":            _ts_worst_of_put,
+    "BestOfCall":            _ts_best_of_call,
+    "BestOfPut":             _ts_best_of_put,
+    "DoubleNoTouch":         _ts_double_no_touch,
+    "Accumulator":           _ts_accumulator,
+    "Decumulator":           _ts_decumulator,
+    "ForwardStartingOption": _ts_forward_starting,
+    "RestrikeOption":        _ts_restrike,
+    "ContingentOption":      _ts_contingent,
 }
 
 
@@ -386,6 +353,7 @@ _MODIFIER_ECONOMICS: dict = {
         f"{p.get('vol_barrier',0.0):.4g}. Vol-contingent activation."
     ),
 }
+
 
 
 # ---------------------------------------------------------------------------
@@ -475,16 +443,12 @@ def render_trade_economics(
 
     notional: float = float(params.get("notional", 1_000_000))
 
-    # --- Economics text ---
-    econ_fn = _ECONOMICS_TEXT.get(inst_type)
-    if econ_fn is not None:
-        econ_text = econ_fn(params, spot, direction)
+    # --- Term sheet (combined trade attributes + economic interpretation) ---
+    ts_fn = _TERM_SHEETS.get(inst_type)
+    if ts_fn is not None:
+        term_sheet_html = ts_fn(params, direction)
     else:
-        econ_text = f"{inst_type} — no economics description available."
-
-    # --- Extended narrative (1-2 paragraphs) ---
-    narrative = _INSTRUMENT_NARRATIVE.get(inst_type, "")
-    narrative_paragraphs = [p.strip() for p in narrative.split("\n\n") if p.strip()]
+        term_sheet_html = f"{inst_type} &mdash; no description available."
 
     # --- Modifier texts ---
     modifier_lines: list = []
@@ -543,16 +507,9 @@ def render_trade_economics(
             f"</tr>"
         )
 
-    narrative_html = "".join(
-        f'<p style="color:#475569; font-size:0.78rem; line-height:1.55; '
-        f'margin:0 0 0.55rem 0;">{p}</p>'
-        for p in narrative_paragraphs
-    )
-
     html = f"""
 <div style="padding:0.3rem 0;">
-  {narrative_html}
-  <p style="color:#64748b; font-size:0.72rem; font-style:italic; margin-bottom:0.4rem; margin-top:0;">{econ_text}</p>
+  <p style="color:#334155; font-size:0.8rem; line-height:1.55; margin:0 0 0.55rem 0;">{term_sheet_html}</p>
   {modifier_html}
   <table style="width:100%; border-collapse:collapse; font-family:'JetBrains Mono',monospace; font-size:0.72rem; margin-top:0.4rem;">
     <thead>
