@@ -224,8 +224,16 @@ def _render_per_trade(result: dict, trade_ids: list):
     time_points = _time_in_weeks(result["time_points"])
     per_trade = result["per_trade_pfe"]
 
+    # Guard: portfolio may have changed since this run was computed
+    n_available = min(len(trade_ids), len(per_trade))
+    if n_available < len(trade_ids):
+        st.caption(
+            f"Showing {n_available} of {len(trade_ids)} trades \u2014 "
+            f"portfolio has changed since the last run. Re-run PFE to refresh."
+        )
+
     fig = go.Figure()
-    for i, tid in enumerate(trade_ids):
+    for i, tid in enumerate(trade_ids[:n_available]):
         color = _TRADE_PALETTE[i % len(_TRADE_PALETTE)]
         if color.startswith("#") and len(color) == 7:
             r, g, b = int(color[1:3], 16), int(color[3:5], 16), int(color[5:7], 16)
