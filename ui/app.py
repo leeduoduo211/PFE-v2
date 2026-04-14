@@ -155,6 +155,7 @@ with tab_portfolio:
     if trade_spec is not None:
         st.session_state["portfolio"].append(trade_spec)
         st.session_state["tab_tb_modifier_count"] = 0
+        st.session_state["_switch_to_portfolio"] = True
         st.rerun()
 
     st.markdown('<hr style="margin:1rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
@@ -212,6 +213,15 @@ if st.session_state.pop("_switch_to_results", False):
     <script>
     const tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
     if (tabs.length >= 4) { tabs[3].click(); }
+    </script>
+    """
+    st.components.v1.html(_js, height=0)
+
+if st.session_state.pop("_switch_to_portfolio", False):
+    _js = """
+    <script>
+    const tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
+    if (tabs.length >= 2) { tabs[1].click(); }
     </script>
     """
     st.components.v1.html(_js, height=0)
