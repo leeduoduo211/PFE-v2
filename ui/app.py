@@ -156,6 +156,20 @@ with tab_portfolio:
         st.session_state["portfolio"].append(trade_spec)
         st.session_state["tab_tb_modifier_count"] = 0
         st.session_state["_switch_to_portfolio"] = True
+
+        # Auto-increment trade ID for the next trade. Parses a trailing
+        # numeric suffix (e.g. "TRD_001" -> "TRD_002"). If no suffix is
+        # found, appends "_2", "_3", ...
+        import re
+        last_id = trade_spec["trade_id"]
+        m = re.match(r"^(.*?)(\d+)$", last_id)
+        if m:
+            prefix, num = m.group(1), m.group(2)
+            next_id = f"{prefix}{int(num) + 1:0{len(num)}d}"
+        else:
+            next_id = f"{last_id}_2"
+        st.session_state["tab_tb_trade_id"] = next_id
+
         st.rerun()
 
     st.markdown('<hr style="margin:1rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
