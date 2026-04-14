@@ -78,7 +78,11 @@ def render_portfolio_table(key_prefix: str = "pt"):
             edit_col, clone_col, del_col = cols[5], cols[6], cols[7]
 
         if edit_col.button("Edit", key=f"{key_prefix}_edit_{i}"):
-            edit_idx = i
+            # Stash the trade for the trade builder to consume on next run
+            st.session_state["_pending_edit_trade"] = copy.deepcopy(trade)
+            portfolio.pop(i)
+            st.session_state["_switch_to_portfolio"] = True
+            st.rerun()
 
         if clone_col.button("Clone", key=f"{key_prefix}_clone_{i}"):
             clone = copy.deepcopy(trade)

@@ -16,6 +16,86 @@ from ui.components.payoff_display import payoff_formula, payoff_sparkline
 
 
 # ---------------------------------------------------------------------------
+# Edit-flow helper: seed widget session state from an existing trade spec.
+# Must be called BEFORE any trade-builder widget is instantiated on the run,
+# otherwise Streamlit raises "cannot be modified after widget instantiated".
+# ---------------------------------------------------------------------------
+
+def seed_builder_from_trade(trade: dict, key_prefix: str) -> None:
+    ss = st.session_state
+    params = trade.get("params", {}) or {}
+    modifiers = trade.get("modifiers", []) or []
+    inst_type = trade.get("instrument_type")
+    inst_spec = INSTRUMENT_REGISTRY.get(inst_type)
+
+    # Product (selectbox holds the label, not the type key)
+    if inst_spec is not None:
+        ss[f"{key_prefix}_product"] = inst_spec["label"]
+
+    # Common fields
+    ss[f"{key_prefix}_trade_id"] = trade.get("trade_id", "")
+    ss[f"{key_prefix}_maturity"] = float(params.get("maturity", 1.0))
+    ss[f"{key_prefix}_notional"] = float(params.get("notional", 1_000_000.0))
+    ss[f"{key_prefix}_direction"] = "Short" if trade.get("direction") == "short" else "Long"
+
+    # Assets — single-select uses `_asset_0`, multi-select uses `_assets_multi`
+    assets = list(params.get("assets", []) or [])
+    if inst_spec is not None:
+        min_n, max_n = _parse_n_assets_spec(inst_spec["n_assets"])
+    else:
+        min_n, max_n = 1, 1
+    if min_n == max_n == 1:
+        if assets:
+            ss[f"{key_prefix}_asset_0"] = assets[0]
+    else:
+        if assets:
+            ss[f"{key_prefix}_assets_multi"] = assets
+
+    # Instrument-specific fields
+    if inst_spec is not None:
+        for field in inst_spec["fields"]:
+            fname = field["name"]
+            if fname not in params:
+                continue
+            val = params[fname]
+            ftype = field["type"]
+            fkey = f"{key_prefix}_inst_{fname}"
+            if ftype in ("float_list", "select_list"):
+                for i, v in enumerate(val or []):
+                    ss[f"{fkey}_{i}"] = v
+            elif ftype == "schedule":
+                # Schedule widgets regenerate from maturity; skip.
+                pass
+            else:
+                ss[fkey] = val
+
+    # Modifiers
+    ss[f"{key_prefix}_modifier_count"] = len(modifiers)
+    for i, mod in enumerate(modifiers):
+        mod_type = mod.get("type")
+        mod_spec = MODIFIER_REGISTRY.get(mod_type)
+        if mod_spec is None:
+            continue
+        mod_key = f"{key_prefix}_mod_{i}"
+        ss[f"{mod_key}_type"] = mod_spec["label"]
+        mod_params = mod.get("params", {}) or {}
+        for field in mod_spec["fields"]:
+            fname = field["name"]
+            if fname not in mod_params:
+                continue
+            val = mod_params[fname]
+            ftype = field["type"]
+            fkey = f"{mod_key}_{fname}"
+            if ftype in ("float_list", "select_list"):
+                for j, v in enumerate(val or []):
+                    ss[f"{fkey}_{j}"] = v
+            elif ftype == "schedule":
+                pass
+            else:
+                ss[fkey] = val
+
+
+# ---------------------------------------------------------------------------
 # Internal helpers
 # ---------------------------------------------------------------------------
 
@@ -206,6 +286,12 @@ def render_trade_builder(key_prefix="tb"):
     dict or None
         Trade spec dict on "Add to Portfolio" click, otherwise None.
     """
+    # Consume any pending-edit payload before instantiating widgets, so
+    # session_state seeding happens pre-widget-creation (Streamlit requirement).
+    _pending = st.session_state.pop("_pending_edit_trade", None)
+    if _pending is not None:
+        seed_builder_from_trade(_pending, key_prefix)
+
     asset_names = get_asset_names()
 
     # -----------------------------------------------------------------------
