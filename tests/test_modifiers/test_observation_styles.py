@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pfev2.instruments.vanilla import VanillaCall
+from pfev2.instruments.vanilla import VanillaOption
 from pfev2.modifiers.knock_out import KnockOut
 from pfev2.modifiers.knock_in import KnockIn
 from pfev2.core.exceptions import ModifierError
@@ -8,8 +8,8 @@ from pfev2.core.exceptions import ModifierError
 
 class TestKnockOutObservationStyles:
     def _make_base(self):
-        return VanillaCall(trade_id="C1", maturity=1.0, notional=1.0,
-                           asset_indices=(0,), strike=100.0)
+        return VanillaOption(trade_id="C1", maturity=1.0, notional=1.0,
+                             asset_indices=(0,), strike=100.0, option_type="call")
 
     def test_continuous_default_unchanged(self):
         base = self._make_base()
@@ -80,8 +80,8 @@ class TestKnockOutObservationStyles:
 
 class TestKnockOutRebate:
     def _make_base(self):
-        return VanillaCall(trade_id="C1", maturity=1.0, notional=1.0,
-                           asset_indices=(0,), strike=100.0)
+        return VanillaOption(trade_id="C1", maturity=1.0, notional=1.0,
+                             asset_indices=(0,), strike=100.0, option_type="call")
 
     def test_rebate_paid_on_knockout(self):
         base = self._make_base()
@@ -105,8 +105,8 @@ class TestKnockOutRebate:
 
 class TestKnockInObservationStyles:
     def _make_base(self):
-        return VanillaCall(trade_id="C1", maturity=1.0, notional=1.0,
-                           asset_indices=(0,), strike=100.0)
+        return VanillaOption(trade_id="C1", maturity=1.0, notional=1.0,
+                             asset_indices=(0,), strike=100.0, option_type="call")
 
     def test_discrete_activation_on_observation_date(self):
         base = self._make_base()

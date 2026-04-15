@@ -1,6 +1,6 @@
 import numpy as np
 from pfev2.pricing.inner_mc import InnerMCPricer
-from pfev2.instruments.vanilla import VanillaCall, VanillaPut
+from pfev2.instruments.vanilla import VanillaOption
 from pfev2.engine.gbm import MultivariateGBM
 from pfev2.engine.backends.numpy_backend import NumpyBackend
 from pfev2.core.types import MarketData, TimeGrid
@@ -17,10 +17,10 @@ def test_call_put_parity_netting():
         asset_names=["X"],
         asset_classes=["EQUITY"],
     )
-    call = VanillaCall(trade_id="C1", maturity=1.0, notional=1.0,
-                       asset_indices=(0,), strike=100.0)
-    put = VanillaPut(trade_id="P1", maturity=1.0, notional=1.0,
-                     asset_indices=(0,), strike=100.0)
+    call = VanillaOption(trade_id="C1", maturity=1.0, notional=1.0,
+                         asset_indices=(0,), strike=100.0, option_type="call")
+    put = VanillaOption(trade_id="P1", maturity=1.0, notional=1.0,
+                        asset_indices=(0,), strike=100.0, option_type="put")
 
     engine = MultivariateGBM(backend=NumpyBackend())
     pricer = InnerMCPricer(engine=engine)

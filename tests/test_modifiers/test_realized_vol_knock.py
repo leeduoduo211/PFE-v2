@@ -1,6 +1,6 @@
 import numpy as np
 import pytest
-from pfev2.instruments.vanilla import VanillaCall
+from pfev2.instruments.vanilla import VanillaOption
 from pfev2.modifiers.realized_vol_knock import RealizedVolKnockOut, RealizedVolKnockIn
 from pfev2.core.exceptions import ModifierError
 
@@ -10,8 +10,8 @@ from pfev2.core.exceptions import ModifierError
 # ---------------------------------------------------------------------------
 
 def _call(strike=100.0, asset_indices=(0,)):
-    return VanillaCall(trade_id="C1", maturity=1.0, notional=1.0,
-                       asset_indices=asset_indices, strike=strike)
+    return VanillaOption(trade_id="C1", maturity=1.0, notional=1.0,
+                         asset_indices=asset_indices, strike=strike, option_type="call")
 
 
 def _flat_path(n_paths, n_steps, spot=100.0):
@@ -197,8 +197,8 @@ class TestRealizedVolKnockIn:
 
     def test_multi_asset_monitor_pos(self):
         """asset_idx selects the correct column from path_history."""
-        base = VanillaCall(trade_id="T1", maturity=1.0, notional=1.0,
-                           asset_indices=(0, 1), strike=100.0)
+        base = VanillaOption(trade_id="T1", maturity=1.0, notional=1.0,
+                             asset_indices=(0, 1), strike=100.0, option_type="call")
         # Column 0: volatile; column 1: flat
         n_paths, n_steps = 2, 30
         prices = np.ones((n_paths, n_steps, 2)) * 100.0

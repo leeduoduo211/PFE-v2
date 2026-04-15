@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 from pfev2.pricing.inner_mc import InnerMCPricer
-from pfev2.instruments.vanilla import VanillaCall
+from pfev2.instruments.vanilla import VanillaOption
 from pfev2.engine.gbm import MultivariateGBM
 from pfev2.engine.backends.numpy_backend import NumpyBackend
 from pfev2.core.types import MarketData, TimeGrid
@@ -28,8 +28,8 @@ def market():
 
 def test_vanilla_call_convergence(pricer, market):
     """MC price should converge to Black-Scholes for a vanilla call."""
-    call = VanillaCall(trade_id="C1", maturity=1.0, notional=1.0,
-                       asset_indices=(0,), strike=100.0)
+    call = VanillaOption(trade_id="C1", maturity=1.0, notional=1.0,
+                         asset_indices=(0,), strike=100.0, option_type="call")
     node_spots = np.array([100.0])
     remaining_grid = TimeGrid.from_maturity(1.0, frequency="weekly")
 
@@ -49,10 +49,10 @@ def test_vanilla_call_convergence(pricer, market):
 
 def test_portfolio_netting(pricer, market):
     """Long call + short call at same strike = ~zero."""
-    call = VanillaCall(trade_id="C1", maturity=1.0, notional=1.0,
-                       asset_indices=(0,), strike=100.0)
-    put = VanillaCall(trade_id="C2", maturity=1.0, notional=-1.0,
-                      asset_indices=(0,), strike=100.0)
+    call = VanillaOption(trade_id="C1", maturity=1.0, notional=1.0,
+                         asset_indices=(0,), strike=100.0, option_type="call")
+    put = VanillaOption(trade_id="C2", maturity=1.0, notional=-1.0,
+                        asset_indices=(0,), strike=100.0, option_type="call")
 
     node_spots = np.array([100.0])
     remaining_grid = TimeGrid.from_maturity(1.0, frequency="weekly")

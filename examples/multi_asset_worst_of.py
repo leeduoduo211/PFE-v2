@@ -8,7 +8,7 @@ Demonstrates:
 """
 import numpy as np
 from pfev2 import MarketData, PFEConfig, compute_pfe
-from pfev2.instruments import VanillaCall, WorstOfPut, BestOfCall
+from pfev2.instruments import VanillaOption, WorstOfOption, BestOfOption
 from pfev2.modifiers import PayoffCap
 
 # 3-asset equity market
@@ -28,30 +28,33 @@ market = MarketData(
 
 # Portfolio: worst-of put (capped) + best-of call + vanilla hedge
 capped_wop = PayoffCap(
-    WorstOfPut(
+    WorstOfOption(
         trade_id="WOP-3",
         maturity=1.0,
         notional=500_000,
         asset_indices=(0, 1, 2),
         strikes=[100.0, 80.0, 120.0],
+        option_type="put",
     ),
     cap=0.3,  # cap payoff at 30%
 )
 
-best_call = BestOfCall(
+best_call = BestOfOption(
     trade_id="BOC-3",
     maturity=1.0,
     notional=200_000,
     asset_indices=(0, 1, 2),
     strikes=[100.0, 80.0, 120.0],
+    option_type="call",
 )
 
-hedge = VanillaCall(
+hedge = VanillaOption(
     trade_id="HEDGE",
     maturity=0.5,
     notional=-100_000,   # short position
     asset_indices=(0,),
     strike=105.0,
+    option_type="call",
 )
 
 portfolio = [capped_wop, best_call, hedge]

@@ -1,8 +1,8 @@
 import numpy as np
 import pytest
 from pfev2.risk.pfe import compute_pfe
-from pfev2.instruments.vanilla import VanillaCall
-from pfev2.instruments.worst_best_of import WorstOfPut
+from pfev2.instruments.vanilla import VanillaOption
+from pfev2.instruments.worst_best_of import WorstOfOption
 from pfev2.instruments.accumulator import Accumulator
 from pfev2.core.types import MarketData, PFEConfig
 
@@ -23,8 +23,8 @@ def market():
 @pytest.fixture
 def portfolio():
     return [
-        VanillaCall(trade_id="C1", maturity=1.0, notional=1_000_000,
-                    asset_indices=(0,), strike=100.0),
+        VanillaOption(trade_id="C1", maturity=1.0, notional=1_000_000,
+                      asset_indices=(0,), strike=100.0, option_type="call"),
     ]
 
 
@@ -71,10 +71,10 @@ def test_batch_european_multi_asset():
         asset_classes=["EQ", "EQ"],
     )
     portfolio = [
-        VanillaCall(trade_id="C1", maturity=1.0, notional=100_000,
-                    asset_indices=(0,), strike=100.0),
-        WorstOfPut(trade_id="WOP", maturity=1.0, notional=100_000,
-                   asset_indices=(0, 1), strikes=[100.0, 80.0]),
+        VanillaOption(trade_id="C1", maturity=1.0, notional=100_000,
+                      asset_indices=(0,), strike=100.0, option_type="call"),
+        WorstOfOption(trade_id="WOP", maturity=1.0, notional=100_000,
+                      asset_indices=(0, 1), strikes=[100.0, 80.0], option_type="put"),
     ]
     config = PFEConfig(n_outer=100, n_inner=200, seed=42, grid_frequency="monthly")
     result = compute_pfe(portfolio, market, config, per_trade_detail=True)
@@ -97,8 +97,8 @@ def test_mixed_european_and_path_dependent():
         asset_names=["X"],
         asset_classes=["EQ"],
     )
-    call = VanillaCall(trade_id="C1", maturity=1.0, notional=100_000,
-                       asset_indices=(0,), strike=100.0)
+    call = VanillaOption(trade_id="C1", maturity=1.0, notional=100_000,
+                         asset_indices=(0,), strike=100.0, option_type="call")
     acc = Accumulator(trade_id="ACC", maturity=1.0, notional=100_000,
                       asset_indices=(0,), strike=100.0, side="buy",
                       leverage=2.0, schedule=[0.25, 0.5, 0.75, 1.0])
@@ -129,8 +129,8 @@ def test_batch_reproducibility():
         asset_classes=["EQ", "EQ"],
     )
     portfolio = [
-        VanillaCall(trade_id="C1", maturity=1.0, notional=100_000,
-                    asset_indices=(0,), strike=100.0),
+        VanillaOption(trade_id="C1", maturity=1.0, notional=100_000,
+                      asset_indices=(0,), strike=100.0, option_type="call"),
     ]
     config = PFEConfig(n_outer=100, n_inner=200, seed=42, grid_frequency="monthly")
 

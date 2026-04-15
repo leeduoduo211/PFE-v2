@@ -1,6 +1,6 @@
 import numpy as np
 from pfev2.risk.pfe import compute_pfe
-from pfev2.instruments.vanilla import VanillaCall
+from pfev2.instruments.vanilla import VanillaOption
 from pfev2.core.types import MarketData, PFEConfig
 
 
@@ -15,8 +15,8 @@ def test_margined_less_than_unmargined():
         asset_classes=["EQUITY"],
     )
     portfolio = [
-        VanillaCall(trade_id="C1", maturity=1.0, notional=1_000_000,
-                    asset_indices=(0,), strike=100.0),
+        VanillaOption(trade_id="C1", maturity=1.0, notional=1_000_000,
+                      asset_indices=(0,), strike=100.0, option_type="call"),
     ]
     config_unmargined = PFEConfig(n_outer=200, n_inner=200, seed=42,
                                    grid_frequency="monthly", margined=False)
@@ -41,8 +41,8 @@ def test_unmargined_curves_populated():
         asset_classes=["EQUITY"],
     )
     portfolio = [
-        VanillaCall(trade_id="C1", maturity=1.0, notional=1_000_000,
-                    asset_indices=(0,), strike=100.0),
+        VanillaOption(trade_id="C1", maturity=1.0, notional=1_000_000,
+                      asset_indices=(0,), strike=100.0, option_type="call"),
     ]
     config = PFEConfig(n_outer=200, n_inner=200, seed=42,
                        grid_frequency="monthly", margined=True, mpor_days=10)
@@ -67,8 +67,8 @@ def test_unmargined_only_curves_identical():
         asset_classes=["EQUITY"],
     )
     portfolio = [
-        VanillaCall(trade_id="C1", maturity=1.0, notional=1_000_000,
-                    asset_indices=(0,), strike=100.0),
+        VanillaOption(trade_id="C1", maturity=1.0, notional=1_000_000,
+                      asset_indices=(0,), strike=100.0, option_type="call"),
     ]
     config = PFEConfig(n_outer=100, n_inner=200, seed=42,
                        grid_frequency="monthly", margined=False)

@@ -1,6 +1,6 @@
 import numpy as np
 from pfev2 import MarketData, PFEConfig, compute_pfe
-from pfev2.instruments import VanillaCall
+from pfev2.instruments import VanillaOption
 
 
 def test_pinned_pfe_values():
@@ -15,8 +15,8 @@ def test_pinned_pfe_values():
         asset_classes=["EQUITY"],
     )
     portfolio = [
-        VanillaCall(trade_id="C1", maturity=1.0, notional=100_000,
-                    asset_indices=(0,), strike=100.0),
+        VanillaOption(trade_id="C1", maturity=1.0, notional=100_000,
+                      asset_indices=(0,), strike=100.0, option_type="call"),
     ]
     config = PFEConfig(n_outer=100, n_inner=200, seed=42, grid_frequency="monthly")
 
