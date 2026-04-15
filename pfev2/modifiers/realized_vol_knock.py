@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 from pfev2.modifiers.base import BaseModifier
 from pfev2.core.exceptions import ModifierError
+from pfev2.modifiers.knock_out import _validate_observation_params, _get_monitored_prices
 
 
 def _realized_vol(path_history: np.ndarray, monitor_pos: int, annualization_factor: float) -> np.ndarray:
@@ -47,6 +48,14 @@ class RealizedVolKnockOut(BaseModifier):
     annualization_factor : float
         Steps per year used in the inner MC grid (252 daily, 52 weekly,
         12 monthly). Must match the grid frequency used at pricing time.
+    observation_style : "continuous" | "discrete" | "window"
+        Controls which portion of the path is used to compute realized vol.
+    observation_dates : list or None
+        Required when observation_style="discrete".
+    window_start : float or None
+        Required when observation_style="window".
+    window_end : float or None
+        Required when observation_style="window".
     """
 
     def __init__(
@@ -56,6 +65,10 @@ class RealizedVolKnockOut(BaseModifier):
         direction: str,
         asset_idx=None,
         annualization_factor: float = 52.0,
+        observation_style: str = "continuous",
+        observation_dates=None,
+        window_start=None,
+        window_end=None,
     ):
         super().__init__(inner)
         if direction not in ("above", "below"):
@@ -64,13 +77,26 @@ class RealizedVolKnockOut(BaseModifier):
             raise ModifierError(f"vol_barrier must be positive, got {vol_barrier}")
         if annualization_factor <= 0:
             raise ModifierError(f"annualization_factor must be positive, got {annualization_factor}")
+        _validate_observation_params(observation_style, observation_dates, window_start, window_end)
         self.vol_barrier = vol_barrier
         self.direction = direction
         self.annualization_factor = annualization_factor
+        self.observation_style = observation_style
+        self.observation_dates = observation_dates
+        self.window_start = window_start
+        self.window_end = window_end
         self._monitor_pos = 0 if asset_idx is None else list(inner.asset_indices).index(asset_idx)
 
     def _apply(self, raw_payoff, spots, path_history, t_grid=None) -> np.ndarray:
-        rv = _realized_vol(path_history, self._monitor_pos, self.annualization_factor)
+        prices = path_history[:, :, self._monitor_pos]
+        monitored = _get_monitored_prices(
+            prices, self.observation_style, t_grid,
+            self.observation_dates, self.window_start, self.window_end
+        )
+        # Reconstruct a 3-D history with only the monitored steps so
+        # _realized_vol can index into axis 2 at position 0.
+        filtered_history = monitored[:, :, np.newaxis]
+        rv = _realized_vol(filtered_history, 0, self.annualization_factor)
         if self.direction == "above":
             knocked_out = rv > self.vol_barrier
         else:
@@ -98,6 +124,14 @@ class RealizedVolKnockIn(BaseModifier):
     annualization_factor : float
         Steps per year used in the inner MC grid (252 daily, 52 weekly,
         12 monthly). Must match the grid frequency used at pricing time.
+    observation_style : "continuous" | "discrete" | "window"
+        Controls which portion of the path is used to compute realized vol.
+    observation_dates : list or None
+        Required when observation_style="discrete".
+    window_start : float or None
+        Required when observation_style="window".
+    window_end : float or None
+        Required when observation_style="window".
     """
 
     def __init__(
@@ -107,6 +141,10 @@ class RealizedVolKnockIn(BaseModifier):
         direction: str,
         asset_idx=None,
         annualization_factor: float = 52.0,
+        observation_style: str = "continuous",
+        observation_dates=None,
+        window_start=None,
+        window_end=None,
     ):
         super().__init__(inner)
         if direction not in ("above", "below"):
@@ -115,13 +153,24 @@ class RealizedVolKnockIn(BaseModifier):
             raise ModifierError(f"vol_barrier must be positive, got {vol_barrier}")
         if annualization_factor <= 0:
             raise ModifierError(f"annualization_factor must be positive, got {annualization_factor}")
+        _validate_observation_params(observation_style, observation_dates, window_start, window_end)
         self.vol_barrier = vol_barrier
         self.direction = direction
         self.annualization_factor = annualization_factor
+        self.observation_style = observation_style
+        self.observation_dates = observation_dates
+        self.window_start = window_start
+        self.window_end = window_end
         self._monitor_pos = 0 if asset_idx is None else list(inner.asset_indices).index(asset_idx)
 
     def _apply(self, raw_payoff, spots, path_history, t_grid=None) -> np.ndarray:
-        rv = _realized_vol(path_history, self._monitor_pos, self.annualization_factor)
+        prices = path_history[:, :, self._monitor_pos]
+        monitored = _get_monitored_prices(
+            prices, self.observation_style, t_grid,
+            self.observation_dates, self.window_start, self.window_end
+        )
+        filtered_history = monitored[:, :, np.newaxis]
+        rv = _realized_vol(filtered_history, 0, self.annualization_factor)
         if self.direction == "above":
             activated = rv > self.vol_barrier
         else:
