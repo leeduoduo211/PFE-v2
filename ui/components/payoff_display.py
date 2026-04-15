@@ -5,6 +5,7 @@ from typing import Optional
 import numpy as np
 import plotly.graph_objects as go
 
+from ui.utils.product_content import SPARKLINE_SUPPORTED
 from ui.utils.registry import INSTRUMENT_REGISTRY
 
 
@@ -28,6 +29,30 @@ _BASE_FORMULAS = {
     "ForwardStartingOption": lambda p: f"max(S_T - S_start, 0) [{p.get('option_type','call')}]",
     "RestrikeOption": lambda p: f"max(S_T - S_reset, 0) [{p.get('option_type','call')}]",
     "ContingentOption": lambda p: f"payoff(target) \u00d7 1{{trigger {'>' if p.get('trigger_direction','up')=='up' else '<'} {p.get('trigger_barrier',0):.4g}}}",
+    "SingleBarrier": lambda p: (
+        f"max(S {'−' if p.get('option_type','call')=='call' else '− S, '}"
+        f"{p.get('strike',0):.4g}"
+        f"{', 0)' if p.get('option_type','call')=='call' else ''}"
+        f" \u00b7 1{{S(T) {'>' if p.get('barrier_direction','up')=='up' else '<'} {p.get('barrier',0):.4g}}}"
+    ),
+    "AsianOption": lambda p: (
+        f"max({'avg(S)' if p.get('average_type','price')=='price' else 'S(T)'}"
+        f" \u2212 {'K' if p.get('average_type','price')=='price' else 'avg(S)'}, 0)"
+        f" [{p.get('option_type','call')}]"
+    ),
+    "Cliquet": lambda p: (
+        f"N \u00b7 max(\u03a3 clip(r\u1d62, {p.get('local_floor',0):.4g}, {p.get('local_cap',0):.4g}), "
+        f"{p.get('global_floor',0):.4g})"
+    ),
+    "RangeAccrual": lambda p: (
+        f"N \u00b7 (days_in / total) \u00b7 {p.get('coupon_rate',0):.4g}"
+    ),
+    "Autocallable": lambda p: (
+        f"if called: coupon \u00d7 i | if not: max(worst_perf \u2212 1, put_strike \u2212 1)"
+    ),
+    "TARF": lambda p: (
+        f"\u03a3 units \u00b7 (S \u2212 {p.get('strike',0):.4g}) [target={p.get('target',0):.4g}]"
+    ),
 }
 
 _MODIFIER_FORMULAS = {
@@ -39,6 +64,7 @@ _MODIFIER_FORMULAS = {
     "ObservationSchedule": lambda p, inner: inner,
     "RealizedVolKnockOut": lambda p, inner: f"{inner} \u00b7 1{{rv {'<' if p['direction']=='above' else '>'} {p['vol_barrier']:.4g}}}",
     "RealizedVolKnockIn":  lambda p, inner: f"{inner} \u00b7 1{{rv {'>' if p['direction']=='above' else '<'} {p['vol_barrier']:.4g}}}",
+    "TargetProfit": lambda p, inner: f"min({inner}, {p.get('target',0):.4g})",
 }
 
 
@@ -74,10 +100,13 @@ def payoff_formula(spec: dict) -> str:
 _PATH_DEPENDENT_TYPES = {
     "Accumulator", "Decumulator", "DoubleNoTouch",
     "ForwardStartingOption", "RestrikeOption",
+    "AsianOption", "Cliquet", "RangeAccrual",
+    "Autocallable", "TARF",
 }
 
 _PATH_DEPENDENT_MODIFIERS = {
     "KnockOut", "KnockIn", "RealizedVolKnockOut", "RealizedVolKnockIn",
+    "TargetProfit",
 }
 
 
@@ -150,9 +179,15 @@ def _apply_non_path_modifier(mod_type: str, mod_params: dict, payoffs: np.ndarra
     return payoffs
 
 
-def payoff_sparkline(spec: dict, asset_names: list) -> go.Figure:
-    """Generate a compact Plotly sparkline of the payoff profile."""
+def payoff_sparkline(spec: dict, asset_names: list) -> Optional[go.Figure]:
+    """Generate a compact Plotly sparkline of the payoff profile.
+
+    Returns None for instrument types that cannot be meaningfully represented
+    by a simple terminal-payoff sparkline (schedule-heavy / path-complex types).
+    """
     inst_type = spec["instrument_type"]
+    if inst_type not in SPARKLINE_SUPPORTED:
+        return None
     params = spec.get("params", {})
     direction = spec.get("direction", "long")
 

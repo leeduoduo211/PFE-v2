@@ -147,3 +147,172 @@ class TestPayoffSparkline:
         }
         fig = payoff_sparkline(spec, asset_names=["X"])
         assert fig is not None
+
+
+class TestNewInstrumentFormulas:
+    def test_single_barrier_formula(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "SingleBarrier",
+            "params": {
+                "strike": 100.0,
+                "barrier": 120.0,
+                "option_type": "call",
+                "barrier_direction": "up",
+                "barrier_type": "out",
+            },
+            "modifiers": [],
+        }
+        f = payoff_formula(spec)
+        assert "100" in f
+        assert "120" in f
+
+    def test_asian_formula(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "AsianOption",
+            "params": {
+                "strike": 100.0,
+                "option_type": "call",
+                "average_type": "price",
+            },
+            "modifiers": [],
+        }
+        f = payoff_formula(spec)
+        assert "avg" in f.lower() or "S" in f
+
+    def test_cliquet_formula(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "Cliquet",
+            "params": {
+                "local_cap": 0.05,
+                "local_floor": 0.0,
+                "global_floor": 0.0,
+            },
+            "modifiers": [],
+        }
+        f = payoff_formula(spec)
+        assert "0.05" in f
+
+    def test_range_accrual_formula(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "RangeAccrual",
+            "params": {
+                "coupon_rate": 0.08,
+            },
+            "modifiers": [],
+        }
+        f = payoff_formula(spec)
+        assert "0.08" in f
+
+    def test_autocallable_formula(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "Autocallable",
+            "params": {
+                "autocall_trigger": 1.0,
+                "coupon_rate": 0.05,
+                "put_strike": 0.7,
+            },
+            "modifiers": [],
+        }
+        f = payoff_formula(spec)
+        assert len(f) > 0
+
+    def test_tarf_formula(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "TARF",
+            "params": {
+                "strike": 100.0,
+                "target": 10.0,
+                "leverage": 2.0,
+                "side": "buy",
+            },
+            "modifiers": [],
+        }
+        f = payoff_formula(spec)
+        assert "100" in f
+        assert "10" in f
+
+    def test_target_profit_modifier_formula(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "VanillaCall",
+            "params": {"strike": 100.0},
+            "modifiers": [{"type": "TargetProfit", "params": {"target": 15.0}}],
+        }
+        f = payoff_formula(spec)
+        assert "15" in f
+
+
+class TestSparklineGating:
+    def test_asian_returns_none(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "AsianOption",
+            "params": {
+                "strike": 100.0,
+                "maturity": 1.0,
+                "notional": 1.0,
+                "average_type": "price",
+                "option_type": "call",
+                "assets": ["X"],
+            },
+            "modifiers": [],
+        }
+        result = payoff_sparkline(spec, asset_names=["X"])
+        assert result is None
+
+    def test_cliquet_returns_none(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "Cliquet",
+            "params": {
+                "strike": 100.0,
+                "maturity": 1.0,
+                "notional": 1.0,
+                "local_cap": 0.05,
+                "local_floor": 0.0,
+                "global_floor": 0.0,
+                "assets": ["X"],
+            },
+            "modifiers": [],
+        }
+        result = payoff_sparkline(spec, asset_names=["X"])
+        assert result is None
+
+    def test_autocallable_returns_none(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "Autocallable",
+            "params": {
+                "strike": 100.0,
+                "maturity": 1.0,
+                "notional": 1.0,
+                "autocall_trigger": 1.0,
+                "coupon_rate": 0.05,
+                "put_strike": 0.7,
+                "assets": ["X"],
+            },
+            "modifiers": [],
+        }
+        result = payoff_sparkline(spec, asset_names=["X"])
+        assert result is None
+
+    def test_vanilla_still_returns_figure(self):
+        spec = {
+            "direction": "long",
+            "instrument_type": "VanillaCall",
+            "params": {
+                "strike": 100.0,
+                "maturity": 1.0,
+                "notional": 1.0,
+                "assets": ["X"],
+            },
+            "modifiers": [],
+        }
+        result = payoff_sparkline(spec, asset_names=["X"])
+        assert result is not None
