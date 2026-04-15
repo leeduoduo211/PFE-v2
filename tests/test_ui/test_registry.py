@@ -5,10 +5,16 @@ from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
 class TestInstrumentRegistry:
     def test_all_instruments_present(self):
         expected = {
-            "VanillaCall", "VanillaPut", "Digital", "DualDigital", "TripleDigital",
+            # European
+            "VanillaCall", "VanillaPut", "Digital", "ContingentOption", "SingleBarrier",
+            # Path-dependent
+            "DoubleNoTouch", "ForwardStartingOption", "RestrikeOption",
+            "AsianOption", "Cliquet", "RangeAccrual",
+            # Multi-asset
+            "DualDigital", "TripleDigital",
             "WorstOfCall", "WorstOfPut", "BestOfCall", "BestOfPut",
-            "DoubleNoTouch", "Accumulator", "Decumulator",
-            "ForwardStartingOption", "RestrikeOption", "ContingentOption",
+            # Periodic
+            "Accumulator", "Decumulator", "Autocallable", "TARF",
         }
         assert set(INSTRUMENT_REGISTRY.keys()) == expected
 
@@ -47,9 +53,12 @@ class TestInstrumentRegistry:
 class TestModifierRegistry:
     def test_all_modifiers_present(self):
         expected = {
-            "KnockOut", "KnockIn", "PayoffCap", "PayoffFloor",
-            "LeverageModifier", "ObservationSchedule",
-            "RealizedVolKnockOut", "RealizedVolKnockIn",
+            # Barrier
+            "KnockOut", "KnockIn", "RealizedVolKnockOut", "RealizedVolKnockIn",
+            # Payoff shapers
+            "PayoffCap", "PayoffFloor", "LeverageModifier",
+            # Structural
+            "ObservationSchedule", "TargetProfit",
         }
         assert set(MODIFIER_REGISTRY.keys()) == expected
 

@@ -1,13 +1,23 @@
+# Category 1 — European (terminal spot only)
 from pfev2.instruments.vanilla import VanillaCall, VanillaPut
-from pfev2.instruments.digital import Digital, DualDigital, TripleDigital
-from pfev2.instruments.worst_best_of import WorstOfCall, WorstOfPut, BestOfCall, BestOfPut
+from pfev2.instruments.digital import Digital
+from pfev2.instruments.contingent import ContingentOption
+from pfev2.instruments.single_barrier import SingleBarrier
+
+# Category 2 — Path-dependent (single asset, full path)
 from pfev2.instruments.barrier import DoubleNoTouch
-from pfev2.instruments.accumulator import Accumulator
 from pfev2.instruments.forward_starting import ForwardStartingOption
 from pfev2.instruments.restrike import RestrikeOption
-from pfev2.instruments.contingent import ContingentOption
 from pfev2.instruments.asian import AsianOption
 from pfev2.instruments.cliquet import Cliquet
+from pfev2.instruments.range_accrual import RangeAccrual
+
+# Category 3 — Multi-asset (multiple underlyings)
+from pfev2.instruments.worst_best_of import WorstOfCall, WorstOfPut, BestOfCall, BestOfPut
+from pfev2.instruments.digital import DualDigital, TripleDigital
+
+# Category 4 — Periodic observation (scheduled path)
+from pfev2.instruments.accumulator import Accumulator
 from pfev2.instruments.autocallable import Autocallable
 from pfev2.instruments.tarf import TARF
 
@@ -15,14 +25,14 @@ from pfev2.instruments.tarf import TARF
 Decumulator = Accumulator
 
 __all__ = [
-    "VanillaCall", "VanillaPut",
-    "Digital", "DualDigital", "TripleDigital",
+    # European
+    "VanillaCall", "VanillaPut", "Digital", "ContingentOption", "SingleBarrier",
+    # Path-dependent
+    "DoubleNoTouch", "ForwardStartingOption", "RestrikeOption",
+    "AsianOption", "Cliquet", "RangeAccrual",
+    # Multi-asset
     "WorstOfCall", "WorstOfPut", "BestOfCall", "BestOfPut",
-    "DoubleNoTouch",
-    "Accumulator", "Decumulator",
-    "ForwardStartingOption", "RestrikeOption", "ContingentOption",
-    "AsianOption",
-    "Cliquet",
-    "Autocallable",
-    "TARF",
+    "DualDigital", "TripleDigital",
+    # Periodic
+    "Accumulator", "Decumulator", "Autocallable", "TARF",
 ]
