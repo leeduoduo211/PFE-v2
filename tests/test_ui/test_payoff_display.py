@@ -6,8 +6,8 @@ class TestPayoffFormula:
     def test_vanilla_call_long(self):
         spec = {
             "direction": "long",
-            "instrument_type": "VanillaCall",
-            "params": {"strike": 100.0},
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "call"},
             "modifiers": [],
         }
         f = payoff_formula(spec)
@@ -17,8 +17,8 @@ class TestPayoffFormula:
     def test_vanilla_call_short(self):
         spec = {
             "direction": "short",
-            "instrument_type": "VanillaCall",
-            "params": {"strike": 100.0},
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "call"},
             "modifiers": [],
         }
         f = payoff_formula(spec)
@@ -27,8 +27,8 @@ class TestPayoffFormula:
     def test_vanilla_put_long(self):
         spec = {
             "direction": "long",
-            "instrument_type": "VanillaPut",
-            "params": {"strike": 100.0},
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "put"},
             "modifiers": [],
         }
         f = payoff_formula(spec)
@@ -47,8 +47,8 @@ class TestPayoffFormula:
     def test_with_knock_out(self):
         spec = {
             "direction": "long",
-            "instrument_type": "VanillaCall",
-            "params": {"strike": 100.0},
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "call"},
             "modifiers": [{"type": "KnockOut", "params": {"barrier": 120.0, "direction": "up"}}],
         }
         f = payoff_formula(spec)
@@ -57,8 +57,8 @@ class TestPayoffFormula:
     def test_with_cap(self):
         spec = {
             "direction": "long",
-            "instrument_type": "VanillaCall",
-            "params": {"strike": 100.0},
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "call"},
             "modifiers": [{"type": "PayoffCap", "params": {"cap": 50.0}}],
         }
         f = payoff_formula(spec)
@@ -67,7 +67,7 @@ class TestPayoffFormula:
     def test_accumulator(self):
         spec = {
             "direction": "long",
-            "instrument_type": "Accumulator",
+            "instrument_type": "AccumulatorDecumulator",
             "params": {"strike": 100.0, "leverage": 2.0, "side": "buy"},
             "modifiers": [],
         }
@@ -76,8 +76,8 @@ class TestPayoffFormula:
 
     def test_missing_direction_defaults_long(self):
         spec = {
-            "instrument_type": "VanillaCall",
-            "params": {"strike": 100.0},
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "call"},
             "modifiers": [],
         }
         f = payoff_formula(spec)
@@ -88,8 +88,8 @@ class TestPayoffSparkline:
     def test_vanilla_call_returns_figure(self):
         spec = {
             "direction": "long",
-            "instrument_type": "VanillaCall",
-            "params": {"strike": 100.0, "maturity": 1.0, "notional": 1.0,
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "call", "maturity": 1.0, "notional": 1.0,
                         "assets": ["X"]},
             "modifiers": [],
         }
@@ -100,8 +100,8 @@ class TestPayoffSparkline:
     def test_short_negates_payoff(self):
         long_spec = {
             "direction": "long",
-            "instrument_type": "VanillaCall",
-            "params": {"strike": 100.0, "maturity": 1.0, "notional": 1.0,
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "call", "maturity": 1.0, "notional": 1.0,
                         "assets": ["X"]},
             "modifiers": [],
         }
@@ -115,8 +115,8 @@ class TestPayoffSparkline:
     def test_cap_modifier_limits_payoff(self):
         spec = {
             "direction": "long",
-            "instrument_type": "VanillaCall",
-            "params": {"strike": 100.0, "maturity": 1.0, "notional": 1.0,
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "call", "maturity": 1.0, "notional": 1.0,
                         "assets": ["X"]},
             "modifiers": [{"type": "PayoffCap", "params": {"cap": 10.0}}],
         }
@@ -127,8 +127,8 @@ class TestPayoffSparkline:
     def test_ko_modifier_adds_barrier_trace(self):
         spec = {
             "direction": "long",
-            "instrument_type": "VanillaCall",
-            "params": {"strike": 100.0, "maturity": 1.0, "notional": 1.0,
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "call", "maturity": 1.0, "notional": 1.0,
                         "assets": ["X"]},
             "modifiers": [{"type": "KnockOut", "params": {"barrier": 120.0, "direction": "up"}}],
         }
@@ -138,7 +138,7 @@ class TestPayoffSparkline:
     def test_accumulator_returns_figure(self):
         spec = {
             "direction": "long",
-            "instrument_type": "Accumulator",
+            "instrument_type": "AccumulatorDecumulator",
             "params": {"strike": 100.0, "maturity": 1.0, "notional": 1.0,
                         "leverage": 2.0, "side": "buy",
                         "schedule": [0.25, 0.5, 0.75, 1.0],
@@ -240,8 +240,8 @@ class TestNewInstrumentFormulas:
     def test_target_profit_modifier_formula(self):
         spec = {
             "direction": "long",
-            "instrument_type": "VanillaCall",
-            "params": {"strike": 100.0},
+            "instrument_type": "VanillaOption",
+            "params": {"strike": 100.0, "option_type": "call"},
             "modifiers": [{"type": "TargetProfit", "params": {"target": 15.0}}],
         }
         f = payoff_formula(spec)
@@ -305,9 +305,10 @@ class TestSparklineGating:
     def test_vanilla_still_returns_figure(self):
         spec = {
             "direction": "long",
-            "instrument_type": "VanillaCall",
+            "instrument_type": "VanillaOption",
             "params": {
                 "strike": 100.0,
+                "option_type": "call",
                 "maturity": 1.0,
                 "notional": 1.0,
                 "assets": ["X"],

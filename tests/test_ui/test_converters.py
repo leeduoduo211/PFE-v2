@@ -38,12 +38,13 @@ class TestBuildInstrument:
     def test_vanilla_call(self):
         spec = {
             "trade_id": "C1",
-            "instrument_type": "VanillaCall",
+            "instrument_type": "VanillaOption",
             "params": {
                 "maturity": 1.0,
                 "notional": 100_000,
                 "asset_indices": [0],
                 "strike": 100.0,
+                "option_type": "call",
             },
             "modifiers": [],
         }
@@ -56,12 +57,13 @@ class TestBuildInstrument:
         """UI trade builder passes 'assets' (names), converter must map to asset_indices."""
         spec = {
             "trade_id": "C1",
-            "instrument_type": "VanillaCall",
+            "instrument_type": "VanillaOption",
             "params": {
                 "maturity": 1.0,
                 "notional": 100_000,
                 "assets": ["TSLA"],
                 "strike": 100.0,
+                "option_type": "call",
             },
             "modifiers": [],
         }
@@ -72,12 +74,13 @@ class TestBuildInstrument:
     def test_with_knock_out_modifier(self):
         spec = {
             "trade_id": "C2",
-            "instrument_type": "VanillaCall",
+            "instrument_type": "VanillaOption",
             "params": {
                 "maturity": 1.0,
                 "notional": 100_000,
                 "asset_indices": [0],
                 "strike": 100.0,
+                "option_type": "call",
             },
             "modifiers": [
                 {"type": "KnockOut", "params": {"barrier": 120.0, "direction": "up"}},
@@ -92,7 +95,7 @@ class TestBuildInstrument:
     def test_accumulator(self):
         spec = {
             "trade_id": "ACC1",
-            "instrument_type": "Accumulator",
+            "instrument_type": "AccumulatorDecumulator",
             "params": {
                 "maturity": 1.0,
                 "notional": 500_000,
@@ -112,12 +115,13 @@ class TestBuildInstrument:
     def test_worst_of_put(self):
         spec = {
             "trade_id": "WP1",
-            "instrument_type": "WorstOfPut",
+            "instrument_type": "WorstOfOption",
             "params": {
                 "maturity": 1.0,
                 "notional": 100_000,
                 "asset_indices": [0, 1],
                 "strikes": [100.0, 50.0],
+                "option_type": "put",
             },
             "modifiers": [],
         }
@@ -128,12 +132,13 @@ class TestBuildInstrument:
     def test_stacked_modifiers(self):
         spec = {
             "trade_id": "C3",
-            "instrument_type": "VanillaCall",
+            "instrument_type": "VanillaOption",
             "params": {
                 "maturity": 1.0,
                 "notional": 100_000,
                 "asset_indices": [0],
                 "strike": 100.0,
+                "option_type": "call",
             },
             "modifiers": [
                 {"type": "KnockOut", "params": {"barrier": 120.0, "direction": "up"}},
@@ -152,12 +157,13 @@ class TestBuildInstrumentDirection:
         spec = {
             "trade_id": "T1",
             "direction": "long",
-            "instrument_type": "VanillaCall",
+            "instrument_type": "VanillaOption",
             "params": {
                 "maturity": 1.0,
                 "notional": 1_000_000.0,
                 "asset_indices": (0,),
                 "strike": 100.0,
+                "option_type": "call",
             },
             "modifiers": [],
         }
@@ -168,12 +174,13 @@ class TestBuildInstrumentDirection:
         spec = {
             "trade_id": "T1",
             "direction": "short",
-            "instrument_type": "VanillaCall",
+            "instrument_type": "VanillaOption",
             "params": {
                 "maturity": 1.0,
                 "notional": 1_000_000.0,
                 "asset_indices": (0,),
                 "strike": 100.0,
+                "option_type": "call",
             },
             "modifiers": [],
         }
@@ -184,12 +191,13 @@ class TestBuildInstrumentDirection:
         spec = {
             "trade_id": "T1",
             "direction": "short",
-            "instrument_type": "VanillaCall",
+            "instrument_type": "VanillaOption",
             "params": {
                 "maturity": 1.0,
                 "notional": 1_000_000.0,
                 "asset_indices": (0,),
                 "strike": 100.0,
+                "option_type": "call",
             },
             "modifiers": [],
         }
@@ -199,12 +207,13 @@ class TestBuildInstrumentDirection:
     def test_missing_direction_defaults_to_long(self):
         spec = {
             "trade_id": "T1",
-            "instrument_type": "VanillaCall",
+            "instrument_type": "VanillaOption",
             "params": {
                 "maturity": 1.0,
                 "notional": 1_000_000.0,
                 "asset_indices": (0,),
                 "strike": 100.0,
+                "option_type": "call",
             },
             "modifiers": [],
         }
@@ -227,14 +236,14 @@ class TestBuildPortfolio:
         specs = [
             {
                 "trade_id": "C1",
-                "instrument_type": "VanillaCall",
-                "params": {"maturity": 1.0, "notional": 100_000, "asset_indices": [0], "strike": 100.0},
+                "instrument_type": "VanillaOption",
+                "params": {"maturity": 1.0, "notional": 100_000, "asset_indices": [0], "strike": 100.0, "option_type": "call"},
                 "modifiers": [],
             },
             {
                 "trade_id": "WP1",
-                "instrument_type": "WorstOfPut",
-                "params": {"maturity": 1.0, "notional": 100_000, "asset_indices": [0, 1], "strikes": [100.0, 50.0]},
+                "instrument_type": "WorstOfOption",
+                "params": {"maturity": 1.0, "notional": 100_000, "asset_indices": [0, 1], "strikes": [100.0, 50.0], "option_type": "put"},
                 "modifiers": [],
             },
         ]

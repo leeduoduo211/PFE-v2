@@ -23,15 +23,13 @@ Each field_spec is a dict:
 """
 
 from pfev2.instruments import (
-    VanillaCall,
-    VanillaPut,
+    VanillaOption,
     Digital,
     DualDigital,
     TripleDigital,
-    WorstOfCall,
-    WorstOfPut,
-    BestOfCall,
-    BestOfPut,
+    WorstOfOption,
+    BestOfOption,
+    Dispersion,
     DoubleNoTouch,
     Accumulator,
     ForwardStartingOption,
@@ -62,27 +60,20 @@ from pfev2.modifiers import (
 
 INSTRUMENT_REGISTRY = {
     # ── Category 1: European ──────────────────────────────────────────────
-    "VanillaCall": {
-        "cls": VanillaCall,
-        "label": "Vanilla Call",
+    "VanillaOption": {
+        "cls": VanillaOption,
+        "label": "Vanilla Option",
         "category": "European",
         "n_assets": 1,
         "fields": [
             {
-                "name": "strike",
-                "label": "Strike",
-                "type": "float",
-                "default": 100.0,
-                "help": "Option strike price",
+                "name": "option_type",
+                "label": "Option Type",
+                "type": "select",
+                "default": "call",
+                "choices": ["call", "put"],
+                "help": "Call or put option",
             },
-        ],
-    },
-    "VanillaPut": {
-        "cls": VanillaPut,
-        "label": "Vanilla Put",
-        "category": "European",
-        "n_assets": 1,
-        "fields": [
             {
                 "name": "strike",
                 "label": "Strike",
@@ -437,12 +428,20 @@ INSTRUMENT_REGISTRY = {
             },
         ],
     },
-    "WorstOfCall": {
-        "cls": WorstOfCall,
-        "label": "Worst-Of Call",
+    "WorstOfOption": {
+        "cls": WorstOfOption,
+        "label": "Worst-Of Option",
         "category": "Multi-asset",
         "n_assets": "2-5",
         "fields": [
+            {
+                "name": "option_type",
+                "label": "Option Type",
+                "type": "select",
+                "default": "call",
+                "choices": ["call", "put"],
+                "help": "Call or put payoff on the worst performer",
+            },
             {
                 "name": "strikes",
                 "label": "Strikes",
@@ -452,27 +451,20 @@ INSTRUMENT_REGISTRY = {
             },
         ],
     },
-    "WorstOfPut": {
-        "cls": WorstOfPut,
-        "label": "Worst-Of Put",
+    "BestOfOption": {
+        "cls": BestOfOption,
+        "label": "Best-Of Option",
         "category": "Multi-asset",
         "n_assets": "2-5",
         "fields": [
             {
-                "name": "strikes",
-                "label": "Strikes",
-                "type": "float_list",
-                "default": [100.0, 100.0],
-                "help": "Strike for each asset; payoff based on worst performer",
+                "name": "option_type",
+                "label": "Option Type",
+                "type": "select",
+                "default": "call",
+                "choices": ["call", "put"],
+                "help": "Call or put payoff on the best performer",
             },
-        ],
-    },
-    "BestOfCall": {
-        "cls": BestOfCall,
-        "label": "Best-Of Call",
-        "category": "Multi-asset",
-        "n_assets": "2-5",
-        "fields": [
             {
                 "name": "strikes",
                 "label": "Strikes",
@@ -482,25 +474,55 @@ INSTRUMENT_REGISTRY = {
             },
         ],
     },
-    "BestOfPut": {
-        "cls": BestOfPut,
-        "label": "Best-Of Put",
+    "Dispersion": {
+        "cls": Dispersion,
+        "label": "Dispersion",
         "category": "Multi-asset",
         "n_assets": "2-5",
         "fields": [
             {
+                "name": "component_types",
+                "label": "Component Types",
+                "type": "select_list",
+                "default": ["call", "call"],
+                "choices": ["call", "put"],
+                "help": "Call or put per component",
+            },
+            {
                 "name": "strikes",
-                "label": "Strikes",
+                "label": "Component Strikes",
                 "type": "float_list",
                 "default": [100.0, 100.0],
-                "help": "Strike for each asset; payoff based on best performer",
+                "help": "Strike price per component",
+            },
+            {
+                "name": "weights",
+                "label": "Basket Weights",
+                "type": "float_list",
+                "default": [0.5, 0.5],
+                "help": "Weight per component (must sum to 1)",
+            },
+            {
+                "name": "basket_strike",
+                "label": "Basket Strike",
+                "type": "float",
+                "default": 100.0,
+                "help": "Strike for the basket leg",
+            },
+            {
+                "name": "basket_type",
+                "label": "Basket Type",
+                "type": "select",
+                "default": "call",
+                "choices": ["call", "put"],
+                "help": "Call or put for basket leg",
             },
         ],
     },
     # ── Category 4: Periodic ──────────────────────────────────────────────
-    "Accumulator": {
+    "AccumulatorDecumulator": {
         "cls": Accumulator,
-        "label": "Accumulator",
+        "label": "Accumulator / Decumulator",
         "category": "Periodic",
         "n_assets": 1,
         "fields": [
@@ -509,14 +531,14 @@ INSTRUMENT_REGISTRY = {
                 "label": "Strike",
                 "type": "float",
                 "default": 100.0,
-                "help": "Accumulation strike price",
+                "help": "Accumulation/decumulation strike price",
             },
             {
                 "name": "leverage",
                 "label": "Leverage",
                 "type": "float",
                 "default": 2.0,
-                "help": "Multiplier applied when spot is below strike (buy direction)",
+                "help": "Multiplier applied when spot is on the unfavorable side",
             },
             {
                 "name": "side",
@@ -525,43 +547,6 @@ INSTRUMENT_REGISTRY = {
                 "default": "buy",
                 "choices": ["buy", "sell"],
                 "help": "buy = accumulate when S >= strike; sell = decumulate",
-            },
-            {
-                "name": "schedule",
-                "label": "Observation Schedule",
-                "type": "schedule",
-                "default": [],
-                "help": "List of observation times (in years)",
-            },
-        ],
-    },
-    "Decumulator": {
-        "cls": Accumulator,
-        "label": "Decumulator",
-        "category": "Periodic",
-        "n_assets": 1,
-        "fields": [
-            {
-                "name": "strike",
-                "label": "Strike",
-                "type": "float",
-                "default": 100.0,
-                "help": "Decumulation strike price",
-            },
-            {
-                "name": "leverage",
-                "label": "Leverage",
-                "type": "float",
-                "default": 2.0,
-                "help": "Multiplier applied when spot is above strike (sell direction)",
-            },
-            {
-                "name": "side",
-                "label": "Side",
-                "type": "select",
-                "default": "sell",
-                "choices": ["buy", "sell"],
-                "help": "Side is fixed to sell for a decumulator",
             },
             {
                 "name": "schedule",

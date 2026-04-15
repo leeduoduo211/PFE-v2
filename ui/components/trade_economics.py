@@ -64,39 +64,35 @@ def _header(direction: str, label: str, params: dict) -> str:
 # trade's actual attributes with a brief economic interpretation.
 # ---------------------------------------------------------------------------
 
-def _ts_vanilla_call(params: dict, direction: str) -> str:
+def _ts_vanilla_option(params: dict, direction: str) -> str:
     K = _fmt_num(params.get("strike", 0.0))
     asset = _asset_phrase(params)
-    head = _header(direction, "vanilla call", params) + f", strike {K}."
-    if direction == "long":
-        body = (
-            f" The long pays an upfront premium and receives notional &times; max(S<sub>T</sub> &minus; {K}, 0) "
-            f"at maturity, capturing unlimited upside above {K} with the maximum loss bounded by the premium. "
-            f"Risk is dominated by delta and vega; the position bleeds theta in calm markets."
-        )
+    opt = params.get("option_type", "call")
+    head = _header(direction, f"vanilla {opt}", params) + f", strike {K}."
+    if opt == "call":
+        if direction == "long":
+            body = (
+                f" The long pays an upfront premium and receives notional &times; max(S<sub>T</sub> &minus; {K}, 0) "
+                f"at maturity, capturing unlimited upside above {K} with the maximum loss bounded by the premium. "
+                f"Risk is dominated by delta and vega; the position bleeds theta in calm markets."
+            )
+        else:
+            body = (
+                f" The short collects the premium today and is obliged to pay notional &times; max(S<sub>T</sub> &minus; {K}, 0) "
+                f"at maturity, profiting if {asset} stays at or below {K}. The exposure is unbounded if {asset} rallies, "
+                f"which is why short calls dominate the upside tail of the PFE profile."
+            )
     else:
-        body = (
-            f" The short collects the premium today and is obliged to pay notional &times; max(S<sub>T</sub> &minus; {K}, 0) "
-            f"at maturity, profiting if {asset} stays at or below {K}. The exposure is unbounded if {asset} rallies, "
-            f"which is why short calls dominate the upside tail of the PFE profile."
-        )
-    return head + body
-
-
-def _ts_vanilla_put(params: dict, direction: str) -> str:
-    K = _fmt_num(params.get("strike", 0.0))
-    asset = _asset_phrase(params)
-    head = _header(direction, "vanilla put", params) + f", strike {K}."
-    if direction == "long":
-        body = (
-            f" The long pays a premium and receives notional &times; max({K} &minus; S<sub>T</sub>, 0) at maturity &mdash; "
-            f"a textbook hedge against {asset} drawdowns, with maximum profit bounded by {K} (assuming a non-negative spot)."
-        )
-    else:
-        body = (
-            f" The short collects premium and accepts the obligation to pay notional &times; max({K} &minus; S<sub>T</sub>, 0). "
-            f"Equivalent to selling crash insurance: comfortable carry in calm markets, large losses in a sharp decline of {asset}."
-        )
+        if direction == "long":
+            body = (
+                f" The long pays a premium and receives notional &times; max({K} &minus; S<sub>T</sub>, 0) at maturity &mdash; "
+                f"a textbook hedge against {asset} drawdowns, with maximum profit bounded by {K} (assuming a non-negative spot)."
+            )
+        else:
+            body = (
+                f" The short collects premium and accepts the obligation to pay notional &times; max({K} &minus; S<sub>T</sub>, 0). "
+                f"Equivalent to selling crash insurance: comfortable carry in calm markets, large losses in a sharp decline of {asset}."
+            )
     return head + body
 
 
@@ -158,44 +154,40 @@ def _ts_triple_digital(params: dict, direction: str) -> str:
     return head + body
 
 
-def _ts_worst_of_call(params: dict, direction: str) -> str:
-    head = _header(direction, "worst-of call", params) + f", strikes {_strikes_phrase(params)}."
-    body = (
-        " Terminal payoff is notional &times; max(min<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>) &minus; 1, 0) "
-        "&mdash; only the weakest performer in the basket drives the payout. The long captures basket upside "
-        "cheaply versus a strip of individual calls but is short dispersion: low correlation increases the chance "
-        "the worst leg disappoints, hurting the buyer and benefiting the seller."
-    )
+def _ts_worst_of_option(params: dict, direction: str) -> str:
+    opt = params.get("option_type", "call")
+    head = _header(direction, f"worst-of {opt}", params) + f", strikes {_strikes_phrase(params)}."
+    if opt == "call":
+        body = (
+            " Terminal payoff is notional &times; max(min<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>) &minus; 1, 0) "
+            "&mdash; only the weakest performer in the basket drives the payout. The long captures basket upside "
+            "cheaply versus a strip of individual calls but is short dispersion: low correlation increases the chance "
+            "the worst leg disappoints, hurting the buyer and benefiting the seller."
+        )
+    else:
+        body = (
+            " Pays notional &times; max(1 &minus; min<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>), 0) &mdash; the canonical "
+            "downside-protection wrapper inside autocallable notes, since the put activates on whichever asset falls the most. "
+            "The long is long correlation; the short carries the dispersion-crash tail (one stock collapses while the others hold up)."
+        )
     return head + body
 
 
-def _ts_worst_of_put(params: dict, direction: str) -> str:
-    head = _header(direction, "worst-of put", params) + f", strikes {_strikes_phrase(params)}."
-    body = (
-        " Pays notional &times; max(1 &minus; min<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>), 0) &mdash; the canonical "
-        "downside-protection wrapper inside autocallable notes, since the put activates on whichever asset falls the most. "
-        "The long is long correlation; the short carries the dispersion-crash tail (one stock collapses while the others hold up)."
-    )
-    return head + body
-
-
-def _ts_best_of_call(params: dict, direction: str) -> str:
-    head = _header(direction, "best-of call", params) + f", strikes {_strikes_phrase(params)}."
-    body = (
-        " Pays notional &times; max(max<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>) &minus; 1, 0) &mdash; only the best "
-        "performer matters, so the structure automatically rotates into the strongest leg. The long is long dispersion: "
-        "low correlation raises the chance that at least one asset rallies hard, lifting the premium."
-    )
-    return head + body
-
-
-def _ts_best_of_put(params: dict, direction: str) -> str:
-    head = _header(direction, "best-of put", params) + f", strikes {_strikes_phrase(params)}."
-    body = (
-        " Pays notional &times; max(1 &minus; max<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>), 0) &mdash; a deep-OTM bearish "
-        "bet that requires every basket member, including the strongest, to finish below its strike. Premium is low and "
-        "sellers are exposed only in severe correlated drawdowns, which produces a fat-tail asymmetry in the PFE profile."
-    )
+def _ts_best_of_option(params: dict, direction: str) -> str:
+    opt = params.get("option_type", "call")
+    head = _header(direction, f"best-of {opt}", params) + f", strikes {_strikes_phrase(params)}."
+    if opt == "call":
+        body = (
+            " Pays notional &times; max(max<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>) &minus; 1, 0) &mdash; only the best "
+            "performer matters, so the structure automatically rotates into the strongest leg. The long is long dispersion: "
+            "low correlation raises the chance that at least one asset rallies hard, lifting the premium."
+        )
+    else:
+        body = (
+            " Pays notional &times; max(1 &minus; max<sub>i</sub>(S<sub>i</sub>/K<sub>i</sub>), 0) &mdash; a deep-OTM bearish "
+            "bet that requires every basket member, including the strongest, to finish below its strike. Premium is low and "
+            "sellers are exposed only in severe correlated drawdowns, which produces a fat-tail asymmetry in the PFE profile."
+        )
     return head + body
 
 
@@ -213,31 +205,40 @@ def _ts_double_no_touch(params: dict, direction: str) -> str:
     return head + body
 
 
-def _ts_accumulator(params: dict, direction: str) -> str:
+def _ts_accumulator_decumulator(params: dict, direction: str) -> str:
     K = _fmt_num(params.get("strike", 0.0))
     lev = _fmt_num(params.get("leverage", 1.0))
     side = params.get("side", "buy")
     asset = _asset_phrase(params)
-    head = _header(direction, "accumulator", params) + f", strike {K}, leverage {lev}&times; ({side} side)."
-    body = (
-        f" At each observation date the buyer accumulates {asset} at {K}; if spot prints below {K} the leverage clause "
-        f"forces buying at {lev}&times; the standard quantity. Profitable in calm or rising markets above the strike, "
-        f"but in a sharp decline the leveraged-buying clause forces continued purchases into a falling market &mdash; the "
-        f"asymmetry that produced the famous 2008 Hong Kong accumulator losses and that dominates the long tail of exotic PFE."
-    )
+    label = "accumulator" if side == "buy" else "decumulator"
+    head = _header(direction, label, params) + f", strike {K}, leverage {lev}&times; ({side} side)."
+    if side == "buy":
+        body = (
+            f" At each observation date the buyer accumulates {asset} at {K}; if spot prints below {K} the leverage clause "
+            f"forces buying at {lev}&times; the standard quantity. Profitable in calm or rising markets above the strike, "
+            f"but in a sharp decline the leveraged-buying clause forces continued purchases into a falling market &mdash; the "
+            f"asymmetry that produced the famous 2008 Hong Kong accumulator losses and that dominates the long tail of exotic PFE."
+        )
+    else:
+        body = (
+            f" Mirror image of an accumulator: the holder periodically sells {asset} at {K}, with the leverage clause forcing "
+            f"sales at {lev}&times; size if spot rises above {K}. Used by holders of concentrated long positions to monetise "
+            f"gradually above market; the risk shows up in trending bull markets where forced selling at {K} crystallises a "
+            f"large opportunity-cost loss."
+        )
     return head + body
 
 
-def _ts_decumulator(params: dict, direction: str) -> str:
-    K = _fmt_num(params.get("strike", 0.0))
-    lev = _fmt_num(params.get("leverage", 1.0))
+def _ts_dispersion(params: dict, direction: str) -> str:
     asset = _asset_phrase(params)
-    head = _header(direction, "decumulator", params) + f", strike {K}, leverage {lev}&times;."
+    basket_type = params.get("basket_type", "call")
+    basket_K = _fmt_num(params.get("basket_strike", 0.0))
+    head = _header(direction, "dispersion trade", params) + f", basket {basket_type} strike {basket_K}."
     body = (
-        f" Mirror image of an accumulator: the holder periodically sells {asset} at {K}, with the leverage clause forcing "
-        f"sales at {lev}&times; size if spot rises above {K}. Used by holders of concentrated long positions to monetise "
-        f"gradually above market; the risk shows up in trending bull markets where forced selling at {K} crystallises a "
-        f"large opportunity-cost loss."
+        f" Long individual component options on each underlying versus short a basket {basket_type} option. "
+        f"Profits when single-name moves diverge from the weighted basket &mdash; a pure play on realized "
+        f"dispersion (cross-sectional volatility). The long is long correlation-vol spread; the short collects "
+        f"carry when the basket stays cohesive."
     )
     return head + body
 
@@ -296,21 +297,24 @@ def _ts_contingent(params: dict, direction: str) -> str:
 
 
 _TERM_SHEETS: dict = {
-    "VanillaCall":           _ts_vanilla_call,
-    "VanillaPut":            _ts_vanilla_put,
-    "Digital":               _ts_digital,
-    "DualDigital":           _ts_dual_digital,
-    "TripleDigital":         _ts_triple_digital,
-    "WorstOfCall":           _ts_worst_of_call,
-    "WorstOfPut":            _ts_worst_of_put,
-    "BestOfCall":            _ts_best_of_call,
-    "BestOfPut":             _ts_best_of_put,
-    "DoubleNoTouch":         _ts_double_no_touch,
-    "Accumulator":           _ts_accumulator,
-    "Decumulator":           _ts_decumulator,
-    "ForwardStartingOption": _ts_forward_starting,
-    "RestrikeOption":        _ts_restrike,
-    "ContingentOption":      _ts_contingent,
+    "VanillaOption":            _ts_vanilla_option,
+    "Digital":                  _ts_digital,
+    "DualDigital":              _ts_dual_digital,
+    "TripleDigital":            _ts_triple_digital,
+    "WorstOfOption":            _ts_worst_of_option,
+    "BestOfOption":             _ts_best_of_option,
+    "Dispersion":               _ts_dispersion,
+    "DoubleNoTouch":            _ts_double_no_touch,
+    "AccumulatorDecumulator":   _ts_accumulator_decumulator,
+    "ForwardStartingOption":    _ts_forward_starting,
+    "RestrikeOption":           _ts_restrike,
+    "ContingentOption":         _ts_contingent,
+    "SingleBarrier":            lambda params, direction: _header(direction, "single barrier", params) + ".",
+    "AsianOption":              lambda params, direction: _header(direction, "asian option", params) + ".",
+    "Cliquet":                  lambda params, direction: _header(direction, "cliquet", params) + ".",
+    "RangeAccrual":             lambda params, direction: _header(direction, "range accrual", params) + ".",
+    "Autocallable":             lambda params, direction: _header(direction, "autocallable", params) + ".",
+    "TARF":                     lambda params, direction: _header(direction, "TARF", params) + ".",
 }
 
 
@@ -351,6 +355,10 @@ _MODIFIER_ECONOMICS: dict = {
         f"Knocks in if realized vol "
         f"{'exceeds' if p.get('direction','above') == 'above' else 'falls below'} "
         f"{p.get('vol_barrier',0.0):.4g}. Vol-contingent activation."
+    ),
+    "TargetProfit": lambda p: (
+        f"Terminates when cumulative payoff reaches {p.get('target',0.0):.4g}. "
+        f"{'Partial fill on final fixing.' if str(p.get('partial_fill','true')).lower() == 'true' else 'No partial fill on final fixing.'}"
     ),
 }
 

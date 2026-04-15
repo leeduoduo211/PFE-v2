@@ -1,5 +1,5 @@
 """
-Presentation-layer data for all 21 instruments and 9 modifiers.
+Presentation-layer data for all 18 instruments and 9 modifiers.
 
 Pure data — no rendering logic. Consumed by the Streamlit trade builder
 and related UI components.
@@ -22,11 +22,9 @@ CATEGORY_COLORS = {
 
 PRODUCT_DESCRIPTIONS = {
     # European
-    "VanillaCall": (
-        "Pays max(S − K, 0) at expiry; the standard upside participation contract."
-    ),
-    "VanillaPut": (
-        "Pays max(K − S, 0) at expiry; classic downside protection instrument."
+    "VanillaOption": (
+        "Pays max(S - K, 0) for a call or max(K - S, 0) for a put at expiry; "
+        "the standard directional participation contract."
     ),
     "Digital": (
         "Pays a fixed amount (1) if spot finishes on the correct side of the strike."
@@ -72,30 +70,22 @@ PRODUCT_DESCRIPTIONS = {
         "Pays 1 only if all three assets satisfy their strike conditions — "
         "maximises carry via multi-asset correlation."
     ),
-    "WorstOfCall": (
-        "Call payoff based on the worst-performing asset in the basket; "
+    "WorstOfOption": (
+        "Call or put payoff based on the worst-performing asset in the basket; "
         "sells correlation to enhance the strike."
     ),
-    "WorstOfPut": (
-        "Put payoff based on the worst-performing asset in the basket; "
-        "common downside protection structure."
-    ),
-    "BestOfCall": (
-        "Call payoff based on the best-performing asset in the basket; "
+    "BestOfOption": (
+        "Call or put payoff based on the best-performing asset in the basket; "
         "buys correlation at a premium."
     ),
-    "BestOfPut": (
-        "Put payoff based on the best-performing asset in the basket; "
-        "targeted protection on the strongest mover."
+    "Dispersion": (
+        "Long individual component options versus a short basket option; "
+        "profits when single-stock moves diverge from the basket."
     ),
     # Periodic
-    "Accumulator": (
-        "Client buys a fixed notional at a discounted strike on each observation "
-        "date; leveraged exposure below strike."
-    ),
-    "Decumulator": (
-        "Client sells a fixed notional at a premium strike on each observation "
-        "date; leveraged obligation above strike."
+    "AccumulatorDecumulator": (
+        "Client buys (accumulator) or sells (decumulator) a fixed notional at a "
+        "strike on each observation date; leveraged exposure on the unfavorable side."
     ),
     "Autocallable": (
         "Redeems early with a coupon if underlying clears the autocall trigger; "
@@ -121,18 +111,11 @@ _INDIGO = "#6366f1"
 
 PRODUCT_SECTIONS = {
     # ── European ─────────────────────────────────────────────────────────────
-    "VanillaCall": [
+    "VanillaOption": [
         {
             "label": "Option Terms",
             "color": _BLUE,
-            "fields": ["strike"],
-        },
-    ],
-    "VanillaPut": [
-        {
-            "label": "Option Terms",
-            "color": _BLUE,
-            "fields": ["strike"],
+            "fields": ["option_type", "strike"],
         },
     ],
     "Digital": [
@@ -259,53 +242,40 @@ PRODUCT_SECTIONS = {
             "fields": ["strikes", "option_types"],
         },
     ],
-    "WorstOfCall": [
+    "WorstOfOption": [
         {
             "label": "Basket Terms",
             "color": _PURPLE,
-            "fields": ["strikes"],
+            "fields": ["option_type", "strikes"],
         },
     ],
-    "WorstOfPut": [
+    "BestOfOption": [
         {
             "label": "Basket Terms",
             "color": _PURPLE,
-            "fields": ["strikes"],
+            "fields": ["option_type", "strikes"],
         },
     ],
-    "BestOfCall": [
+    "Dispersion": [
         {
-            "label": "Basket Terms",
+            "label": "Component Legs",
             "color": _PURPLE,
-            "fields": ["strikes"],
+            "help": "Individual component options per underlying",
+            "fields": ["component_types", "strikes", "weights"],
         },
-    ],
-    "BestOfPut": [
         {
-            "label": "Basket Terms",
-            "color": _PURPLE,
-            "fields": ["strikes"],
+            "label": "Basket Leg",
+            "color": _INDIGO,
+            "help": "Short basket option offsetting the component legs",
+            "fields": ["basket_strike", "basket_type"],
         },
     ],
     # ── Periodic ──────────────────────────────────────────────────────────────
-    "Accumulator": [
+    "AccumulatorDecumulator": [
         {
-            "label": "Accumulation Terms",
+            "label": "Accumulation / Decumulation Terms",
             "color": _AMBER,
-            "help": "Buys at strike each period; leverage multiplies quantity when spot is unfavorable",
-            "fields": ["strike", "leverage", "side"],
-        },
-        {
-            "label": "Observation Schedule",
-            "color": _AMBER,
-            "fields": ["schedule"],
-        },
-    ],
-    "Decumulator": [
-        {
-            "label": "Decumulation Terms",
-            "color": _AMBER,
-            "help": "Sells at strike each period; leverage multiplies quantity when spot is unfavorable",
+            "help": "Buys or sells at strike each period; leverage multiplies quantity when spot is unfavorable",
             "fields": ["strike", "leverage", "side"],
         },
         {
@@ -446,12 +416,11 @@ MODIFIER_SECTIONS = {
 # Sparkline support
 # ---------------------------------------------------------------------------
 
-# All 21 instrument types except schedule-heavy / path-complex types that
+# All 18 instrument types except schedule-heavy / path-complex types that
 # can't be meaningfully represented by a simple sparkline payoff diagram.
 SPARKLINE_SUPPORTED = {
     # European
-    "VanillaCall",
-    "VanillaPut",
+    "VanillaOption",
     "Digital",
     "ContingentOption",
     "SingleBarrier",
@@ -462,13 +431,11 @@ SPARKLINE_SUPPORTED = {
     # Multi-asset
     "DualDigital",
     "TripleDigital",
-    "WorstOfCall",
-    "WorstOfPut",
-    "BestOfCall",
-    "BestOfPut",
+    "WorstOfOption",
+    "BestOfOption",
+    "Dispersion",
     # Periodic
-    "Accumulator",
-    "Decumulator",
+    "AccumulatorDecumulator",
     # Excluded: AsianOption, Cliquet, RangeAccrual, Autocallable, TARF
 }
 
@@ -477,38 +444,21 @@ SPARKLINE_SUPPORTED = {
 # ---------------------------------------------------------------------------
 
 PRODUCT_SCENARIOS = {
-    "VanillaCall": [
+    "VanillaOption": [
         {
             "label": "At-the-money",
-            "description": "Spot at strike; maximum time-value region.",
+            "description": "Spot at strike; maximum time-value region for call or put.",
             "spot_mult": 1.0,
         },
         {
-            "label": "In-the-money (+20%)",
-            "description": "Spot 20% above strike; call is deep in the money.",
+            "label": "Spot +20%",
+            "description": "Spot 20% above strike; call deep ITM, put OTM.",
             "spot_mult": 1.2,
         },
         {
-            "label": "Out-of-the-money (−15%)",
-            "description": "Spot 15% below strike; call expires worthless if unchanged.",
+            "label": "Spot -15%",
+            "description": "Spot 15% below strike; put deep ITM, call OTM.",
             "spot_mult": 0.85,
-        },
-    ],
-    "VanillaPut": [
-        {
-            "label": "At-the-money",
-            "description": "Spot at strike; maximum optionality for downside protection.",
-            "spot_mult": 1.0,
-        },
-        {
-            "label": "Deep in-the-money (−25%)",
-            "description": "Spot 25% below strike; put has high intrinsic value.",
-            "spot_mult": 0.75,
-        },
-        {
-            "label": "Out-of-the-money (+15%)",
-            "description": "Spot 15% above strike; put expires worthless if unchanged.",
-            "spot_mult": 1.15,
         },
     ],
     "SingleBarrier": [
@@ -613,38 +563,21 @@ PRODUCT_SCENARIOS = {
             "spot_mult": 0.85,
         },
     ],
-    "Accumulator": [
+    "AccumulatorDecumulator": [
         {
-            "label": "Spot above strike (no accumulation)",
-            "description": "Spot above strike; client buys at strike — below-market price.",
+            "label": "Favorable side",
+            "description": "Spot on the favorable side of strike; client transacts at a better-than-market price.",
             "spot_mult": 1.05,
         },
         {
-            "label": "Spot below strike (leveraged)",
-            "description": "Spot below strike; leveraged obligation forces client to buy above market.",
+            "label": "Unfavorable side (leveraged)",
+            "description": "Spot on the unfavorable side; leveraged obligation forces larger transactions.",
             "spot_mult": 0.9,
         },
         {
-            "label": "Sharp sell-off",
-            "description": "Spot falls sharply; leveraged accumulation creates significant losses.",
+            "label": "Sharp adverse move",
+            "description": "Spot moves sharply against the client; leveraged exposure creates significant losses.",
             "spot_mult": 0.75,
-        },
-    ],
-    "Decumulator": [
-        {
-            "label": "Spot below strike (no decumulation)",
-            "description": "Spot below strike; client sells at premium — above-market price.",
-            "spot_mult": 0.95,
-        },
-        {
-            "label": "Spot above strike (leveraged)",
-            "description": "Spot above strike; leveraged obligation forces client to sell below market.",
-            "spot_mult": 1.1,
-        },
-        {
-            "label": "Sharp rally",
-            "description": "Spot rallies sharply; leveraged decumulation generates significant losses.",
-            "spot_mult": 1.25,
         },
     ],
     "DoubleNoTouch": [
@@ -664,38 +597,21 @@ PRODUCT_SCENARIOS = {
             "spot_mult": 1.2,
         },
     ],
-    "WorstOfCall": [
+    "WorstOfOption": [
         {
             "label": "All assets rally",
-            "description": "Worst performer still above all strikes; basket call pays on every asset.",
+            "description": "Worst performer still above all strikes; call pays, put expires worthless.",
             "spot_mult": 1.15,
         },
         {
             "label": "One asset lags",
-            "description": "Worst performer barely above its strike; payoff driven by weakest link.",
+            "description": "Worst performer barely at its strike; payoff driven by weakest link.",
             "spot_mult": 1.02,
         },
         {
             "label": "One asset declines",
-            "description": "Worst performer below strike; entire basket call expires worthless.",
+            "description": "Worst performer below strike; call expires worthless, put gains intrinsic value.",
             "spot_mult": 0.9,
-        },
-    ],
-    "WorstOfPut": [
-        {
-            "label": "All assets decline",
-            "description": "Worst performer well below its strike; worst-of put pays maximum intrinsic value.",
-            "spot_mult": 0.8,
-        },
-        {
-            "label": "Mixed performance",
-            "description": "One asset falls while others rise; payoff determined by the worst mover.",
-            "spot_mult": 0.95,
-        },
-        {
-            "label": "All assets above strike",
-            "description": "No asset finishes below its strike; worst-of put expires worthless.",
-            "spot_mult": 1.1,
         },
     ],
 }

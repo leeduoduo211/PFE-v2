@@ -132,6 +132,9 @@ class TestModifierSections:
 
 _COMPLEX_TYPES = {"AsianOption", "Cliquet", "RangeAccrual", "Autocallable", "TARF"}
 
+# Note: VanillaOption replaces VanillaCall/VanillaPut,
+# WorstOfOption replaces WorstOfCall/WorstOfPut, etc.
+
 
 class TestSparklineSupported:
     def test_subset_of_registry(self):
@@ -156,10 +159,10 @@ class TestProductScenarios:
     def test_scenarios_structure(self):
         """Each product's scenarios must be a list of dicts with label and description."""
         required_products = {
-            "VanillaCall", "VanillaPut", "SingleBarrier", "AsianOption",
+            "VanillaOption", "SingleBarrier", "AsianOption",
             "Cliquet", "RangeAccrual", "Autocallable", "TARF",
-            "Accumulator", "Decumulator", "DoubleNoTouch",
-            "WorstOfCall", "WorstOfPut",
+            "AccumulatorDecumulator", "DoubleNoTouch",
+            "WorstOfOption",
         }
         for key in required_products:
             assert key in PRODUCT_SCENARIOS, f"Missing scenarios for {key}"

@@ -14,18 +14,28 @@ from ui.utils.registry import INSTRUMENT_REGISTRY
 # ---------------------------------------------------------------------------
 
 _BASE_FORMULAS = {
-    "VanillaCall":    lambda p: f"max(S - {p['strike']:.4g}, 0)",
-    "VanillaPut":     lambda p: f"max({p['strike']:.4g} - S, 0)",
+    "VanillaOption": lambda p: (
+        f"max(S - {p['strike']:.4g}, 0)" if p.get("option_type") == "call"
+        else f"max({p['strike']:.4g} - S, 0)"
+    ),
     "Digital":        lambda p: f"1{{S {'>' if p.get('option_type','call')=='call' else '<'} {p['strike']:.4g}}}",
     "DualDigital":    lambda p: "1{S\u2081,S\u2082 conditions}",
     "TripleDigital":  lambda p: "1{S\u2081,S\u2082,S\u2083 conditions}",
-    "WorstOfCall":    lambda p: f"max(min(S\u1d62/K\u1d62) - 1, 0)",
-    "WorstOfPut":     lambda p: f"max(1 - min(S\u1d62/K\u1d62), 0)",
-    "BestOfCall":     lambda p: f"max(max(S\u1d62/K\u1d62) - 1, 0)",
-    "BestOfPut":      lambda p: f"max(1 - max(S\u1d62/K\u1d62), 0)",
+    "WorstOfOption": lambda p: (
+        "max(min(S\u1d62/K\u1d62) - 1, 0)" if p.get("option_type") == "call"
+        else "max(1 - min(S\u1d62/K\u1d62), 0)"
+    ),
+    "BestOfOption": lambda p: (
+        "max(max(S\u1d62/K\u1d62) - 1, 0)" if p.get("option_type") == "call"
+        else "max\u1d62(max(1 - S\u1d62/K\u1d62, 0))"
+    ),
+    "Dispersion":     lambda p: "\u03a3(w\u1d62 \u00d7 comp\u1d62) - basket",
     "DoubleNoTouch":  lambda p: f"1{{{p.get('lower',0):.4g} < path < {p.get('upper',0):.4g}}}",
-    "Accumulator":    lambda p: f"\u03a3 (S_t - {p['strike']:.4g}) \u00d7 lev={p['leverage']:.4g} [{p.get('side','buy')}]",
-    "Decumulator":    lambda p: f"\u03a3 ({p['strike']:.4g} - S_t) \u00d7 lev={p['leverage']:.4g} [{p.get('side','sell')}]",
+    "AccumulatorDecumulator": lambda p: (
+        f"\u03a3 (S_t - {p['strike']:.4g}) \u00d7 lev={p['leverage']:.4g} [{p.get('side','buy')}]"
+        if p.get("side", "buy") == "buy"
+        else f"\u03a3 ({p['strike']:.4g} - S_t) \u00d7 lev={p['leverage']:.4g} [{p.get('side','sell')}]"
+    ),
     "ForwardStartingOption": lambda p: f"max(S_T - S_start, 0) [{p.get('option_type','call')}]",
     "RestrikeOption": lambda p: f"max(S_T - S_reset, 0) [{p.get('option_type','call')}]",
     "ContingentOption": lambda p: f"payoff(target) \u00d7 1{{trigger {'>' if p.get('trigger_direction','up')=='up' else '<'} {p.get('trigger_barrier',0):.4g}}}",
@@ -98,7 +108,7 @@ def payoff_formula(spec: dict) -> str:
 # ---------------------------------------------------------------------------
 
 _PATH_DEPENDENT_TYPES = {
-    "Accumulator", "Decumulator", "DoubleNoTouch",
+    "AccumulatorDecumulator", "DoubleNoTouch",
     "ForwardStartingOption", "RestrikeOption",
     "AsianOption", "Cliquet", "RangeAccrual",
     "Autocallable", "TARF",

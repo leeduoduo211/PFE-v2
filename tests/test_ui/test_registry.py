@@ -6,26 +6,31 @@ class TestInstrumentRegistry:
     def test_all_instruments_present(self):
         expected = {
             # European
-            "VanillaCall", "VanillaPut", "Digital", "ContingentOption", "SingleBarrier",
+            "VanillaOption", "Digital", "ContingentOption", "SingleBarrier",
             # Path-dependent
             "DoubleNoTouch", "ForwardStartingOption", "RestrikeOption",
             "AsianOption", "Cliquet", "RangeAccrual",
             # Multi-asset
             "DualDigital", "TripleDigital",
-            "WorstOfCall", "WorstOfPut", "BestOfCall", "BestOfPut",
+            "WorstOfOption", "BestOfOption", "Dispersion",
             # Periodic
-            "Accumulator", "Decumulator", "Autocallable", "TARF",
+            "AccumulatorDecumulator", "Autocallable", "TARF",
         }
         assert set(INSTRUMENT_REGISTRY.keys()) == expected
 
-    def test_vanilla_call_spec(self):
-        spec = INSTRUMENT_REGISTRY["VanillaCall"]
-        assert spec["n_assets"] == 1
-        assert "strike" in [f["name"] for f in spec["fields"]]
-        assert spec["cls"].__name__ == "VanillaCall"
+    def test_registry_count(self):
+        assert len(INSTRUMENT_REGISTRY) == 18
 
-    def test_accumulator_spec(self):
-        spec = INSTRUMENT_REGISTRY["Accumulator"]
+    def test_vanilla_option_spec(self):
+        spec = INSTRUMENT_REGISTRY["VanillaOption"]
+        assert spec["n_assets"] == 1
+        field_names = [f["name"] for f in spec["fields"]]
+        assert "strike" in field_names
+        assert "option_type" in field_names
+        assert spec["cls"].__name__ == "VanillaOption"
+
+    def test_accumulator_decumulator_spec(self):
+        spec = INSTRUMENT_REGISTRY["AccumulatorDecumulator"]
         field_names = [f["name"] for f in spec["fields"]]
         assert "strike" in field_names
         assert "leverage" in field_names
@@ -37,17 +42,22 @@ class TestInstrumentRegistry:
         assert spec["n_assets"] == 2
 
     def test_worst_of_variable_assets(self):
-        spec = INSTRUMENT_REGISTRY["WorstOfCall"]
+        spec = INSTRUMENT_REGISTRY["WorstOfOption"]
         assert spec["n_assets"] == "2-5"
 
     def test_contingent_requires_two_assets(self):
         spec = INSTRUMENT_REGISTRY["ContingentOption"]
         assert spec["n_assets"] == 2
 
-    def test_decumulator_defaults_to_sell(self):
-        spec = INSTRUMENT_REGISTRY["Decumulator"]
-        side_field = next(f for f in spec["fields"] if f["name"] == "side")
-        assert side_field["default"] == "sell"
+    def test_dispersion_spec(self):
+        spec = INSTRUMENT_REGISTRY["Dispersion"]
+        assert spec["n_assets"] == "2-5"
+        field_names = [f["name"] for f in spec["fields"]]
+        assert "component_types" in field_names
+        assert "strikes" in field_names
+        assert "weights" in field_names
+        assert "basket_strike" in field_names
+        assert "basket_type" in field_names
 
 
 class TestModifierRegistry:
