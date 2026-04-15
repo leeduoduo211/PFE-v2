@@ -13,6 +13,15 @@ import streamlit as st
 from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
 from ui.utils.session import get_asset_names
 from ui.components.payoff_display import payoff_formula, payoff_sparkline
+from ui.utils.product_content import (
+    PRODUCT_SECTIONS,
+    CATEGORY_COLORS,
+    PRODUCT_DESCRIPTIONS,
+    MODIFIER_GROUP_COLORS,
+    MODIFIER_SECTIONS,
+    PRODUCT_SCENARIOS,
+    SPARKLINE_SUPPORTED,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -244,11 +253,30 @@ def _render_field(field: dict, key: str, asset_names: list[str], n_selected: int
     return st.text_input(label, value=str(default or ""), help=help_, key=key)
 
 
-def _render_modifier(idx, key_prefix, asset_names, n_trade_assets):
-    """Render one modifier block. Returns {"type": str, "params": dict} or None."""
+def _render_section(section: dict, inst_spec: dict, key_prefix: str, asset_names, n_selected):
+    """Render a grouped section with colored left border."""
+    st.markdown(
+        f'<div style="border-left:3px solid {section["color"]};padding-left:12px;margin-bottom:4px;">'
+        f'<div style="font-weight:600;color:#1e293b;font-size:13px;">{section["label"]}</div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+    if "help" in section:
+        st.caption(section["help"])
+
+    values = {}
+    for field_name in section["fields"]:
+        field = next(f for f in inst_spec["fields"] if f["name"] == field_name)
+        fkey = f"{key_prefix}_inst_{field_name}"
+        values[field_name] = _render_field(field, fkey, asset_names, n_selected)
+    return values
+
+
+def _render_modifier_styled(idx, key_prefix, asset_names, n_trade_assets):
+    """Render one modifier with group badge and structured sections."""
     mod_key = f"{key_prefix}_mod_{idx}"
 
-    mod_names  = list(MODIFIER_REGISTRY.keys())
+    mod_names = list(MODIFIER_REGISTRY.keys())
     mod_labels = [MODIFIER_REGISTRY[k]["label"] for k in mod_names]
 
     chosen_label = st.selectbox(
@@ -257,13 +285,38 @@ def _render_modifier(idx, key_prefix, asset_names, n_trade_assets):
         key=f"{mod_key}_type",
     )
     chosen_type = mod_names[mod_labels.index(chosen_label)]
-    spec = MODIFIER_REGISTRY[chosen_type]
+    mod_spec = MODIFIER_REGISTRY[chosen_type]
+    section_config = MODIFIER_SECTIONS.get(chosen_type, {})
+    group = section_config.get("group", "")
+    group_style = MODIFIER_GROUP_COLORS.get(group, {})
+
+    # Section header with group badge
+    st.markdown(
+        f'<div style="border-left:3px solid {group_style.get("color", "#94a3b8")};padding-left:12px;">'
+        f'<span style="font-weight:600;color:#1e293b;font-size:13px;">Modifier: {mod_spec["label"]}</span> '
+        f'<span style="background:{group_style.get("badge_bg","#f1f5f9")};color:{group_style.get("badge_text","#64748b")};'
+        f'padding:1px 6px;border-radius:3px;font-size:9px;font-weight:600;">{group.upper()}</span>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
 
     params = {}
-    for field in spec["fields"]:
-        fkey = f"{mod_key}_{field['name']}"
-        val = _render_field(field, fkey, asset_names, n_trade_assets)
-        params[field["name"]] = val
+    # Core fields
+    for field_name in section_config.get("core_fields", []):
+        field = next(f for f in mod_spec["fields"] if f["name"] == field_name)
+        params[field_name] = _render_field(field, f"{mod_key}_{field_name}", asset_names, n_trade_assets)
+
+    # Observation style sub-section (barrier modifiers only)
+    obs_fields = section_config.get("observation_fields", [])
+    if obs_fields:
+        for field_name in obs_fields:
+            field = next(f for f in mod_spec["fields"] if f["name"] == field_name)
+            params[field_name] = _render_field(field, f"{mod_key}_{field_name}", asset_names, n_trade_assets)
+
+    # Extra fields (e.g., rebate)
+    for field_name in section_config.get("extra_fields", []):
+        field = next(f for f in mod_spec["fields"] if f["name"] == field_name)
+        params[field_name] = _render_field(field, f"{mod_key}_{field_name}", asset_names, n_trade_assets)
 
     return {"type": chosen_type, "params": params}
 
@@ -314,6 +367,22 @@ def render_trade_builder(key_prefix="tb"):
     inst_spec   = INSTRUMENT_REGISTRY[chosen_type]
     n_assets_spec = inst_spec["n_assets"]
     min_assets, max_assets = _parse_n_assets_spec(n_assets_spec)
+
+    # Product header with category badge and description
+    category = inst_spec.get("category", "")
+    cat_color = CATEGORY_COLORS.get(category, "#94a3b8")
+    description = PRODUCT_DESCRIPTIONS.get(chosen_type, "")
+
+    st.markdown(
+        f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
+        f'<span style="background:{cat_color};color:#fff;padding:2px 8px;border-radius:4px;'
+        f'font-size:11px;font-weight:600;">{category}</span>'
+        f'<span style="font-weight:700;font-size:15px;color:#1e293b;">{inst_spec["label"]}</span>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+    if description:
+        st.caption(description)
 
     # -----------------------------------------------------------------------
     # 2. Common fields: trade_id, maturity, notional
@@ -386,13 +455,20 @@ def render_trade_builder(key_prefix="tb"):
                 )
 
     # -----------------------------------------------------------------------
-    # 4. Dynamic instrument fields
+    # 4. Grouped instrument sections
     # -----------------------------------------------------------------------
+    sections = PRODUCT_SECTIONS.get(chosen_type, [])
     instrument_params: dict = {}
-    for field in inst_spec["fields"]:
-        fkey = f"{key_prefix}_inst_{field['name']}"
-        val = _render_field(field, fkey, asset_names, n_selected)
-        instrument_params[field["name"]] = val
+    if sections:
+        for section in sections:
+            section_values = _render_section(section, inst_spec, key_prefix, asset_names, n_selected)
+            instrument_params.update(section_values)
+    else:
+        # Fallback to flat rendering for any unlisted product
+        for field in inst_spec["fields"]:
+            fkey = f"{key_prefix}_inst_{field['name']}"
+            val = _render_field(field, fkey, asset_names, n_selected)
+            instrument_params[field["name"]] = val
 
     # -----------------------------------------------------------------------
     # 5. Modifier stacking
@@ -417,7 +493,7 @@ def render_trade_builder(key_prefix="tb"):
 
     for i in range(n_mods):
         with st.expander(f"Modifier #{i + 1}", expanded=True):
-            mod = _render_modifier(i, key_prefix, asset_names, n_selected)
+            mod = _render_modifier_styled(i, key_prefix, asset_names, n_selected)
             if mod is not None:
                 modifiers.append(mod)
 
@@ -440,8 +516,54 @@ def render_trade_builder(key_prefix="tb"):
         }
         st.caption(payoff_formula(preview_spec))
         fig = payoff_sparkline(preview_spec, asset_names)
-        st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False},
-                        key=f"{key_prefix}_payoff_preview")
+        if fig is not None:
+            st.plotly_chart(fig, use_container_width=True, config={"displayModeBar": False},
+                            key=f"{key_prefix}_payoff_preview")
+        else:
+            st.caption("Payoff depends on full path — chart not available. See scenarios below.")
+
+        # Live scenario panel
+        from ui.components.trade_economics import compute_scenarios
+
+        market_spots = st.session_state.get("market", {}).get("spots", [])
+        spot = 100.0
+        if market_spots and asset_names:
+            trade_assets = preview_spec["params"].get("assets", [])
+            target_name = trade_assets[0] if trade_assets else asset_names[0]
+            if target_name in asset_names:
+                idx = asset_names.index(target_name)
+                if idx < len(market_spots):
+                    spot = float(market_spots[idx])
+            elif market_spots:
+                spot = float(market_spots[0])
+
+        scenarios = compute_scenarios(preview_spec, spot, notional)
+        for row in scenarios:
+            pnl = row["direction_payoff"]
+            color = "#22c55e" if pnl > 0 else "#ef4444" if pnl < 0 else "#64748b"
+            st.markdown(
+                f'<div style="display:flex;justify-content:space-between;font-size:12px;'
+                f'padding:2px 0;border-bottom:1px solid #f1f5f9;">'
+                f'<span style="color:#64748b;">{row["label"]} ({row["spot"]:.2f})</span>'
+                f'<span style="color:{color};font-weight:600;">{pnl:+,.0f}</span>'
+                f'</div>',
+                unsafe_allow_html=True,
+            )
+
+        # Product-specific structural scenarios
+        prod_scenarios = PRODUCT_SCENARIOS.get(chosen_type, [])
+        if prod_scenarios:
+            st.markdown(
+                '<div style="color:#94a3b8;font-size:10px;text-transform:uppercase;'
+                'letter-spacing:0.5px;margin-top:8px;font-weight:600;">Structural Scenarios</div>',
+                unsafe_allow_html=True,
+            )
+            for s in prod_scenarios:
+                st.markdown(
+                    f'<div style="font-size:11px;color:#334155;padding:2px 0;">'
+                    f'<b>{s["label"]}</b>: {s["description"]}</div>',
+                    unsafe_allow_html=True,
+                )
 
     # -----------------------------------------------------------------------
     # 6. "Add to Portfolio" button
