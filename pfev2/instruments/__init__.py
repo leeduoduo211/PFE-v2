@@ -8,6 +8,7 @@ from pfev2.instruments.restrike import RestrikeOption
 from pfev2.instruments.contingent import ContingentOption
 from pfev2.instruments.asian import AsianOption
 from pfev2.instruments.cliquet import Cliquet
+from pfev2.instruments.autocallable import Autocallable
 
 # Decumulator is an alias — Accumulator(side="sell")
 Decumulator = Accumulator
@@ -21,4 +22,5 @@ __all__ = [
     "ForwardStartingOption", "RestrikeOption", "ContingentOption",
     "AsianOption",
     "Cliquet",
+    "Autocallable",
 ]
