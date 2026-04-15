@@ -511,4 +511,4 @@ Which instruments this is commonly used with and why.
 - UI pages (wizard/dashboard) — not present in GitHub version
 - Pricing engine changes — `InnerMCPricer` handles `payoff()` + `requires_full_path` generically
 - Risk calculator changes — works with any `BaseInstrument` implementation
-- `BaseModifier._apply()` signature is extended to include `t_grid` — this is a breaking change to the internal modifier interface, but all updates are mechanical (add `t_grid=None` parameter to each `_apply` method)
+- `BaseModifier._apply()` signature is extended to include `t_grid` (see Section 5.2) — this is an in-scope internal interface change, but does not cascade to pricing engine or risk calculator. All existing modifier updates are mechanical (add `t_grid=None` parameter to each `_apply` method)
