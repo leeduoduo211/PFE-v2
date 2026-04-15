@@ -11,7 +11,7 @@
 2. **Live scenario panel** — show generic 3-spot scenarios + product-specific structural scenarios that update as the user configures a trade
 3. **Modifier sections** — each modifier rendered as a styled section with group badge (Barrier/Payoff Shaper/Structural), observation style toggle for barrier modifiers
 4. **Read-only term-sheet** in portfolio table — formatted summary of trade terms, economics description, scenarios, and payoff chart
-5. **Full coverage** — term-sheet text, formulas, and scenarios for all 7 new products (SingleBarrier, AsianOption, Cliquet, RangeAccrual, Autocallable, TARF, TargetProfit) plus updated modifier descriptions
+5. **Full coverage** — term-sheet text, formulas, and scenarios for all 6 new instruments (SingleBarrier, AsianOption, Cliquet, RangeAccrual, Autocallable, TARF) and the TargetProfit modifier, plus updated modifier descriptions
 
 ## 2. Architecture
 
@@ -48,8 +48,8 @@ payoff_display.py    → formula strings + sparkline (content)
 |---|---|
 | `ui/components/trade_builder.py` | Replace flat field rendering with grouped-section layout; add live scenario panel; replace modifier expanders with styled modifier sections |
 | `ui/components/portfolio_table.py` | Replace current expander content with `render_term_sheet()` call |
-| `ui/components/payoff_display.py` | Add formula strings for 7 new products; add new products to `_PATH_DEPENDENT_TYPES`; return `None` for sparkline on complex path-dependent types |
-| `ui/components/trade_economics.py` | Add term-sheet text builders for 7 new products; add product-specific scenario generators; add TargetProfit modifier economics; update barrier modifier text with observation style |
+| `ui/components/payoff_display.py` | Add formula strings for 6 new instruments; add new products to `_PATH_DEPENDENT_TYPES`; return `None` for sparkline on complex path-dependent types |
+| `ui/components/trade_economics.py` | Add term-sheet text builders for 6 new instruments; add product-specific scenario generators; add TargetProfit modifier economics; update barrier modifier text with observation style |
 
 ### Unchanged files
 
@@ -719,7 +719,7 @@ def payoff_sparkline(spec, asset_names):
     # ... existing logic
 ```
 
-Callers check for `None` and show a text fallback instead.
+Both callers of `payoff_sparkline()` — `trade_builder.py` (payoff preview) and `portfolio_table.py` (term-sheet expander) — must handle a `None` return by showing a text fallback (e.g., "Payoff depends on full path — chart not available") instead of rendering a chart.
 
 ### 7.5 Product-specific scenario computation
 
@@ -801,7 +801,7 @@ Smoke tests verifying `render_term_sheet()` doesn't raise for each product type.
 
 ### 8.4 Existing test updates
 
-- `tests/test_ui/test_payoff_display.py` — add formula tests for 7 new products, test that sparkline returns `None` for excluded types
+- `tests/test_ui/test_payoff_display.py` — add formula tests for 6 new instruments, test that sparkline returns `None` for excluded types
 
 ## 9. Out of Scope
 
