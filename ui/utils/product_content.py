@@ -146,11 +146,13 @@ PRODUCT_SECTIONS = {
         {
             "label": "Trigger Condition",
             "color": _AMBER,
+            "help": "The trigger asset acts as an on/off switch for the payoff",
             "fields": ["trigger_asset_idx", "trigger_barrier", "trigger_direction"],
         },
         {
             "label": "Target Payoff",
             "color": _BLUE,
+            "help": "Vanilla payoff computed on the target asset if trigger fires",
             "fields": ["target_asset_idx", "target_strike", "target_type"],
         },
     ],
@@ -163,6 +165,7 @@ PRODUCT_SECTIONS = {
         {
             "label": "Barrier Condition (at expiry only)",
             "color": _AMBER,
+            "help": "Checked at maturity only — distinct from path-dependent KO/KI modifiers",
             "fields": ["barrier", "barrier_direction", "barrier_type"],
         },
     ],
@@ -171,6 +174,7 @@ PRODUCT_SECTIONS = {
         {
             "label": "Barrier Corridor",
             "color": _GREEN,
+            "help": "Pays if spot stays strictly inside the corridor for the entire life",
             "fields": ["lower", "upper"],
         },
     ],
@@ -178,6 +182,7 @@ PRODUCT_SECTIONS = {
         {
             "label": "Forward Start Terms",
             "color": _GREEN,
+            "help": "Strike fixed to spot at start time",
             "fields": ["start_time", "option_type"],
         },
     ],
@@ -185,6 +190,7 @@ PRODUCT_SECTIONS = {
         {
             "label": "Restrike Terms",
             "color": _GREEN,
+            "help": "Strike resets to spot at reset time",
             "fields": ["reset_time", "option_type"],
         },
     ],
@@ -192,6 +198,7 @@ PRODUCT_SECTIONS = {
         {
             "label": "Option Terms",
             "color": _GREEN,
+            "help": "Price averaging: average vs fixed strike. Strike averaging: terminal vs average strike.",
             "fields": ["strike", "option_type", "average_type"],
         },
         {
@@ -204,11 +211,13 @@ PRODUCT_SECTIONS = {
         {
             "label": "Return Clipping",
             "color": _GREEN,
+            "help": "Each period's return is clipped to [floor, cap] before summing",
             "fields": ["local_cap", "local_floor"],
         },
         {
             "label": "Global Protection",
             "color": _RED,
+            "help": "Minimum total payoff across all periods",
             "fields": ["global_floor"],
         },
         {
@@ -221,6 +230,7 @@ PRODUCT_SECTIONS = {
         {
             "label": "Accrual Range",
             "color": _GREEN,
+            "help": "Coupon accrues proportional to observations where spot is inside the range",
             "fields": ["lower", "upper"],
         },
         {
@@ -282,6 +292,7 @@ PRODUCT_SECTIONS = {
         {
             "label": "Accumulation Terms",
             "color": _AMBER,
+            "help": "Buys at strike each period; leverage multiplies quantity when spot is unfavorable",
             "fields": ["strike", "leverage", "side"],
         },
         {
@@ -294,6 +305,7 @@ PRODUCT_SECTIONS = {
         {
             "label": "Decumulation Terms",
             "color": _AMBER,
+            "help": "Sells at strike each period; leverage multiplies quantity when spot is unfavorable",
             "fields": ["strike", "leverage", "side"],
         },
         {
@@ -306,11 +318,13 @@ PRODUCT_SECTIONS = {
         {
             "label": "Autocall Terms",
             "color": _INDIGO,
+            "help": "Redeems early if worst-of performance >= trigger",
             "fields": ["autocall_trigger", "coupon_rate"],
         },
         {
             "label": "Downside Protection",
             "color": _RED,
+            "help": "Below put strike at maturity, loss = worst_perf - 1.0",
             "fields": ["put_strike"],
         },
         {
@@ -323,11 +337,13 @@ PRODUCT_SECTIONS = {
         {
             "label": "Forward Terms",
             "color": _AMBER,
+            "help": "Periodic forward with leverage on unfavorable side",
             "fields": ["strike", "leverage", "side"],
         },
         {
             "label": "Target Redemption",
             "color": _RED,
+            "help": "Terminates when cumulative profit reaches target; partial fill on final fixing",
             "fields": ["target"],
         },
         {

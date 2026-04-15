@@ -32,13 +32,17 @@ class TestProductSections:
         """Every field in the registry must appear in exactly one section."""
         for key, spec in INSTRUMENT_REGISTRY.items():
             registry_fields = {f["name"] for f in spec["fields"]}
-            section_fields = set()
+            section_fields = []
             for section in PRODUCT_SECTIONS[key]:
                 for field in section["fields"]:
-                    section_fields.add(field)
-            assert registry_fields == section_fields, (
+                    section_fields.append(field)
+            assert len(section_fields) == len(set(section_fields)), (
+                f"{key}: duplicate field assignments detected in sections: "
+                f"{[f for f in section_fields if section_fields.count(f) > 1]}"
+            )
+            assert registry_fields == set(section_fields), (
                 f"{key}: registry fields {registry_fields} != "
-                f"section fields {section_fields}"
+                f"section fields {set(section_fields)}"
             )
 
     def test_sections_have_required_keys(self):
