@@ -12,5 +12,5 @@ class LeverageModifier(BaseModifier):
     def requires_full_path(self):
         return self._inner.requires_full_path
 
-    def _apply(self, raw_payoff, spots, path_history):
+    def _apply(self, raw_payoff, spots, path_history, t_grid=None):
         return np.where(raw_payoff > self.threshold, raw_payoff * self.leverage, raw_payoff)

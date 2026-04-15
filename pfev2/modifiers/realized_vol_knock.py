@@ -69,7 +69,7 @@ class RealizedVolKnockOut(BaseModifier):
         self.annualization_factor = annualization_factor
         self._monitor_pos = 0 if asset_idx is None else list(inner.asset_indices).index(asset_idx)
 
-    def _apply(self, raw_payoff, spots, path_history) -> np.ndarray:
+    def _apply(self, raw_payoff, spots, path_history, t_grid=None) -> np.ndarray:
         rv = _realized_vol(path_history, self._monitor_pos, self.annualization_factor)
         if self.direction == "above":
             knocked_out = rv > self.vol_barrier
@@ -120,7 +120,7 @@ class RealizedVolKnockIn(BaseModifier):
         self.annualization_factor = annualization_factor
         self._monitor_pos = 0 if asset_idx is None else list(inner.asset_indices).index(asset_idx)
 
-    def _apply(self, raw_payoff, spots, path_history) -> np.ndarray:
+    def _apply(self, raw_payoff, spots, path_history, t_grid=None) -> np.ndarray:
         rv = _realized_vol(path_history, self._monitor_pos, self.annualization_factor)
         if self.direction == "above":
             activated = rv > self.vol_barrier

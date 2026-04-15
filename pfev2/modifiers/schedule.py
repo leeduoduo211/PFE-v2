@@ -16,5 +16,5 @@ class ObservationSchedule(BaseModifier):
     def observation_dates(self) -> np.ndarray:
         return self._dates
 
-    def _apply(self, raw_payoff, spots, path_history):
+    def _apply(self, raw_payoff, spots, path_history, t_grid=None):
         return raw_payoff

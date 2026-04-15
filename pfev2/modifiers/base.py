@@ -39,8 +39,8 @@ class BaseModifier:
 
     def payoff(self, spots, path_history, t_grid=None):
         raw_payoff = self._inner.payoff(spots, path_history, t_grid)
-        return self._apply(raw_payoff, spots, path_history)
+        return self._apply(raw_payoff, spots, path_history, t_grid)
 
     @abstractmethod
-    def _apply(self, raw_payoff, spots, path_history) -> np.ndarray:
+    def _apply(self, raw_payoff, spots, path_history, t_grid=None) -> np.ndarray:
         ...

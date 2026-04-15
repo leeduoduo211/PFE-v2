@@ -12,7 +12,7 @@ class KnockOut(BaseModifier):
         self.direction = direction
         self._monitor_pos = 0 if asset_idx is None else list(inner.asset_indices).index(asset_idx)
 
-    def _apply(self, raw_payoff, spots, path_history):
+    def _apply(self, raw_payoff, spots, path_history, t_grid=None):
         prices = path_history[:, :, self._monitor_pos]
         if self.direction == "up":
             breached = np.any(prices > self.barrier, axis=1)
