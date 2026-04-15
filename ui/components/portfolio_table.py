@@ -3,8 +3,7 @@
 
 import copy
 import streamlit as st
-from ui.components.payoff_display import payoff_formula, payoff_sparkline
-from ui.components.trade_economics import render_trade_economics
+from ui.components.term_sheet import render_term_sheet
 
 
 def render_portfolio_table(key_prefix: str = "pt"):
@@ -94,18 +93,13 @@ def render_portfolio_table(key_prefix: str = "pt"):
             portfolio.pop(i)
             st.rerun()
 
-        # Payoff display + economics
-        with st.expander(f"Payoff: {trade['trade_id']}", expanded=False):
+        # Term-sheet view
+        with st.expander(f"Term Sheet: {trade['trade_id']}", expanded=False):
             asset_names_list = st.session_state.get("market", {}).get("asset_names", [])
             market_spots = st.session_state.get("market", {}).get("spots", [])
-            # Economics explanation with scenario table
             if asset_names_list:
-                render_trade_economics(trade, asset_names_list, market_spots)
-            st.caption(payoff_formula(trade))
-            if asset_names_list:
-                fig = payoff_sparkline(trade, asset_names_list)
-                st.plotly_chart(fig, use_container_width=True,
-                                config={"displayModeBar": False},
-                                key=f"{key_prefix}_payoff_chart_{i}")
+                render_term_sheet(trade, asset_names_list, market_spots)
+            else:
+                st.caption("Add market data to see term-sheet details.")
 
     return edit_idx
