@@ -1,5 +1,5 @@
 # Category 1 — European (terminal spot only)
-from pfev2.instruments.vanilla import VanillaCall, VanillaPut
+from pfev2.instruments.vanilla import VanillaOption
 from pfev2.instruments.digital import Digital
 from pfev2.instruments.contingent import ContingentOption
 from pfev2.instruments.single_barrier import SingleBarrier
@@ -26,7 +26,7 @@ Decumulator = Accumulator
 
 __all__ = [
     # European
-    "VanillaCall", "VanillaPut", "Digital", "ContingentOption", "SingleBarrier",
+    "VanillaOption", "Digital", "ContingentOption", "SingleBarrier",
     # Path-dependent
     "DoubleNoTouch", "ForwardStartingOption", "RestrikeOption",
     "AsianOption", "Cliquet", "RangeAccrual",
