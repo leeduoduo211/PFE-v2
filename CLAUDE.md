@@ -18,7 +18,7 @@ python3 -m pytest tests/ -v
 python3 -m pytest tests/test_instruments/test_vanilla.py -v
 
 # Run a single test
-python3 -m pytest tests/test_ui/test_registry.py::TestInstrumentRegistry::test_vanilla_call_spec -v
+python3 -m pytest tests/test_ui/test_registry.py::TestInstrumentRegistry::test_vanilla_option_spec -v
 
 # Launch Streamlit UI
 python3 -m streamlit run ui/app.py
@@ -65,3 +65,7 @@ Tab-based layout: Market Data → Portfolio → Configuration → Results.
 - `payoff_sparkline()` returns `Optional[go.Figure]` — returns `None` for complex path-dependent types (AsianOption, Cliquet, RangeAccrual, Autocallable, TARF). Callers must handle `None`.
 - Trade specs in the UI are dicts: `{trade_id, instrument_type, direction, params, modifiers}`. This is the universal format passed between builder, portfolio table, term sheet, and converters.
 - The `seed_builder_from_trade()` function in `trade_builder.py` pre-seeds Streamlit widget state using `{key_prefix}_inst_{field_name}` keys. Any changes to field rendering must preserve this key pattern.
+- `BaseInstrument.__init__` enforces max 5 underlyings per trade (`len(asset_indices) > 5` raises `InstrumentError`).
+- Direction (long/short) is applied via notional negation in `converters.py`, not in instrument classes. `direction="short"` → `notional = -notional`.
+- Registry field schema uses `"choices"` for select/select_list options (NOT `"options"`). Every field entry includes `"name"`, `"type"`, `"label"`, `"default"`, `"help"`. For variable-asset-count instruments, `float_list` and `select_list` defaults must be lists matching minimum `n_assets` (e.g., `"default": [100.0, 100.0]` for `"n_assets": "2-5"`).
+- `BestOfOption` put payoff is asymmetric: `max_i(max(1 - S_i/K_i, 0))` — evaluates individual puts first, then takes maximum. This differs from the call pattern and must be preserved in any refactoring.
