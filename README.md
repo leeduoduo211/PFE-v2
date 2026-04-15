@@ -29,7 +29,7 @@ echo "/path/to/PFE-v2" > $(python3 -c "import site; print(site.getusersitepackag
 ```python
 import numpy as np
 from pfev2 import MarketData, PFEConfig, compute_pfe
-from pfev2.instruments import VanillaCall, WorstOfPut
+from pfev2.instruments import VanillaOption, WorstOfOption
 
 market = MarketData(
     spots=np.array([100.0, 50.0]),
@@ -42,8 +42,8 @@ market = MarketData(
 )
 
 portfolio = [
-    VanillaCall(trade_id="C1", maturity=1.0, notional=100_000, asset_indices=(0,), strike=100.0),
-    WorstOfPut(trade_id="WP1", maturity=1.0, notional=100_000, asset_indices=(0, 1), strikes=[100.0, 50.0]),
+    VanillaOption(trade_id="C1", maturity=1.0, notional=100_000, asset_indices=(0,), strike=100.0, option_type="call"),
+    WorstOfOption(trade_id="WP1", maturity=1.0, notional=100_000, asset_indices=(0, 1), strikes=[100.0, 50.0], option_type="put"),
 ]
 
 config = PFEConfig(n_outer=500, n_inner=500, seed=42, grid_frequency="monthly")
@@ -63,14 +63,14 @@ Two modes available:
 
 ## Instruments
 
-**21 instrument types** across four categories (by pricing structure):
+**18 instrument types** across four categories (by pricing structure):
 
 | Category | Instruments |
 |---|---|
-| European (terminal spot) | `VanillaCall`, `VanillaPut`, `Digital`, `ContingentOption`, `SingleBarrier` |
+| European (terminal spot) | `VanillaOption`, `Digital`, `ContingentOption`, `SingleBarrier` |
 | Path-dependent (single asset) | `DoubleNoTouch`, `ForwardStartingOption`, `RestrikeOption`, `AsianOption`, `Cliquet`, `RangeAccrual` |
-| Multi-asset | `WorstOfCall`, `WorstOfPut`, `BestOfCall`, `BestOfPut`, `DualDigital`, `TripleDigital` |
-| Periodic (scheduled observation) | `Accumulator`, `Decumulator`, `Autocallable`, `TARF` |
+| Multi-asset | `WorstOfOption`, `BestOfOption`, `Dispersion`, `DualDigital`, `TripleDigital` |
+| Periodic (scheduled observation) | `AccumulatorDecumulator`, `Autocallable`, `TARF` |
 
 **9 composable modifiers** in three groups:
 
