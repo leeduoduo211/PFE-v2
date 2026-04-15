@@ -301,7 +301,11 @@ TARF(
 
 ### 5.1 TargetProfit
 
-Wraps periodic instruments and terminates when cumulative payoff hits target.
+Generic modifier that wraps any periodic instrument and terminates when cumulative payoff hits a target. This is the composable building block — e.g. `TargetProfit(Accumulator(...))` creates TARF-like behavior from existing instruments.
+
+**Relationship to TARF:** TARF (Section 4.6) is a self-contained instrument with FX-specific conventions (leverage, side, partial fill logic baked in). TargetProfit is the generic modifier for adding target-accrual termination to any periodic instrument. Both exist because:
+- TARF encapsulates specific market conventions that FX desks expect as a single product
+- TargetProfit enables target-accrual behavior on instruments where it isn't built in (e.g. a vanilla Accumulator, or future periodic instruments)
 
 **Effect on payoff:**
 ```
@@ -330,6 +334,23 @@ TargetProfit(
 
 All four barrier modifiers gain observation style parameters. Backward compatible — all new parameters have defaults matching current behavior.
 
+#### BaseModifier signature change
+
+The current `BaseModifier._apply()` signature is `_apply(self, raw_payoff, spots, path_history)` — it does not receive `t_grid`. The observation style logic needs `t_grid` to map observation dates to path indices. This requires extending both `payoff()` and `_apply()`:
+
+```python
+# BaseModifier.payoff() — pass t_grid through to _apply:
+def payoff(self, spots, path_history, t_grid=None):
+    raw_payoff = self._inner.payoff(spots, path_history, t_grid)
+    return self._apply(raw_payoff, spots, path_history, t_grid)
+
+# BaseModifier._apply() — new signature:
+def _apply(self, raw_payoff, spots, path_history, t_grid=None) -> np.ndarray:
+    ...
+```
+
+This is a breaking change to the internal modifier interface. All 8 existing modifier `_apply()` implementations must be updated to accept `t_grid=None` (even if they ignore it). This is mechanical — add `t_grid=None` to each `_apply` signature. No behavioral changes for existing modifiers.
+
 **New parameters for KnockOut:**
 ```python
 KnockOut(
@@ -347,7 +368,10 @@ KnockOut(
 
 **New parameters for KnockIn** — same as KnockOut minus `rebate`.
 
-**New parameters for RealizedVolKnockOut / RealizedVolKnockIn** — same as KnockIn (observation style parameters only).
+**New parameters for RealizedVolKnockOut / RealizedVolKnockIn** — same as KnockIn (observation style parameters only). For these vol-based modifiers, the observation style controls which portion of the path is used to compute realized vol (not just when the threshold is checked):
+- **Continuous**: compute realized vol from the full path (current behavior)
+- **Discrete**: compute realized vol only from prices at specified observation dates
+- **Window**: compute realized vol only from the `[window_start, window_end]` sub-path
 
 **Implementation logic:**
 ```python
@@ -487,4 +511,4 @@ Which instruments this is commonly used with and why.
 - UI pages (wizard/dashboard) — not present in GitHub version
 - Pricing engine changes — `InnerMCPricer` handles `payoff()` + `requires_full_path` generically
 - Risk calculator changes — works with any `BaseInstrument` implementation
-- No breaking changes to existing API — all modifications are additive
+- `BaseModifier._apply()` signature is extended to include `t_grid` — this is a breaking change to the internal modifier interface, but all updates are mechanical (add `t_grid=None` parameter to each `_apply` method)
