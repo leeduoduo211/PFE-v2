@@ -63,19 +63,26 @@ Two modes available:
 
 ## Instruments
 
-**15 instrument types** across four categories:
+**21 instrument types** across four categories (by pricing structure):
 
 | Category | Instruments |
 |---|---|
-| Vanilla | `VanillaCall`, `VanillaPut` |
-| Digital | `Digital`, `DualDigital`, `TripleDigital` |
-| Multi-asset | `WorstOfCall`, `WorstOfPut`, `BestOfCall`, `BestOfPut` |
-| Barrier | `DoubleNoTouch` |
-| Path-dependent | `Accumulator`, `Decumulator`, `ForwardStartingOption`, `RestrikeOption`, `ContingentOption` |
+| European (terminal spot) | `VanillaCall`, `VanillaPut`, `Digital`, `ContingentOption`, `SingleBarrier` |
+| Path-dependent (single asset) | `DoubleNoTouch`, `ForwardStartingOption`, `RestrikeOption`, `AsianOption`, `Cliquet`, `RangeAccrual` |
+| Multi-asset | `WorstOfCall`, `WorstOfPut`, `BestOfCall`, `BestOfPut`, `DualDigital`, `TripleDigital` |
+| Periodic (scheduled observation) | `Accumulator`, `Decumulator`, `Autocallable`, `TARF` |
 
-**6 composable modifiers** (wrappers applied on top of any instrument):
+**9 composable modifiers** in three groups:
 
-`KnockOut`, `KnockIn`, `PayoffCap`, `PayoffFloor`, `LeverageModifier`, `ObservationSchedule`
+| Group | Modifiers |
+|---|---|
+| Barrier (path-based kill/activate) | `KnockOut`, `KnockIn`, `RealizedVolKnockOut`, `RealizedVolKnockIn` |
+| Payoff shaper | `PayoffCap`, `PayoffFloor`, `LeverageModifier` |
+| Structural | `ObservationSchedule`, `TargetProfit` |
+
+Barrier modifiers support three observation styles: **continuous** (every step), **discrete** (specific dates), and **window** (sub-period). `KnockOut` also supports a rebate payment on barrier breach.
+
+See [`docs/product-catalog.md`](docs/product-catalog.md) for full product documentation including payoff formulas, use cases, PFE behavior, and worked examples.
 
 ## Configuration
 
@@ -131,7 +138,7 @@ python3 examples/multi_asset_worst_of.py
 python3 -m pytest tests/ -v
 ```
 
-132 tests covering core types, instruments, modifiers, engine, pricing, risk, and UI converters.
+236 tests covering core types, instruments, modifiers, engine, pricing, risk, and UI converters.
 
 ## Tech Stack
 
