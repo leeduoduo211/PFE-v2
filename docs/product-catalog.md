@@ -10,8 +10,7 @@ The library is organized into two layers: **instruments** (standalone pricing ob
 
 | Product | Category | Assets | Path Required | Module |
 |---|---|---|---|---|
-| VanillaCall | European | 1 | No | `pfev2.instruments.vanilla` |
-| VanillaPut | European | 1 | No | `pfev2.instruments.vanilla` |
+| VanillaOption | European | 1 | No | `pfev2.instruments.vanilla` |
 | Digital | European | 1 | No | `pfev2.instruments.digital` |
 | ContingentOption | European | 2 | No | `pfev2.instruments.contingent` |
 | SingleBarrier | European | 1 | No | `pfev2.instruments.single_barrier` |
@@ -21,10 +20,9 @@ The library is organized into two layers: **instruments** (standalone pricing ob
 | AsianOption | Path-dependent | 1 | Yes | `pfev2.instruments.asian` |
 | Cliquet | Path-dependent | 1 | Yes | `pfev2.instruments.cliquet` |
 | RangeAccrual | Path-dependent | 1 | Yes | `pfev2.instruments.range_accrual` |
-| WorstOfCall | Multi-asset | 2–5 | No | `pfev2.instruments.worst_best_of` |
-| WorstOfPut | Multi-asset | 2–5 | No | `pfev2.instruments.worst_best_of` |
-| BestOfCall | Multi-asset | 2–5 | No | `pfev2.instruments.worst_best_of` |
-| BestOfPut | Multi-asset | 2–5 | No | `pfev2.instruments.worst_best_of` |
+| WorstOfOption | Multi-asset | 2–5 | No | `pfev2.instruments.worst_best_of` |
+| BestOfOption | Multi-asset | 2–5 | No | `pfev2.instruments.worst_best_of` |
+| Dispersion | Multi-asset | 2–5 | No | `pfev2.instruments.dispersion` |
 | DualDigital | Multi-asset | 2 | No | `pfev2.instruments.digital` |
 | TripleDigital | Multi-asset | 3 | No | `pfev2.instruments.digital` |
 | Accumulator | Periodic | 1 | Yes | `pfev2.instruments.accumulator` |
@@ -37,13 +35,13 @@ The library is organized into two layers: **instruments** (standalone pricing ob
 
 | Modifier | Group | Instruments commonly paired with |
 |---|---|---|
-| KnockOut | Barrier | VanillaCall, VanillaPut, AsianOption, Cliquet, RangeAccrual |
-| KnockIn | Barrier | VanillaCall, VanillaPut, Digital, ForwardStartingOption |
+| KnockOut | Barrier | VanillaOption, AsianOption, Cliquet, RangeAccrual |
+| KnockIn | Barrier | VanillaOption, Digital, ForwardStartingOption |
 | RealizedVolKnockOut | Barrier | Accumulator, TARF, Cliquet, RangeAccrual |
-| RealizedVolKnockIn | Barrier | VanillaCall, AsianOption, Cliquet |
-| PayoffCap | Payoff shaper | VanillaCall, ForwardStartingOption, Cliquet, RangeAccrual |
-| PayoffFloor | Payoff shaper | VanillaPut, Autocallable, Accumulator |
-| LeverageModifier | Payoff shaper | VanillaCall, ForwardStartingOption, BestOfCall |
+| RealizedVolKnockIn | Barrier | VanillaOption, AsianOption, Cliquet |
+| PayoffCap | Payoff shaper | VanillaOption, ForwardStartingOption, Cliquet, RangeAccrual |
+| PayoffFloor | Payoff shaper | VanillaOption, Autocallable, Accumulator |
+| LeverageModifier | Payoff shaper | VanillaOption, ForwardStartingOption, BestOfOption |
 | ObservationSchedule | Structural | DoubleNoTouch, KnockOut, KnockIn, RangeAccrual |
 | TargetProfit | Structural | Accumulator, RangeAccrual |
 
