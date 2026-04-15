@@ -4,6 +4,23 @@ from pfev2.core.exceptions import InstrumentError
 
 
 class Digital(BaseInstrument):
+    """European binary (cash-or-nothing) digital option on a single asset.
+
+    Category: European
+    Path required: No
+
+    Payoff:
+        Call: 1 if S(T) > K, else 0
+        Put:  1 if S(T) < K, else 0
+
+    Parameters
+    ----------
+    strike : float
+        Barrier strike level. Must be positive.
+    option_type : str
+        "call" or "put". Defaults to "call".
+    """
+
     def __init__(self, *, trade_id, maturity, notional, asset_indices, strike, option_type="call"):
         super().__init__(trade_id, maturity, notional, asset_indices)
         if strike <= 0:
@@ -22,6 +39,25 @@ class Digital(BaseInstrument):
 
 
 class DualDigital(BaseInstrument):
+    """Binary digital option contingent on two assets simultaneously meeting their conditions.
+
+    Category: Multi-asset
+    Path required: No
+
+    Payoff: 1 if both conditions satisfied simultaneously, else 0
+
+    Conditions per asset i:
+        call: S_i(T) > K_i
+        put:  S_i(T) < K_i
+
+    Parameters
+    ----------
+    strikes : list of float
+        Strike levels for each of the two assets. Length must be 2.
+    option_types : list of str
+        "call" or "put" for each of the two assets. Length must be 2.
+    """
+
     def __init__(self, *, trade_id, maturity, notional, asset_indices, strikes, option_types):
         super().__init__(trade_id, maturity, notional, asset_indices)
         if len(strikes) != 2 or len(option_types) != 2:
@@ -41,6 +77,25 @@ class DualDigital(BaseInstrument):
 
 
 class TripleDigital(BaseInstrument):
+    """Binary digital option contingent on three assets simultaneously meeting their conditions.
+
+    Category: Multi-asset
+    Path required: No
+
+    Payoff: 1 if all three conditions satisfied simultaneously, else 0
+
+    Conditions per asset i:
+        call: S_i(T) > K_i
+        put:  S_i(T) < K_i
+
+    Parameters
+    ----------
+    strikes : list of float
+        Strike levels for each of the three assets. Length must be 3.
+    option_types : list of str
+        "call" or "put" for each of the three assets. Length must be 3.
+    """
+
     def __init__(self, *, trade_id, maturity, notional, asset_indices, strikes, option_types):
         super().__init__(trade_id, maturity, notional, asset_indices)
         if len(strikes) != 3 or len(option_types) != 3:

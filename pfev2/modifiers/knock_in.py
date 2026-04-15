@@ -5,6 +5,38 @@ from pfev2.modifiers.knock_out import _validate_observation_params, _get_monitor
 
 
 class KnockIn(BaseModifier):
+    """Knock-in barrier modifier.
+
+    Group: Barrier
+    Observation styles: continuous, discrete, window
+
+    Activates the inner payoff only if the monitored asset price breaches the
+    barrier at some point during the observation window. If the barrier is
+    never touched, the payoff is zero.
+
+    Parameters
+    ----------
+    inner : BaseInstrument or BaseModifier
+        The wrapped instrument whose payoff is activated on knock-in.
+    barrier : float
+        Barrier level.
+    direction : str
+        "up" — knocks in if price rises above barrier.
+        "down" — knocks in if price falls below barrier.
+    asset_idx : int, optional
+        Global asset index to monitor. Defaults to the first asset.
+    observation_style : str
+        "continuous" — full path monitored (default).
+        "discrete" — monitored only on ``observation_dates``.
+        "window" — monitored only between ``window_start`` and ``window_end``.
+    observation_dates : array-like of float, optional
+        Required when ``observation_style="discrete"``.
+    window_start : float, optional
+        Start of monitoring window (years). Required for ``style="window"``.
+    window_end : float, optional
+        End of monitoring window (years). Required for ``style="window"``.
+    """
+
     def __init__(self, inner, barrier, direction, asset_idx=None,
                  observation_style="continuous", observation_dates=None,
                  window_start=None, window_end=None):

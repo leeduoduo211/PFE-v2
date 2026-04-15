@@ -4,8 +4,36 @@ from pfev2.core.exceptions import InstrumentError
 
 
 class ContingentOption(BaseInstrument):
-    """
-    Trigger asset breaches barrier → vanilla payoff on target asset.
+    """Contingent option: vanilla payoff on a target asset, gated by a trigger asset.
+
+    Category: European
+    Path required: No
+
+    If the trigger asset breaches its barrier at maturity, the holder receives
+    a vanilla call or put payoff on the target asset; otherwise zero.
+
+    Payoff:
+        trigger_met * max(sign * (S_target(T) - K_target), 0)
+
+    where trigger_met = 1 if:
+        direction="up":   S_trigger(T) > barrier
+        direction="down": S_trigger(T) < barrier
+
+    Parameters
+    ----------
+    trigger_asset_idx : int
+        Global asset index of the trigger underlying.
+    trigger_barrier : float
+        Barrier level for the trigger asset.
+    trigger_direction : str
+        "up" — trigger fires when S_trigger > barrier.
+        "down" — trigger fires when S_trigger < barrier.
+    target_asset_idx : int
+        Global asset index of the target underlying whose payoff is paid.
+    target_strike : float
+        Strike of the vanilla option on the target asset.
+    target_type : str
+        "call" or "put" for the target asset's payoff.
     """
 
     def __init__(

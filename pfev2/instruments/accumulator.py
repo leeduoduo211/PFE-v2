@@ -4,15 +4,31 @@ from pfev2.core.exceptions import InstrumentError
 
 
 class Accumulator(BaseInstrument):
-    """
-    Accumulator (side="buy") / Decumulator (side="sell").
+    """Accumulator (buy) or decumulator (sell) — periodic forward obligation.
 
-    At each observation date, accumulates units:
-    - Buy: 1 unit if S >= strike, leverage units if S < strike
-    - Sell: 1 unit if S <= strike, leverage units if S > strike
+    Category: Periodic
+    Path required: Yes
 
-    Payoff = sum over observations of: units * (S_obs - strike) * sign
-    where sign = +1 for buy, -1 for sell.
+    At each scheduled observation date the holder accumulates (or decumulates)
+    units of the underlying at the fixed strike:
+
+        side="buy":  units = 1 if S >= K, else leverage
+        side="sell": units = 1 if S <= K, else leverage
+
+    Payoff: sum over observations of units * (S_obs - K) * sign
+        where sign = +1 for buy, -1 for sell.
+
+    Parameters
+    ----------
+    strike : float
+        Fixed forward price for each periodic settlement. Must be positive.
+    leverage : float
+        Multiplier on accumulated units when price moves against the holder.
+        Must be positive (typically > 1).
+    side : str
+        "buy" or "sell". Determines the direction of each periodic obligation.
+    schedule : array-like of float
+        Observation dates in years from trade inception.
     """
 
     def __init__(

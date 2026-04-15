@@ -6,7 +6,22 @@ import numpy as np
 
 
 class BaseModifier:
-    """Wraps an instrument, delegating attributes and transforming payoff."""
+    """Abstract base class for all payoff modifiers.
+
+    Group: Base
+
+    Wraps an existing instrument (or another modifier) and transforms the
+    raw payoff returned by the inner instrument's ``payoff`` method.
+    Attributes such as ``trade_id``, ``maturity``, ``notional``, and
+    ``asset_indices`` are delegated transparently to the inner instrument.
+
+    Subclasses implement ``_apply`` to perform the actual transformation.
+
+    Parameters
+    ----------
+    inner : BaseInstrument or BaseModifier
+        The instrument (or modifier chain) whose payoff will be transformed.
+    """
 
     def __init__(self, inner, **kwargs):
         self._inner = inner

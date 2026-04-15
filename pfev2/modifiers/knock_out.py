@@ -54,6 +54,40 @@ def _get_monitored_prices(prices, observation_style, t_grid, observation_dates, 
 
 
 class KnockOut(BaseModifier):
+    """Knock-out barrier modifier.
+
+    Group: Barrier
+    Observation styles: continuous, discrete, window
+
+    Zeroes the inner payoff if the monitored asset price breaches the barrier
+    at any point during the observation window. Optionally pays a fixed rebate
+    when the knock-out event occurs.
+
+    Parameters
+    ----------
+    inner : BaseInstrument or BaseModifier
+        The wrapped instrument whose payoff is extinguished on knock-out.
+    barrier : float
+        Barrier level.
+    direction : str
+        "up" — knocks out if price rises above barrier.
+        "down" — knocks out if price falls below barrier.
+    asset_idx : int, optional
+        Global asset index to monitor. Defaults to the first asset.
+    observation_style : str
+        "continuous" — full path monitored (default).
+        "discrete" — monitored only on ``observation_dates``.
+        "window" — monitored only between ``window_start`` and ``window_end``.
+    observation_dates : array-like of float, optional
+        Required when ``observation_style="discrete"``.
+    window_start : float, optional
+        Start of monitoring window (years). Required for ``style="window"``.
+    window_end : float, optional
+        End of monitoring window (years). Required for ``style="window"``.
+    rebate : float
+        Fixed amount paid to the holder on knock-out. Defaults to 0.
+    """
+
     def __init__(self, inner, barrier, direction, asset_idx=None,
                  observation_style="continuous", observation_dates=None,
                  window_start=None, window_end=None, rebate=0.0):

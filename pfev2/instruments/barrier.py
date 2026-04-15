@@ -4,6 +4,24 @@ from pfev2.core.exceptions import InstrumentError
 
 
 class DoubleNoTouch(BaseInstrument):
+    """Double no-touch binary option: pays 1 if price never touches either barrier.
+
+    Category: Path-dependent
+    Path required: Yes
+
+    Payoff: 1 if lower <= S(t) <= upper for all t in [0, T], else 0
+
+    The entire price path is monitored continuously. The payoff collapses to
+    zero the moment either the lower or upper barrier is breached.
+
+    Parameters
+    ----------
+    lower : float
+        Lower barrier level. Must be strictly less than ``upper``.
+    upper : float
+        Upper barrier level. Must be strictly greater than ``lower``.
+    """
+
     def __init__(self, *, trade_id, maturity, notional, asset_indices, lower, upper):
         super().__init__(trade_id, maturity, notional, asset_indices)
         if lower >= upper:

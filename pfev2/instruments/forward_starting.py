@@ -4,10 +4,24 @@ from pfev2.core.exceptions import InstrumentError
 
 
 class ForwardStartingOption(BaseInstrument):
-    """
-    Strike set at S(start_time). Payoff at maturity:
-    - Call: max(S(T)/S(t_start) - 1, 0)
-    - Put:  max(1 - S(T)/S(t_start), 0)
+    """Forward-starting option whose strike is set at a future date.
+
+    Category: Path-dependent
+    Path required: Yes
+
+    The effective strike is fixed to the spot price at ``start_time``.
+    Payoff at maturity (performance-normalised):
+
+        Call: max(S(T) / S(t_start) - 1, 0)
+        Put:  max(1 - S(T) / S(t_start), 0)
+
+    Parameters
+    ----------
+    start_time : float
+        Date (in years) at which the strike is set. Must satisfy
+        0 < start_time < maturity.
+    option_type : str
+        "call" or "put". Defaults to "call".
     """
 
     def __init__(self, *, trade_id, maturity, notional, asset_indices, start_time, option_type="call"):

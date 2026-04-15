@@ -4,10 +4,24 @@ from pfev2.core.exceptions import InstrumentError
 
 
 class RestrikeOption(BaseInstrument):
-    """
-    Strike resets to S(reset_time). Payoff at maturity:
-    - Call: max(S(T) - S(t_reset), 0)
-    - Put:  max(S(t_reset) - S(T), 0)
+    """Restrike (cliquet-style) option whose strike resets at a fixed date.
+
+    Category: Path-dependent
+    Path required: Yes
+
+    The strike is locked in at the spot price observed on ``reset_time``.
+    Payoff at maturity (in spot units, not performance-normalised):
+
+        Call: max(S(T) - S(t_reset), 0)
+        Put:  max(S(t_reset) - S(T), 0)
+
+    Parameters
+    ----------
+    reset_time : float
+        Date (in years) at which the strike resets to the prevailing spot.
+        Must satisfy 0 < reset_time < maturity.
+    option_type : str
+        "call" or "put". Defaults to "call".
     """
 
     def __init__(self, *, trade_id, maturity, notional, asset_indices, reset_time, option_type="call"):

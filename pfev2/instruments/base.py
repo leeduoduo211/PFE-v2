@@ -8,6 +8,26 @@ from pfev2.core.exceptions import InstrumentError
 
 
 class BaseInstrument(ABC):
+    """Abstract base class for all PFE instruments.
+
+    Category: Base
+
+    Defines the common interface every instrument must implement. Subclasses
+    provide a ``payoff`` method that maps simulated spot prices (and optionally
+    the full path history) to a per-path payoff vector.
+
+    Parameters
+    ----------
+    trade_id : str
+        Unique identifier for the trade.
+    maturity : float
+        Time to maturity in years. Must be positive.
+    notional : float
+        Notional amount. Must be non-zero.
+    asset_indices : tuple of int
+        Indices into the global asset array. At most 5 underlyings allowed.
+    """
+
     def __init__(
         self,
         trade_id: str,
