@@ -50,7 +50,7 @@ class TARF(BaseInstrument):
         else:
             t_grid_full = np.linspace(0.0, self.maturity, n_steps)
             obs_indices = np.searchsorted(t_grid_full, self.schedule, side="right") - 1
-            obs_indices = np.clip(obs_indices, 1, n_steps - 1)
+            obs_indices = np.clip(obs_indices, 0, n_steps - 1)
 
         sign = 1.0 if self.side == "buy" else -1.0
         cumulative = np.zeros(n_paths)

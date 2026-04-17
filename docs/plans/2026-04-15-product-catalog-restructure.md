@@ -1,5 +1,9 @@
 # Product Catalog Restructure Implementation Plan
 
+> **⚠ HISTORICAL — PRE-MERGE (2026-04-15).** Plan references legacy class names that
+> were unified in the April 2026 merge. Kept for history; see [`../../README.md`](../../README.md)
+> for current taxonomy.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Re-categorize instruments/modifiers by pricing structure, add 6 new instruments + 1 new modifier + barrier enhancements, and write a full product catalog with documentation for every product.

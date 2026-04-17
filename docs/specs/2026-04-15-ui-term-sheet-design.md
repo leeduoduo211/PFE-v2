@@ -1,5 +1,10 @@
 # UI Term-Sheet & Product-Specific Input — Design Spec
 
+> **⚠ HISTORICAL — PRE-MERGE (2026-04-15).** References to `VanillaCall`/`VanillaPut`,
+> `WorstOfCall`/`WorstOfPut`, `BestOfCall`/`BestOfPut`, and `Decumulator` were superseded
+> by the April 2026 instrument merge. Kept for design-decision history; for current class
+> names see [`../../README.md`](../../README.md).
+
 **Date:** 2026-04-15
 **Scope:** Product-specific trade builder inputs, term-sheet views, and scenario analysis for all 21 instruments and 9 modifiers
 
