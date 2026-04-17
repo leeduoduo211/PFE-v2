@@ -46,7 +46,11 @@ def render_results_summary(result: dict):
     with col_kpi:
         kpi_card("Peak PFE", f"{result['peak_pfe']:,.0f}", "95th percentile",
                  "pfe-kpi-red", icon=ICON_PEAK)
-        kpi_card("EEPE", f"{result['eepe']:,.0f}", "Basel III effective",
+        # Peak EPE replaces EEPE on the dashboard: it's a point on the plotted
+        # blue curve, so the scalar matches what the user sees. EEPE is still
+        # available as result.eepe for regulatory / scripted reporting.
+        peak_epe = float(np.max(result["epe_curve"]))
+        kpi_card("Peak EPE", f"{peak_epe:,.0f}", "max of EPE profile",
                  "pfe-kpi-accent", icon=ICON_SCALE)
 
         # Net t=0 MtM
