@@ -5,6 +5,33 @@ See [`/Users/xuefeng/.claude/CLAUDE.md`](file:///Users/xuefeng/.claude/CLAUDE.md
 
 ---
 
+## 2026-04-17 — Documentation revamp: illustrative README + wiki
+
+**Type**: Docs
+**Summary**: Rewrote README and all wiki pages in a less spec-heavy, more illustrative tone. Added real PFE/EPE profile PNG as the hero image, replaced ASCII-art diagrams with Mermaid, added two new wiki pages (Mathematical Foundations, FAQ), fixed stale parameter names left over from the instrument merge.
+
+**Files**:
+- `README.md` — added TOC, badges, hero PNG, Mermaid architecture + instrument-tree + decision diagrams. Trimmed parameter tables, pushed detail to wiki.
+- `docs/assets/pfe_profile.png` — real PFE/EPE profile generated from `basic_pfe.py` (2000 outer × 1000 inner paths, peak PFE ≈ $4.37M).
+- `docs/assets/make_pfe_profile.py` — reproducible matplotlib script.
+- Wiki pages (in separate `PFE-v2.wiki.git` repo):
+  - `Home.md` — navigation-first home page with hero image.
+  - `Getting-Started.md` — corrected attribute names (`time_points`/`pfe_curve`/`epe_curve`, not `time_grid`/`pfe_profile`/`epe_profile`).
+  - `Architecture.md` — Mermaid diagrams for outer/inner MC, Cholesky flow, and modifier chain.
+  - `Instruments.md` — full rewrite with narrative-first tone; fixed stale params (`ContingentOption` → correct 6-param schema, `SingleBarrier` → `barrier_direction` + `barrier_type`, `Cliquet` removed non-existent `global_cap`, `Accumulator` → `AccumulatorDecumulator`, `Autocallable` → correct `autocall_trigger`/`put_strike`, no `ki_barrier`).
+  - `Modifiers.md` — added missing `LeverageModifier.threshold` param, `TargetProfit.partial_fill` param, and realized-vol modifier details.
+  - `Streamlit-UI.md` — refocused on user workflow rather than data-flow internals.
+  - `Examples.md` — updated to post-merge API (`AccumulatorDecumulator` + `side`, attribute name fixes).
+  - `Mathematical-Foundations.md` **(new)** — GBM SDE, Cholesky derivation, quantile standard error, why we don't use Black–Scholes.
+  - `FAQ.md` **(new)** — 20+ common pitfalls and questions grouped by topic.
+  - `_Sidebar.md` — cleaner nested nav.
+
+**Notes**:
+- Wiki lives in a separate git repo (`git@github.com:leeduoduo211/PFE-v2.wiki.git`); pushed independently.
+- PNG reproducible via `PYTHONPATH=. python3 docs/assets/make_pfe_profile.py`.
+
+---
+
 ## 2026-04-17 — Post-merge review: 5 fixes across core, UI, and docs
 
 **Type**: Fix + Docs
