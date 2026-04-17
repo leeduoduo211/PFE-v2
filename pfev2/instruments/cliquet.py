@@ -34,7 +34,7 @@ class Cliquet(BaseInstrument):
         else:
             t_grid_full = np.linspace(0.0, self.maturity, n_steps)
             obs_indices = np.searchsorted(t_grid_full, self.schedule, side="right") - 1
-            obs_indices = np.clip(obs_indices, 1, n_steps - 1)
+            obs_indices = np.clip(obs_indices, 0, n_steps - 1)
 
         # Prepend index 0 as the initial reference price
         all_indices = np.concatenate([[0], obs_indices])

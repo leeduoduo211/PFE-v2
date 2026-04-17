@@ -74,7 +74,7 @@ class InnerMCPricer:
         # Cholesky factor for correlated normals (cached for the lifetime of this pricer)
         corr_id = id(market.corr_matrix)
         if corr_id not in self._chol_cache:
-            self._chol_cache = {corr_id: CholeskyDecomposer.decompose(market.corr_matrix)}
+            self._chol_cache[corr_id] = CholeskyDecomposer.decompose(market.corr_matrix)
         L = self._chol_cache[corr_id]
 
         # Memory budget: process in chunks to stay under ~200MB
@@ -154,7 +154,7 @@ class InnerMCPricer:
 
         corr_id = id(market.corr_matrix)
         if corr_id not in self._chol_cache:
-            self._chol_cache = {corr_id: CholeskyDecomposer.decompose(market.corr_matrix)}
+            self._chol_cache[corr_id] = CholeskyDecomposer.decompose(market.corr_matrix)
         L = self._chol_cache[corr_id]
         dt = remaining_grid.dt  # (n_steps_gen,)
         drift = (market.rates[asset_pos] - 0.5 * market.vols[asset_pos] ** 2)  # (n_trade_assets,)

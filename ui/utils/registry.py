@@ -116,6 +116,7 @@ INSTRUMENT_REGISTRY = {
                 "name": "trigger_asset_idx",
                 "label": "Trigger Asset",
                 "type": "asset_select",
+                "default": 0,
                 "help": "Asset index used to determine if the option is triggered",
             },
             {
@@ -137,6 +138,7 @@ INSTRUMENT_REGISTRY = {
                 "name": "target_asset_idx",
                 "label": "Target Asset",
                 "type": "asset_select",
+                "default": 1,
                 "help": "Asset on which the vanilla payoff is computed",
             },
             {

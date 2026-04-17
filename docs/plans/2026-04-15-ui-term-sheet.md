@@ -1,5 +1,9 @@
 # UI Term-Sheet & Product-Specific Input — Implementation Plan
 
+> **⚠ HISTORICAL — PRE-MERGE (2026-04-15).** Plan references legacy class names that
+> were unified in the April 2026 merge. Kept for history; see [`../../README.md`](../../README.md)
+> for current taxonomy.
+
 > **For agentic workers:** REQUIRED SUB-SKILL: Use superpowers:subagent-driven-development (recommended) or superpowers:executing-plans to implement this plan task-by-task. Steps use checkbox (`- [ ]`) syntax for tracking.
 
 **Goal:** Add product-specific grouped inputs in the trade builder, a read-only term-sheet view in the portfolio table, and full content coverage (term-sheet text, formulas, scenarios) for all 21 instruments and 9 modifiers.

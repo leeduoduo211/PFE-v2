@@ -1,5 +1,16 @@
 # PFE-v2 Product Catalog
 
+> **⚠ SUPERSEDED — HISTORICAL REFERENCE ONLY**
+>
+> This catalogue predates the **April 2026 instrument merge** and references legacy class names
+> (`VanillaCall`/`VanillaPut`, `WorstOfCall`/`WorstOfPut`, `BestOfCall`/`BestOfPut`, `Decumulator`)
+> that have been unified into `VanillaOption`, `WorstOfOption`, `BestOfOption`, and
+> `AccumulatorDecumulator` (using `option_type` / `side` parameters).
+>
+> For the current authoritative product list, see the top-level
+> [`README.md`](../README.md) and [`CLAUDE.md`](../CLAUDE.md) (18 instruments, 9 modifiers).
+> The economic narratives below remain correct; only the class names are out of date.
+
 This catalog covers all instruments and modifiers available in the PFE-v2 library. Each entry documents the payoff mechanics, parameters, typical use cases, and PFE behavior drawn directly from the source implementation.
 
 The library is organized into two layers: **instruments** (standalone pricing objects that compute terminal payoffs) and **modifiers** (composable wrappers that transform an inner instrument's payoff). Modifiers chain arbitrarily, so a single trade can carry multiple barrier, shaper, and structural modifiers simultaneously.

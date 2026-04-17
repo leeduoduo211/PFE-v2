@@ -296,6 +296,133 @@ def _ts_contingent(params: dict, direction: str) -> str:
     return head + body
 
 
+def _ts_single_barrier(params: dict, direction: str) -> str:
+    K = _fmt_num(params.get("strike", 0.0))
+    B = _fmt_num(params.get("barrier", 0.0))
+    opt = params.get("option_type", "call")
+    bdir = params.get("barrier_direction", "up")
+    btype = params.get("barrier_type", "out")
+    asset = _asset_phrase(params)
+    breach = "above" if bdir == "up" else "below"
+    rule = "only if" if btype == "in" else "only if NOT"
+    head = _header(direction, f"single-barrier {opt}", params) + f", strike {K}, barrier {B} ({bdir}-and-{btype})."
+    body = (
+        f" Pays the vanilla {opt} payoff on {asset} at maturity, {rule} S<sub>T</sub> is {breach} {B}. "
+        f"The European barrier is cheaper than a standard vanilla because the barrier condition eliminates part of the "
+        f"payoff distribution. Sensitivity concentrates near the barrier at expiry &mdash; delta and gamma flip sign as the "
+        f"knock-in/out probability crosses 50%."
+    )
+    return head + body
+
+
+def _ts_asian_option(params: dict, direction: str) -> str:
+    K = _fmt_num(params.get("strike", 0.0))
+    opt = params.get("option_type", "call")
+    avg = params.get("average_type", "price")
+    n_obs = len(params.get("schedule") or [])
+    asset = _asset_phrase(params)
+    head = _header(direction, f"asian {opt}", params) + f", strike {K}, {avg}-averaging over {n_obs} fixings."
+    if avg == "price":
+        payoff_desc = (
+            f"notional &times; max(&#x00AF;S &minus; {K}, 0)" if opt == "call"
+            else f"notional &times; max({K} &minus; &#x00AF;S, 0)"
+        )
+        body = (
+            f" Terminal payoff is {payoff_desc} where &#x00AF;S is the arithmetic average of {asset} spot over the fixing "
+            f"dates. Averaging crushes realised vol relative to a vanilla, so the Asian is typically 60-75% of the vanilla "
+            f"premium and exposes the book to average-rate rather than terminal-spot risk &mdash; attractive for hedging "
+            f"commodity or FX flows with smooth P&amp;L."
+        )
+    else:
+        body = (
+            f" The strike is set to the average of {asset} over the fixing window; terminal payoff compares spot to this "
+            f"running strike. The long is effectively long forward vol: early averaging locks in a \u201cfair\u201d strike "
+            f"while the final spot captures the remaining move, so the PFE profile builds up after the averaging window closes."
+        )
+    return head + body
+
+
+def _ts_cliquet(params: dict, direction: str) -> str:
+    lc = _fmt_num(params.get("local_cap", 0.0))
+    lf = _fmt_num(params.get("local_floor", 0.0))
+    gf = _fmt_num(params.get("global_floor", 0.0))
+    n_resets = len(params.get("schedule") or [])
+    asset = _asset_phrase(params)
+    head = _header(direction, "cliquet", params) + (
+        f", {n_resets} resets, local &#8712; [{lf}, {lc}], global floor {gf}."
+    )
+    body = (
+        f" Pays notional &times; max(&sum;<sub>i</sub> clip(r<sub>i</sub>, {lf}, {lc}), {gf}) where r<sub>i</sub> is the "
+        f"period return of {asset} between resets. The local cap caps each period's contribution, making the structure short "
+        f"forward-skew: short individual caplets, long a global floorlet. Cliquets are notoriously vega-convex &mdash; a rise "
+        f"in forward vol lifts cap value faster than linear, so MtM is dominated by the vol-of-vol term."
+    )
+    return head + body
+
+
+def _ts_range_accrual(params: dict, direction: str) -> str:
+    lo = _fmt_num(params.get("lower", 0.0))
+    hi = _fmt_num(params.get("upper", 0.0))
+    rate = _fmt_num(params.get("coupon_rate", 0.0))
+    n_obs = len(params.get("schedule") or [])
+    asset = _asset_phrase(params)
+    head = _header(direction, "range accrual", params) + (
+        f", range [{lo}, {hi}], coupon {rate} over {n_obs} observations."
+    )
+    body = (
+        f" Accrues the daily coupon {rate}/n only when {asset} prints inside [{lo}, {hi}] on each observation date; days "
+        f"outside the range earn nothing. The long is short vol and short tails &mdash; a quiet, range-bound market pays a "
+        f"high running yield, while any sustained move outside the corridor zeroes out the coupon. Sellers take the "
+        f"symmetric risk: short the range."
+    )
+    return head + body
+
+
+def _ts_autocallable(params: dict, direction: str) -> str:
+    trig = _fmt_num(params.get("autocall_trigger", 1.0))
+    cpn = _fmt_num(params.get("coupon_rate", 0.0))
+    ps = _fmt_num(params.get("put_strike", 0.0))
+    n_obs = len(params.get("schedule") or [])
+    asset = _asset_phrase(params)
+    head = _header(direction, "autocallable", params) + (
+        f", autocall at {trig} &times; initial, coupon {cpn}/period, put strike {ps} &times; initial, "
+        f"{n_obs} observations."
+    )
+    body = (
+        f" On each observation the worst-of {asset} is compared to the autocall trigger ({trig} &times; initial); if "
+        f"breached, the note is called early and the investor collects accrued coupons. If never called, at maturity the "
+        f"investor receives par unless the worst performer is below {ps} &times; initial, in which case they take the "
+        f"worst-of downside loss. The long is short a worst-of put, long a coupon strip &mdash; a standard yield-enhancement "
+        f"structure with severe dispersion-crash tail."
+    )
+    return head + body
+
+
+def _ts_tarf(params: dict, direction: str) -> str:
+    K = _fmt_num(params.get("strike", 0.0))
+    tgt = _fmt_num(params.get("target", 0.0))
+    lev = _fmt_num(params.get("leverage", 1.0))
+    side = params.get("side", "buy")
+    n_obs = len(params.get("schedule") or [])
+    asset = _asset_phrase(params)
+    head = _header(direction, "target-redemption forward (TARF)", params) + (
+        f", strike {K}, target {tgt}, leverage {lev}&times; on the unfavorable side, {n_obs} fixings ({side} client)."
+    )
+    if side == "buy":
+        action = f"buys {asset} at {K}"
+        unfavor = f"spot prints below {K}, forcing purchases at {lev}&times; size"
+    else:
+        action = f"sells {asset} at {K}"
+        unfavor = f"spot prints above {K}, forcing sales at {lev}&times; size"
+    body = (
+        f" On each fixing the client {action}; cumulative favorable P&amp;L is capped at the target {tgt} &mdash; once "
+        f"reached the structure terminates and no further fixings occur. If {unfavor} the leveraged leg amplifies losses "
+        f"with no matching cap, producing a deeply asymmetric payoff: small capped profit versus unbounded (until maturity) "
+        f"leveraged loss. TARFs dominated the 2015 CNH-blow-up narrative and remain the archetypal case for tail-driven PFE."
+    )
+    return head + body
+
+
 _TERM_SHEETS: dict = {
     "VanillaOption":            _ts_vanilla_option,
     "Digital":                  _ts_digital,
@@ -309,12 +436,12 @@ _TERM_SHEETS: dict = {
     "ForwardStartingOption":    _ts_forward_starting,
     "RestrikeOption":           _ts_restrike,
     "ContingentOption":         _ts_contingent,
-    "SingleBarrier":            lambda params, direction: _header(direction, "single barrier", params) + ".",
-    "AsianOption":              lambda params, direction: _header(direction, "asian option", params) + ".",
-    "Cliquet":                  lambda params, direction: _header(direction, "cliquet", params) + ".",
-    "RangeAccrual":             lambda params, direction: _header(direction, "range accrual", params) + ".",
-    "Autocallable":             lambda params, direction: _header(direction, "autocallable", params) + ".",
-    "TARF":                     lambda params, direction: _header(direction, "TARF", params) + ".",
+    "SingleBarrier":            _ts_single_barrier,
+    "AsianOption":              _ts_asian_option,
+    "Cliquet":                  _ts_cliquet,
+    "RangeAccrual":             _ts_range_accrual,
+    "Autocallable":             _ts_autocallable,
+    "TARF":                     _ts_tarf,
 }
 
 
