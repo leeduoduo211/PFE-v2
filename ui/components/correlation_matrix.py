@@ -41,6 +41,11 @@ def render_correlation_matrix(asset_names: list[str], key_prefix: str = "corr"):
     if len(current) != n or (n > 0 and len(current[0]) != n):
         market["corr_matrix"] = [[1.0 if i == j else 0.0 for j in range(n)] for i in range(n)]
 
+    if n == 1:
+        # Single-asset case — correlation matrix is trivially [[1.0]].
+        # Skip the editor UI entirely.
+        return True
+
     corr = market["corr_matrix"]
 
     st.subheader("Correlation Matrix")

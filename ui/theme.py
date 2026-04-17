@@ -68,7 +68,16 @@ header[data-testid="stHeader"] {
     min-height: 0 !important;
     padding: 0 !important;
 }
-#MainMenu, footer {
+#MainMenu, footer,
+[data-testid="stToolbar"],
+[data-testid="stDecoration"],
+[data-testid="stStatusWidget"],
+[data-testid="stBaseButton-header"],
+button[kind="header"],
+button[kind="headerNoPadding"],
+.stDeployButton,
+[data-testid="stAppDeployButton"] {
+    display: none !important;
     visibility: hidden !important;
 }
 
@@ -416,16 +425,50 @@ def section_label(text: str):
     st.markdown(f'<div class="pfe-section-label">{text}</div>', unsafe_allow_html=True)
 
 
-def kpi_card(label: str, value: str, sub: str = "", css_class: str = ""):
-    """Render a single KPI card via HTML."""
+def kpi_card(label: str, value: str, sub: str = "", css_class: str = "", icon: str = ""):
+    """Render a single KPI card via HTML.
+
+    icon: optional inline SVG or text glyph shown before the label.
+    """
+    icon_html = (
+        f'<span style="display:inline-flex;align-items:center;justify-content:center;'
+        f'width:14px;height:14px;margin-right:5px;vertical-align:-2px;">{icon}</span>'
+    ) if icon else ""
     html = (
         f'<div class="pfe-kpi {css_class}">'
-        f'<div class="pfe-kpi-label">{label}</div>'
+        f'<div class="pfe-kpi-label">{icon_html}{label}</div>'
         f'<div class="pfe-kpi-value">{value}</div>'
         f'<div class="pfe-kpi-sub">{sub}</div>'
         f'</div>'
     )
     st.markdown(html, unsafe_allow_html=True)
+
+
+# Inline SVG icons for KPI cards (slate-500 stroke, size 14)
+ICON_PEAK = (
+    '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" '
+    'stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+    '<path d="M1 11l3.5-4 2 2L10 4l3 5"/><circle cx="10" cy="4" r="1" fill="#ef4444" stroke="none"/>'
+    '</svg>'
+)
+ICON_SCALE = (
+    '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" '
+    'stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+    '<path d="M7 1v12M2 4h10M3 7l-1.5 3h3zM11 7l-1.5 3h3z"/>'
+    '</svg>'
+)
+ICON_MONEY = (
+    '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" '
+    'stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+    '<path d="M7 1v12M9.5 3.5h-3a1.8 1.8 0 000 3.6h2a1.8 1.8 0 010 3.6h-3"/>'
+    '</svg>'
+)
+ICON_CLOCK = (
+    '<svg width="14" height="14" viewBox="0 0 14 14" fill="none" '
+    'stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">'
+    '<circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 1.5"/>'
+    '</svg>'
+)
 
 
 def sidebar_portfolio_item(name: str, direction: str, mtm: str = ""):
