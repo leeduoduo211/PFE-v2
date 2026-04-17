@@ -387,17 +387,31 @@ def render_trade_builder(key_prefix="tb"):
     # -----------------------------------------------------------------------
     # 2. Common fields: trade_id, maturity, notional
     # -----------------------------------------------------------------------
+    # Common fields. These widgets have their session_state values set
+    # externally (by seed_builder_from_trade and the _pending_next_trade_id
+    # consumer), so we seed defaults via session_state-if-missing rather than
+    # the value= kwarg — otherwise Streamlit warns about the conflict.
+    _seed = {
+        f"{key_prefix}_trade_id": "TRD_001",
+        f"{key_prefix}_maturity": 1.0,
+        f"{key_prefix}_notional": 1_000_000.0,
+        f"{key_prefix}_direction": "Long",
+    }
+    for _k, _v in _seed.items():
+        if _k not in st.session_state:
+            st.session_state[_k] = _v
+
     col1, col2, col3, col4 = st.columns([2, 1.5, 1.5, 1])
     with col1:
-        trade_id = st.text_input("Trade ID", value="TRD_001", key=f"{key_prefix}_trade_id")
+        trade_id = st.text_input("Trade ID", key=f"{key_prefix}_trade_id")
     with col2:
         maturity = st.number_input(
-            "Maturity (years)", value=1.0, min_value=0.01, format="%.4f",
+            "Maturity (years)", min_value=0.01, format="%.4f",
             key=f"{key_prefix}_maturity",
         )
     with col3:
         notional = st.number_input(
-            "Notional", value=1_000_000.0, min_value=1.0, format="%.2f",
+            "Notional", min_value=1.0, format="%.2f",
             key=f"{key_prefix}_notional",
         )
     with col4:
