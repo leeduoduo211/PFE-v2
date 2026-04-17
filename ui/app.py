@@ -24,6 +24,7 @@ from ui.components.results_viewer import (
     render_results_summary,
     render_t0_mtm_table,
     render_run_comparison,
+    render_result_exports,
 )
 
 apply_theme()
@@ -59,6 +60,43 @@ with st.sidebar:
     )
 
     if portfolio:
+        # Portfolio summary: gross / net notional and max maturity.
+        # Gross is sum of |notional|; net accounts for long/short direction.
+        gross = sum(float(t["params"].get("notional", 0)) for t in portfolio)
+        net = sum(
+            float(t["params"].get("notional", 0))
+            * (-1.0 if t.get("direction") == "short" else 1.0)
+            for t in portfolio
+        )
+        max_mat = max((float(t["params"].get("maturity", 0)) for t in portfolio),
+                      default=0.0)
+
+        def _fmt(n):
+            # Compact notional formatter: 1.2M / 850K / 1,000
+            if abs(n) >= 1e6:
+                return f"{n / 1e6:.2f}M"
+            if abs(n) >= 1e3:
+                return f"{n / 1e3:.0f}K"
+            return f"{n:.0f}"
+
+        st.markdown(
+            f'<div style="font-size:0.72rem;color:#475569;background:#f8fafc;'
+            f'border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;'
+            f'margin-bottom:8px;line-height:1.5;">'
+            f'<div style="display:flex;justify-content:space-between;">'
+            f'<span style="color:#94a3b8;">Gross notl.</span>'
+            f'<span style="font-family:JetBrains Mono,monospace;">{_fmt(gross)}</span></div>'
+            f'<div style="display:flex;justify-content:space-between;">'
+            f'<span style="color:#94a3b8;">Net notl.</span>'
+            f'<span style="font-family:JetBrains Mono,monospace;">'
+            f'{"+" if net >= 0 else ""}{_fmt(net)}</span></div>'
+            f'<div style="display:flex;justify-content:space-between;">'
+            f'<span style="color:#94a3b8;">Max maturity</span>'
+            f'<span style="font-family:JetBrains Mono,monospace;">{max_mat:.2f}y</span></div>'
+            f'</div>',
+            unsafe_allow_html=True,
+        )
+
         for i, trade in enumerate(portfolio):
             direction = trade.get("direction", "long")
             mtm_str = ""
@@ -98,58 +136,174 @@ with st.sidebar:
     else:
         st.caption("No runs yet.")
 
-    # Snapshot save/load at bottom
+    # Session save/load — grouped in a collapsed expander. A snapshot can be
+    # either market-only (legacy v1) or a full session bundle (v2 = market +
+    # portfolio + config).
     st.markdown('<hr style="margin:0.5rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
+    st.markdown(
+        '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;'
+        'color:#94a3b8;font-weight:600;margin:8px 0 6px;">Save &amp; load</div>',
+        unsafe_allow_html=True,
+    )
 
-    from ui.utils.snapshots import serialize_snapshot, deserialize_snapshot, validate_snapshot
+    from ui.utils.snapshots import (
+        serialize_snapshot, serialize_session,
+        deserialize_snapshot, deserialize_session,
+        validate_snapshot,
+    )
 
-    uploaded = st.file_uploader("Load snapshot", type=["json"], key="sidebar_upload",
-                                 label_visibility="collapsed")
-    if uploaded is not None:
-        content = uploaded.read().decode("utf-8")
-        data = deserialize_snapshot(content)
-        errors = validate_snapshot(data)
-        if errors:
-            st.error("Invalid: " + "; ".join(errors))
-        else:
-            st.session_state["market"] = data
-            st.rerun()
-
-    market = st.session_state["market"]
-    if market["asset_names"]:
-        json_str = serialize_snapshot(market, name="snapshot")
-        st.download_button(
-            "Save Snapshot",
-            data=json_str,
-            file_name="pfe_snapshot.json",
-            mime="application/json",
-            key="sidebar_download",
+    with st.expander("Session snapshots", expanded=False):
+        st.caption(
+            "Save just the market, or the full session (market + portfolio + config)."
         )
+        uploaded = st.file_uploader(
+            "Load snapshot (.json)", type=["json"], key="sidebar_upload",
+        )
+        if uploaded is not None:
+            content = uploaded.read().decode("utf-8")
+            try:
+                bundle = deserialize_session(content)
+            except Exception:
+                bundle = None
+            if bundle is None:
+                st.error("Could not parse snapshot.")
+            else:
+                market_data = bundle.get("market") or {}
+                errors = validate_snapshot(market_data) if market_data else ["missing market"]
+                if errors:
+                    # Fall back to legacy market-only schema
+                    legacy = deserialize_snapshot(content)
+                    errors2 = validate_snapshot(legacy)
+                    if errors2:
+                        st.error("Invalid: " + "; ".join(errors2))
+                    else:
+                        st.session_state["market"] = legacy
+                        st.rerun()
+                else:
+                    st.session_state["market"] = market_data
+                    if bundle.get("portfolio") is not None:
+                        st.session_state["portfolio"] = bundle["portfolio"]
+                    if bundle.get("config"):
+                        st.session_state["config"].update(bundle["config"])
+                    st.rerun()
+
+        market = st.session_state["market"]
+        portfolio = st.session_state["portfolio"]
+        config = st.session_state["config"]
+
+        if market["asset_names"]:
+            st.download_button(
+                "Save market only",
+                data=serialize_snapshot(market, name="market"),
+                file_name="pfe_market.json",
+                mime="application/json",
+                key="sidebar_download_market",
+                use_container_width=True,
+            )
+            st.download_button(
+                "Save full session",
+                data=serialize_session(market, portfolio, config, name="session"),
+                file_name="pfe_session.json",
+                mime="application/json",
+                key="sidebar_download_session",
+                use_container_width=True,
+                disabled=not portfolio,
+                help=("Disabled until the portfolio has at least one trade."
+                      if not portfolio else "Saves market + portfolio + config."),
+            )
+        else:
+            st.caption("Define assets first, then return here to save.")
 
 # ---------------------------------------------------------------------------
 # Main content — tabs
 # ---------------------------------------------------------------------------
 
+# Page header — gives orientation before the tabbed workflow
+st.markdown(
+    '<div style="margin-bottom:0.6rem;">'
+    '<div style="font-size:24px;font-weight:700;color:#1e293b;letter-spacing:-0.01em;">'
+    'Portfolio Credit Exposure</div>'
+    '<div style="font-size:13px;color:#64748b;margin-top:2px;">'
+    'Nested Monte Carlo Potential Future Exposure on exotic derivative portfolios.'
+    '</div></div>',
+    unsafe_allow_html=True,
+)
+
 n_trades = len(st.session_state["portfolio"])
-tab_market, tab_portfolio, tab_config, tab_results = st.tabs([
-    "Market Data",
-    f"Portfolio ({n_trades})" if n_trades else "Portfolio",
-    "Configuration",
-    "Results",
-])
+has_market = bool(st.session_state["market"]["asset_names"])
+has_results = st.session_state.get("latest_result") is not None
+
+# Step-numbered tabs with subtle state glyphs (● complete, ○ pending, ▸ next)
+def _step_label(n: int, name: str, done: bool, is_next: bool = False) -> str:
+    if done:
+        glyph = "\u25cf"        # ● complete
+    elif is_next:
+        glyph = "\u25b8"        # ▸ next
+    else:
+        glyph = "\u25cb"        # ○ pending
+    return f"{glyph}  {n}. {name}"
+
+tab_labels = [
+    _step_label(1, "Market Data", has_market, is_next=not has_market),
+    _step_label(
+        2, f"Portfolio ({n_trades})" if n_trades else "Portfolio",
+        n_trades > 0, is_next=has_market and n_trades == 0,
+    ),
+    _step_label(
+        3, "Configuration", has_results,
+        is_next=has_market and n_trades > 0 and not has_results,
+    ),
+    _step_label(4, "Results", has_results),
+]
+tab_market, tab_portfolio, tab_config, tab_results = st.tabs(tab_labels)
 
 with tab_market:
-    st.markdown('<div style="font-size:22px;font-weight:700;color:#1e293b;margin-bottom:4px;">Market Data</div>',
-                unsafe_allow_html=True)
-    st.caption("Define assets, spot prices, volatilities, and correlation structure")
-    is_psd = render_market_data_input(key_prefix="tab_mkt")
+    st.caption("Define assets, spot prices, volatilities, and correlation structure.")
+
+    # Quick-start presets — always visible, but collapsed once the user has
+    # built more than one asset or added any trades. This keeps the prominent
+    # slot free for experienced users while still letting them reload.
+    from ui.utils.presets import PRESETS, load_preset
+    _market = st.session_state["market"]
+    _portfolio = st.session_state["portfolio"]
+    _fresh = len(_market["asset_names"]) <= 1 and len(_portfolio) == 0
+
+    with st.expander("Quick start from a preset", expanded=_fresh):
+        st.caption(
+            "One click loads a realistic market + portfolio. Safe to use even "
+            "mid-session \u2014 overwrites current market and portfolio."
+        )
+        cols = st.columns(len(PRESETS))
+        for col, (preset_key, (label, desc, _)) in zip(cols, PRESETS.items()):
+            with col:
+                if st.button(label, key=f"preset_{preset_key}",
+                             use_container_width=True):
+                    loaded = load_preset(preset_key)
+                    if loaded is not None:
+                        market, portfolio = loaded
+                        # Bump the market tab's key-prefix generation so every
+                        # widget below gets a fresh key on the next rerun.
+                        # This sidesteps Streamlit's session-state caching
+                        # without us having to enumerate every input we depend
+                        # on (number/text/selectbox all in different files).
+                        st.session_state["_market_form_gen"] = (
+                            st.session_state.get("_market_form_gen", 0) + 1
+                        )
+                        st.session_state["market"] = market
+                        st.session_state["portfolio"] = portfolio
+                        st.rerun()
+                st.caption(desc)
+
+    # The key prefix includes a "generation" counter that bumps each time a
+    # preset is loaded, forcing a clean widget tree (bypasses Streamlit's
+    # session-state caching of inputs).
+    _gen = st.session_state.get("_market_form_gen", 0)
+    is_psd = render_market_data_input(key_prefix=f"tab_mkt_g{_gen}")
     if st.session_state["market"]["asset_names"] and not is_psd:
         st.warning("Correlation matrix is not positive semi-definite.")
 
 with tab_portfolio:
-    st.markdown('<div style="font-size:22px;font-weight:700;color:#1e293b;margin-bottom:4px;">Portfolio</div>',
-                unsafe_allow_html=True)
-    st.caption("Build trades and manage your portfolio")
+    st.caption("Build trades and manage your portfolio.")
 
     trade_spec = render_trade_builder(key_prefix="tab_tb")
     if trade_spec is not None:
@@ -179,9 +333,7 @@ with tab_portfolio:
     render_portfolio_table(key_prefix="tab_pt")
 
 with tab_config:
-    st.markdown('<div style="font-size:22px;font-weight:700;color:#1e293b;margin-bottom:4px;">Configuration</div>',
-                unsafe_allow_html=True)
-    st.caption("Set simulation parameters and run PFE calculation")
+    st.caption("Set simulation parameters and run PFE calculation.")
 
     render_config_panel(key_prefix="tab_cfg")
 
@@ -198,9 +350,6 @@ with tab_config:
             st.rerun()
 
 with tab_results:
-    st.markdown('<div style="font-size:22px;font-weight:700;color:#1e293b;margin-bottom:4px;">Exposure Analysis</div>',
-                unsafe_allow_html=True)
-
     latest = st.session_state.get("latest_result")
     if latest is None:
         st.info("No results yet. Configure and run PFE in the Configuration tab.")
@@ -217,6 +366,9 @@ with tab_results:
 
         trade_ids = [t["trade_id"] for t in st.session_state["portfolio"]]
         render_t0_mtm_table(latest, trade_ids)
+
+        st.markdown('<hr style="margin:1rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
+        render_result_exports(latest, key_prefix="tab_export")
 
         st.markdown('<hr style="margin:1rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
         render_run_comparison(key_prefix="tab_cmp")

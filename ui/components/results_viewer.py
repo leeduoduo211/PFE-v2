@@ -3,11 +3,16 @@
 All Plotly charts use the pfe_light template registered by ui.theme.
 """
 
+import io
+
 import numpy as np
 import streamlit as st
 import plotly.graph_objects as go
 
-from ui.theme import section_label, kpi_card
+from ui.theme import (
+    section_label, kpi_card,
+    ICON_PEAK, ICON_SCALE, ICON_MONEY, ICON_CLOCK,
+)
 
 # Chart trace colors
 _PFE = "#ef4444"
@@ -39,18 +44,21 @@ def render_results_summary(result: dict):
     col_kpi, col_chart = st.columns([1, 2.5])
 
     with col_kpi:
-        kpi_card("Peak PFE", f"{result['peak_pfe']:,.0f}", "95th percentile", "pfe-kpi-red")
-        kpi_card("EEPE", f"{result['eepe']:,.0f}", "Basel III effective", "pfe-kpi-accent")
+        kpi_card("Peak PFE", f"{result['peak_pfe']:,.0f}", "95th percentile",
+                 "pfe-kpi-red", icon=ICON_PEAK)
+        kpi_card("EEPE", f"{result['eepe']:,.0f}", "Basel III effective",
+                 "pfe-kpi-accent", icon=ICON_SCALE)
 
         # Net t=0 MtM
         t0_mtm = result.get("per_trade_t0_mtm", [])
         if t0_mtm:
             net = sum(t0_mtm)
             kpi_card("Net t=0 MtM", f"{net:+,.0f}",
-                     f"{result.get('n_trades', 0)} trades netted", "pfe-kpi-green")
+                     f"{result.get('n_trades', 0)} trades netted",
+                     "pfe-kpi-green", icon=ICON_MONEY)
 
         kpi_card("Peak Time", f"Week {peak_time_weeks}",
-                 f"of {total_weeks} weeks", "pfe-kpi-amber")
+                 f"of {total_weeks} weeks", "pfe-kpi-amber", icon=ICON_CLOCK)
 
     with col_chart:
         chart_tab1, chart_tab2, chart_tab3 = st.tabs(["PFE / EPE", "Fan Chart", "Per Trade"])
@@ -171,7 +179,8 @@ def _render_pfe_epe(result: dict):
     fig.update_layout(
         xaxis_title="Time (weeks)", yaxis_title="Exposure",
         hovermode="x unified", height=320,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+                    bgcolor="rgba(255,255,255,0)", bordercolor="rgba(0,0,0,0)"),
     )
     st.plotly_chart(fig, use_container_width=True, key="pfe_epe_chart")
 
@@ -210,7 +219,8 @@ def _render_fan(result: dict):
 
     fig.update_layout(
         xaxis_title="Time (weeks)", yaxis_title="Exposure", height=280,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+                    bgcolor="rgba(255,255,255,0)", bordercolor="rgba(0,0,0,0)"),
     )
     st.plotly_chart(fig, use_container_width=True, key="fan_chart")
 
@@ -250,7 +260,8 @@ def _render_per_trade(result: dict, trade_ids: list):
 
     fig.update_layout(
         xaxis_title="Time (weeks)", yaxis_title="PFE Contribution", height=280,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+                    bgcolor="rgba(255,255,255,0)", bordercolor="rgba(0,0,0,0)"),
     )
     st.plotly_chart(fig, use_container_width=True, key="per_trade_chart")
 
@@ -290,6 +301,45 @@ def render_run_comparison(key_prefix: str = "cmp"):
     run_a = runs[run_a_idx]
     run_b = runs[run_b_idx]
 
+    # Summary deltas above the chart — most important comparison surface.
+    peak_a, peak_b = run_a.get("peak_pfe", 0), run_b.get("peak_pfe", 0)
+    eepe_a, eepe_b = run_a.get("eepe", 0), run_b.get("eepe", 0)
+
+    def _delta(a, b):
+        if a == 0:
+            return (b - a, 0.0)
+        return (b - a, (b - a) / a * 100)
+
+    peak_d, peak_pct = _delta(peak_a, peak_b)
+    eepe_d, eepe_pct = _delta(eepe_a, eepe_b)
+
+    def _color(d):
+        return "#ef4444" if d > 0 else ("#22c55e" if d < 0 else "#94a3b8")
+
+    st.markdown(
+        f'<div style="display:flex;gap:12px;margin:6px 0 10px;">'
+        f'<div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;'
+        f'border-radius:8px;padding:8px 12px;">'
+        f'<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;'
+        f'color:#94a3b8;font-weight:600;">Peak PFE</div>'
+        f'<div style="font-family:JetBrains Mono,monospace;font-size:0.85rem;color:#334155;">'
+        f'{peak_a:,.0f} \u2192 {peak_b:,.0f}</div>'
+        f'<div style="font-family:JetBrains Mono,monospace;font-size:0.8rem;color:{_color(peak_d)};">'
+        f'{"+" if peak_d >= 0 else ""}{peak_d:,.0f} ({"+" if peak_pct >= 0 else ""}{peak_pct:.1f}%)'
+        f'</div></div>'
+        f'<div style="flex:1;background:#f8fafc;border:1px solid #e2e8f0;'
+        f'border-radius:8px;padding:8px 12px;">'
+        f'<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.06em;'
+        f'color:#94a3b8;font-weight:600;">EEPE</div>'
+        f'<div style="font-family:JetBrains Mono,monospace;font-size:0.85rem;color:#334155;">'
+        f'{eepe_a:,.0f} \u2192 {eepe_b:,.0f}</div>'
+        f'<div style="font-family:JetBrains Mono,monospace;font-size:0.8rem;color:{_color(eepe_d)};">'
+        f'{"+" if eepe_d >= 0 else ""}{eepe_d:,.0f} ({"+" if eepe_pct >= 0 else ""}{eepe_pct:.1f}%)'
+        f'</div></div>'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
     fig = go.Figure()
     fig.add_trace(go.Scatter(
         x=_time_in_weeks(run_a["time_points"]), y=run_a["pfe_curve"],
@@ -311,7 +361,8 @@ def render_run_comparison(key_prefix: str = "cmp"):
     fig.update_layout(
         xaxis_title="Time (weeks)", yaxis_title="Exposure",
         hovermode="x unified", height=300,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="left", x=0),
+        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
+                    bgcolor="rgba(255,255,255,0)", bordercolor="rgba(0,0,0,0)"),
     )
     st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}_comparison_chart")
 
@@ -348,3 +399,75 @@ def render_run_comparison(key_prefix: str = "cmp"):
         </table>""",
         unsafe_allow_html=True,
     )
+
+
+# ---------------------------------------------------------------------------
+# Export helpers
+# ---------------------------------------------------------------------------
+
+def _result_to_csv(result: dict) -> str:
+    """Serialize time_points + PFE + EPE curves to a simple CSV string."""
+    t = np.asarray(result["time_points"])
+    pfe = np.asarray(result["pfe_curve"])
+    epe = np.asarray(result["epe_curve"])
+    buf = io.StringIO()
+    buf.write("time_years,time_weeks,pfe,epe\n")
+    for ti, pi, ei in zip(t, pfe, epe):
+        buf.write(f"{ti:.6f},{ti * 52:.3f},{pi:.6f},{ei:.6f}\n")
+    return buf.getvalue()
+
+
+def _result_to_python(result: dict) -> str:
+    """Emit a runnable Python snippet that reproduces the result's config."""
+    conf = result.get("config", {})
+    label = result.get("label", "Run")
+    return f'''# Reproduces {label}. Paste into a script after building market + portfolio.
+from pfev2 import PFEConfig, compute_pfe
+
+config = PFEConfig(
+    n_outer={conf.get("n_outer", 1000)},
+    n_inner={conf.get("n_inner", 1000)},
+    confidence_level={conf.get("confidence_level", 0.95)},
+    grid_frequency="{conf.get("grid_frequency", "weekly")}",
+    margined={conf.get("margined", False)},
+    mpor_days={conf.get("mpor_days", 10)},
+    seed={conf.get("seed", 42)},
+    backend="{conf.get("backend", "numpy")}",
+    n_workers={conf.get("n_workers", 1)},
+    antithetic={conf.get("antithetic", False)},
+)
+
+result = compute_pfe(portfolio, market, config)
+print(result.summary())
+'''
+
+
+def render_result_exports(result: dict, key_prefix: str = "export"):
+    """Render a compact row of download buttons for the current result."""
+    section_label("Export")
+    c1, c2, c3 = st.columns(3)
+    label = result.get("label", "run").replace(" ", "_").replace("#", "n")
+
+    with c1:
+        st.download_button(
+            "Download CSV (PFE + EPE profile)",
+            data=_result_to_csv(result),
+            file_name=f"pfe_{label}.csv",
+            mime="text/csv",
+            key=f"{key_prefix}_csv",
+            use_container_width=True,
+        )
+    with c2:
+        st.download_button(
+            "Download Python snippet",
+            data=_result_to_python(result),
+            file_name=f"pfe_{label}.py",
+            mime="text/x-python",
+            key=f"{key_prefix}_py",
+            use_container_width=True,
+        )
+    with c3:
+        st.caption(
+            "Tip: use Plotly's camera icon on the chart above to save a PNG."
+        )
+

@@ -5,6 +5,28 @@ See [`/Users/xuefeng/.claude/CLAUDE.md`](file:///Users/xuefeng/.claude/CLAUDE.md
 
 ---
 
+## 2026-04-17 — UI design overhaul: 15 improvements across layout, flow, and features
+
+**Type**: Feature + Refactor
+**Summary**: Walked through the Streamlit UI in a browser preview, catalogued 15 improvements, then implemented all of them (except dark mode, which the user explicitly skipped). Covers layout chrome, onboarding presets, discoverability hints, runtime estimation, result export, session snapshots, and live portfolio summary. 310 tests pass.
+
+**Files**:
+- `ui/theme.py` — hide Streamlit "Deploy" button and other default chrome; add inline-SVG `ICON_*` glyphs for KPI cards; extend `kpi_card()` with optional icon parameter.
+- `ui/app.py` — page title + subtitle; step-numbered tabs with `●/▸/○` state glyphs driven by `has_market` / `n_trades` / `has_results`; live sidebar portfolio summary (gross/net notional, max maturity); preset launcher expander on Market Data tab; unified snapshot expander (market-only vs full-session save); wire new `render_result_exports`; generation counter for widget key prefix so presets actually reset widget state.
+- `ui/components/config_panel.py` — runtime estimate below the config grid (path-dependent vs vectorised-European throughput), re-calibrated against empirical 1-second run.
+- `ui/components/correlation_matrix.py` — skip rendering entirely for `n == 1` (no correlation to edit).
+- `ui/components/trade_builder.py` — modifier discoverability hint card with link to wiki, shown only when no modifiers are attached.
+- `ui/components/results_viewer.py` — KPI cards now carry icons; legend moved to upper-right with transparent background; `render_result_exports()` adds CSV + Python-snippet downloads; `render_run_comparison()` enriched with Peak PFE / EEPE deltas and percentage changes above the overlay chart.
+- `ui/utils/presets.py` **(new)** — three canonical quick-start bundles: Equity 2-asset, FX accumulator, 3-asset basket.
+- `ui/utils/snapshots.py` — added `serialize_session()` / `deserialize_session()` for v2 market+portfolio+config bundles (backwards-compatible with legacy v1 market-only envelopes).
+
+**Notes**:
+- Preset loading needed a generation-counter trick because Streamlit widgets cache values under their keys; purging `session_state["tab_mkt_*"]` alone wasn't enough. Bumping the key prefix forces a fresh widget tree.
+- Margined/unmargined overlay on results chart was already implemented in `results_viewer.py:136`; verified working.
+- Dark mode intentionally skipped per user request.
+
+---
+
 ## 2026-04-17 — Documentation revamp: illustrative README + wiki
 
 **Type**: Docs

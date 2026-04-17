@@ -479,6 +479,24 @@ def render_trade_builder(key_prefix="tb"):
     if mod_count_key not in st.session_state:
         st.session_state[mod_count_key] = 0
 
+    n_mods = st.session_state[mod_count_key]
+
+    # Discoverability: when no modifiers are attached yet, hint at what they are
+    # and link out to the wiki. Otherwise the modifier concept is invisible.
+    if n_mods == 0:
+        st.markdown(
+            '<div style="font-size:0.74rem;color:#64748b;background:#f8fafc;'
+            'border:1px solid #e2e8f0;border-radius:8px;padding:8px 12px;'
+            'margin:4px 0 10px;">'
+            '<b>Modifiers</b> wrap this trade with features like '
+            'knock-out / knock-in barriers, payoff caps/floors, leverage, '
+            'or realized-vol knock-outs. '
+            '<a href="https://github.com/leeduoduo211/PFE-v2/wiki/Modifiers" '
+            'target="_blank" style="color:#3b82f6;text-decoration:none;">See all 9 \u2192</a>'
+            '</div>',
+            unsafe_allow_html=True,
+        )
+
     col_add, col_remove, _ = st.columns([1, 1, 4])
     with col_add:
         if st.button("+ Add modifier", key=f"{key_prefix}_add_mod"):

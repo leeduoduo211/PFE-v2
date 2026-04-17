@@ -1,9 +1,14 @@
 """
-Market data snapshot save/load utilities.
+Snapshot save/load utilities.
 
-Provides serialize/deserialize/validate functions for persisting a market data
-state dict as JSON. The envelope schema is versioned (version=1) so future
-breaking changes can be detected gracefully.
+Two levels of snapshot are supported:
+
+* **market** (version=1) — market data only (assets, vols, corr, rates).
+  Useful for reusing a market definition across sessions.
+* **session** (version=2) — market + portfolio + config bundle. Reproduces
+  an end-to-end PFE run without rebuilding trades manually.
+
+Both use the same envelope format; validate() accepts either.
 """
 
 import json
@@ -144,3 +149,40 @@ def validate_snapshot(data: dict) -> list:
             )
 
     return errors
+
+
+def serialize_session(market: dict, portfolio: list, config: dict,
+                      name: str = "") -> str:
+    """Serialize a full session (market + portfolio + config) as JSON.
+
+    Returns a versioned envelope with the three top-level sections. Loading
+    this snapshot restores an end-to-end reproducible PFE run.
+    """
+    envelope = {
+        "version": 2,
+        "kind": "session",
+        "name": name,
+        "market": _to_python(market),
+        "portfolio": _to_python(portfolio),
+        "config": _to_python(config),
+    }
+    return json.dumps(envelope)
+
+
+def deserialize_session(json_str: str) -> dict:
+    """Parse a session JSON and return a dict with market/portfolio/config keys.
+
+    Accepts both v2 session envelopes and legacy v1 market-only envelopes (in
+    which case portfolio and config are absent from the result).
+    """
+    data = json.loads(json_str)
+    kind = data.get("kind")
+    if kind == "session":
+        return {
+            "market": data.get("market", {}),
+            "portfolio": data.get("portfolio", []),
+            "config": data.get("config", {}),
+        }
+    # Legacy: v1 market-only envelope
+    market = {k: v for k, v in data.items() if k not in ("version", "name", "kind")}
+    return {"market": market, "portfolio": None, "config": None}
