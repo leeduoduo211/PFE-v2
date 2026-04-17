@@ -1,109 +1,84 @@
 # PFE-v2
 
-A Python library for computing **Potential Future Exposure (PFE)** on light exotic derivatives using nested Monte Carlo simulation. Supports FX and Equity asset classes with correlated multi-asset paths.
+[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
+[![Tests: 310](https://img.shields.io/badge/tests-310%20passing-brightgreen.svg)](#tests)
 
-## What is PFE?
+A Python engine for computing **Potential Future Exposure (PFE)** on exotic derivatives using nested Monte Carlo simulation. Ships with 18 instrument types, 9 composable modifiers, and an interactive Streamlit UI.
 
-**Potential Future Exposure** measures the maximum expected credit exposure at a future date at a given confidence level (typically 95th percentile). It answers: *"What is the worst-case mark-to-market value of this derivatives portfolio over its lifetime?"*
+![PFE profile — 2-asset portfolio](docs/assets/pfe_profile.png)
 
-PFE is a core input for:
-- **Counterparty credit risk** capital calculations (SA-CCR, IMM)
+*Above: the actual output of `examples/basic_pfe.py` — PFE (red) and EPE (blue) of a 2-asset portfolio (vanilla call + worst-of put) over a 1-year horizon. Peak PFE is ~$4.4M at month 11.*
+
+---
+
+## Contents
+
+- [Why this exists](#why-this-exists)
+- [The core idea](#the-core-idea-in-one-picture)
+- [Install](#install)
+- [Quick start](#quick-start)
+- [What's inside](#whats-inside)
+- [Streamlit UI](#streamlit-ui)
+- [Documentation](#documentation)
+- [Tests](#tests)
+- [License](#license)
+
+---
+
+## Why this exists
+
+When a bank or a brokerage sells a derivative to a client, the question *"how much could this client owe us if things go badly?"* is as important as the price of the trade itself. **Potential Future Exposure** is the industry's answer: the 95th-percentile (or 99th, etc.) of the positive mark-to-market value across every plausible future scenario.
+
+PFE is the main input to:
+
+- **Counterparty credit risk capital** (SA-CCR, IMM)
 - **Credit Value Adjustment (CVA)** pricing
-- **Credit limit monitoring** and pre-deal checking
-- **Margin period of risk (MPoR)** based exposure for margined portfolios
+- **Credit limits and pre-deal checks** on the trading desk
+- **Initial margin / MPoR exposure** for collateralised books
 
-```
-               Exposure
-                  ^
-                  |        ╭──╮     ╭──────╮
-     Peak PFE ----+-------╱----╲---╱--------╲-----------
-                  |      ╱      ╲ ╱          ╲
-          EPE ----+-----/--------X-------------\--------
-                  |    /        ╱ ╲             ╲
-                  |   ╱       ╱    ╲              ╲
-                  |  ╱      ╱       ╲               ╲
-                  | ╱     ╱          ╲                ╲
-                  +╱────╱─────────────╲─────────────────╲──> Time
-                  0    3m    6m       9m     12m
-                       
-                  ── PFE (95th percentile)
-                  ── EPE (expected positive exposure)
-```
+Commercial engines (Murex, Calypso, Numerix) do this well but cost millions and are black boxes. **PFE-v2 is a clean-room, readable, hackable Python implementation** that covers most of the light-exotic product space a mid-tier institution actually trades.
 
-## How It Works
+## The core idea in one picture
 
-PFE-v2 uses a **nested Monte Carlo** approach — an outer simulation generates future market scenarios, and at each scenario node an inner simulation re-prices every trade in the portfolio:
+PFE-v2 runs a **nested Monte Carlo**: first it simulates many future market scenarios, then at every point in every scenario it re-prices the whole portfolio with a second Monte Carlo to get a mark-to-market value. The collection of those MtMs becomes the exposure distribution.
 
-```
-                    ┌─────────────────────────┐
-                    │  MarketData + PFEConfig  │
-                    └────────────┬────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │   MultivariateGBM        │
-                    │   (Outer MC simulation)  │
-                    │                          │
-                    │   n_outer paths           │
-                    │   × T time steps          │
-                    │   × n_assets              │
-                    │                          │
-                    │   Correlated via          │
-                    │   Cholesky decomposition  │
-                    └────────────┬────────────┘
-                                 │
-              ┌──────────────────┼──────────────────┐
-              │                  │                   │
-     ┌────────▼───────┐ ┌───────▼────────┐ ┌───────▼────────┐
-     │  Scenario 1     │ │  Scenario 2     │ │  Scenario N     │
-     │  Time step t    │ │  Time step t    │ │  Time step t    │
-     └────────┬───────┘ └───────┬────────┘ └───────┬────────┘
-              │                  │                   │
-     ┌────────▼───────┐ ┌───────▼────────┐ ┌───────▼────────┐
-     │  InnerMCPricer  │ │  InnerMCPricer  │ │  InnerMCPricer  │
-     │  n_inner paths  │ │  n_inner paths  │ │  n_inner paths  │
-     │  → MtM value    │ │  → MtM value    │ │  → MtM value    │
-     └────────┬───────┘ └───────┬────────┘ └───────┬────────┘
-              │                  │                   │
-              └──────────────────┼──────────────────┘
-                                 │
-                    ┌────────────▼────────────┐
-                    │  Exposure Aggregation    │
-                    │                          │
-                    │  Exposure = max(MtM, 0)  │
-                    │  PFE  = quantile(95%)    │
-                    │  EPE  = mean(Exposure)   │
-                    │  EEPE = effective EPE    │
-                    └─────────────────────────┘
+```mermaid
+flowchart TB
+    A[MarketData + Portfolio + PFEConfig] --> B[Outer MC — simulate<br/>n_outer correlated market scenarios<br/>over time grid]
+    B --> C{For each scenario<br/>at each time step}
+    C --> D[Inner MC — re-price<br/>every trade with n_inner<br/>forward-looking paths]
+    D --> E[MtM matrix<br/>n_outer × T_steps]
+    E --> F[Exposure = max&#40;MtM, 0&#41;]
+    F --> G[PFE = 95th percentile<br/>EPE = mean<br/>EEPE = Basel III effective EPE]
+    G --> H[PFEResult]
+
+    style B fill:#dbeafe,stroke:#2563eb
+    style D fill:#fee2e2,stroke:#dc2626
+    style G fill:#dcfce7,stroke:#16a34a
 ```
 
-The outer loop drives market scenario generation; each node is re-priced with a fresh inner MC to produce a mark-to-market distribution. Exposure is the positive part of MtM (counterparty credit risk perspective). Correlation across assets is handled via Cholesky decomposition of the input correlation matrix.
+The outer loop generates the *market* (what could happen). The inner loop prices the *book* in each of those markets. Correlation across assets is handled via Cholesky decomposition of the input correlation matrix.
 
-## Installation
+Because inner MC at every outer node is expensive, the engine vectorises European payoffs across all outer paths at once, falling back to per-path loops only for genuinely path-dependent instruments. At production scale (`5000 × 52 × 2000` = 260K inner invocations) a typical run takes ~60 seconds on one CPU; the optional Numba backend cuts that further.
+
+## Install
 
 ```bash
-# Core library only
-pip3 install -e .
-
-# With Streamlit UI
-pip3 install -e ".[ui]"
-
-# With Numba JIT acceleration
-pip3 install -e ".[numba]"
-
-# All extras (UI + Numba + plotting + dev tools)
-pip3 install -e ".[ui,numba,plot,dev]"
+pip3 install -e .                    # core only
+pip3 install -e ".[ui]"              # + Streamlit UI
+pip3 install -e ".[ui,numba,plot]"   # everything
 ```
 
-**Requirements:** Python 3.9+, NumPy
+Requires Python 3.9 or newer.
 
-## Quick Start
+## Quick start
 
 ```python
 import numpy as np
 from pfev2 import MarketData, PFEConfig, compute_pfe
 from pfev2.instruments import VanillaOption, WorstOfOption
 
-# Define market: 2 correlated equity assets
 market = MarketData(
     spots=np.array([100.0, 50.0]),
     vols=np.array([0.20, 0.30]),
@@ -114,25 +89,17 @@ market = MarketData(
     asset_classes=["EQUITY", "EQUITY"],
 )
 
-# Build portfolio: a vanilla call + a worst-of put
 portfolio = [
-    VanillaOption(
-        trade_id="C1", maturity=1.0, notional=100_000,
-        asset_indices=(0,), strike=100.0, option_type="call",
-    ),
-    WorstOfOption(
-        trade_id="WP1", maturity=1.0, notional=100_000,
-        asset_indices=(0, 1), strikes=[100.0, 50.0], option_type="put",
-    ),
+    VanillaOption(trade_id="C1", maturity=1.0, notional=100_000,
+                  asset_indices=(0,), strike=100.0, option_type="call"),
+    WorstOfOption(trade_id="WP1", maturity=1.0, notional=100_000,
+                  asset_indices=(0, 1), strikes=[100.0, 50.0], option_type="put"),
 ]
 
-# Run PFE calculation
 config = PFEConfig(n_outer=500, n_inner=500, seed=42, grid_frequency="monthly")
 result = compute_pfe(portfolio, market, config)
 print(result.summary())
 ```
-
-**Output:**
 
 ```
 Peak PFE:          3,936,197.30
@@ -145,95 +112,39 @@ Horizon:           12 months
 Computation time:  0.2s
 ```
 
-## Instruments
+For three worked examples (basic equity, FX accumulator with knock-out, multi-asset basket), see [`examples/`](examples/).
 
-**18 instrument types** across four categories, organized by how they are priced:
+## What's inside
 
-### European (terminal spot only)
+**18 instruments** organised by how they are priced:
 
-These instruments depend only on the spot price at maturity — no path history needed.
+```mermaid
+flowchart LR
+    Root[18 Instruments] --> EU[European<br/>4 types]
+    Root --> PD[Path-dependent<br/>6 types]
+    Root --> MA[Multi-asset<br/>5 types]
+    Root --> PE[Periodic<br/>3 types]
 
-| Instrument | Description | Assets |
-|---|---|---|
-| `VanillaOption` | Standard call/put, `max(S-K, 0)` or `max(K-S, 0)` | 1 |
-| `Digital` | Binary payout if spot crosses strike | 1 |
-| `ContingentOption` | Pays vanilla payoff on asset A only if asset B crosses a trigger | 2 |
-| `SingleBarrier` | European with up/down knock-in/out at a single level | 1 |
+    EU --> EU1[VanillaOption · Digital<br/>ContingentOption · SingleBarrier]
+    PD --> PD1[DoubleNoTouch · ForwardStarting<br/>Restrike · AsianOption<br/>Cliquet · RangeAccrual]
+    MA --> MA1[WorstOfOption · BestOfOption<br/>Dispersion · DualDigital<br/>TripleDigital]
+    PE --> PE1[AccumulatorDecumulator<br/>Autocallable · TARF]
 
-### Path-dependent (single asset, full path)
-
-These instruments observe the entire price path — the engine passes full simulation history.
-
-| Instrument | Description | Assets |
-|---|---|---|
-| `DoubleNoTouch` | Pays fixed amount if spot stays within two barriers over life | 1 |
-| `ForwardStartingOption` | Strike set as % of spot at a future date | 1 |
-| `RestrikeOption` | Strike resets to spot at observation date if favorable | 1 |
-| `AsianOption` | Payoff on arithmetic average price over observation dates | 1 |
-| `Cliquet` | Sum of capped/floored periodic returns | 1 |
-| `RangeAccrual` | Accrues coupon for each day spot is within a range | 1 |
-
-### Multi-asset (multiple underlyings)
-
-These instruments reference 2-5 correlated assets simultaneously.
-
-| Instrument | Description | Assets |
-|---|---|---|
-| `WorstOfOption` | Call/put driven by the worst-performing asset | 2-5 |
-| `BestOfOption` | Call/put driven by the best-performing asset | 2-5 |
-| `Dispersion` | Long component vols, short basket vol — captures correlation | 2-5 |
-| `DualDigital` | Binary payout if both assets cross their respective strikes | 2 |
-| `TripleDigital` | Binary payout if all three assets cross strikes | 3 |
-
-### Periodic (scheduled observation)
-
-These instruments observe prices at discrete dates and accumulate payoffs over time.
-
-| Instrument | Description | Assets |
-|---|---|---|
-| `Accumulator` | Accumulate/decumulate units at a strike on each observation date, with leverage | 1 |
-| `Autocallable` | Periodically checks if spot exceeds barrier; auto-redeems with coupon if triggered | 1-5 |
-| `TARF` | Target Accrual Redemption Forward — accumulates until a profit target is hit | 1 |
-
-## Modifiers
-
-**9 composable modifiers** that wrap any instrument using the decorator pattern. Modifiers chain — e.g., `PayoffCap(KnockOut(VanillaOption(...)))`.
-
-```python
-from pfev2.instruments import VanillaOption
-from pfev2.modifiers import KnockOut, PayoffCap
-
-# A vanilla call that knocks out at 130 and is capped at 20% payoff
-trade = PayoffCap(
-    KnockOut(
-        VanillaOption(trade_id="T1", maturity=1.0, notional=100_000,
-                      asset_indices=(0,), strike=100.0, option_type="call"),
-        barrier=130.0, direction="up",
-    ),
-    cap=0.2,
-)
+    style EU fill:#dbeafe,stroke:#2563eb
+    style PD fill:#fef3c7,stroke:#d97706
+    style MA fill:#fce7f3,stroke:#be185d
+    style PE fill:#e9d5ff,stroke:#7c3aed
 ```
 
-| Group | Modifiers | Description |
+**9 modifiers** that wrap any instrument using a decorator pattern, and chain together (e.g. `PayoffCap(KnockOut(VanillaOption(...)))`):
+
+| Group | Modifiers | What they do |
 |---|---|---|
-| **Barrier** | `KnockOut`, `KnockIn`, `RealizedVolKnockOut`, `RealizedVolKnockIn` | Kill or activate the trade when spot (or realized vol) crosses a barrier. Three observation styles: continuous, discrete, window. `KnockOut` supports a rebate on breach. |
-| **Payoff shaper** | `PayoffCap`, `PayoffFloor`, `LeverageModifier` | Cap, floor, or scale the final payoff |
-| **Structural** | `ObservationSchedule`, `TargetProfit` | Control when the trade observes prices, or auto-terminate at a profit target |
+| Barriers | `KnockOut`, `KnockIn`, `RealizedVolKnockOut`, `RealizedVolKnockIn` | Kill or activate the trade when spot (or realised vol) crosses a level |
+| Payoff shapers | `PayoffCap`, `PayoffFloor`, `LeverageModifier` | Cap, floor, or scale the final payoff |
+| Structural | `ObservationSchedule`, `TargetProfit` | Custom observation dates; auto-terminate at a profit target |
 
-## Configuration
-
-| Parameter | Default | Description |
-|---|---|---|
-| `n_outer` | 5000 | Outer MC paths (market scenarios) |
-| `n_inner` | 2000 | Inner MC paths per node (re-pricing) |
-| `confidence_level` | 0.95 | PFE percentile |
-| `grid_frequency` | `"monthly"` | Time grid: `"daily"`, `"weekly"`, `"monthly"` |
-| `margined` | `False` | Enable margin period of risk (MPoR) based exposure |
-| `mpor_days` | 10 | Margin period of risk in business days |
-| `backend` | `"numpy"` | Compute backend: `"numpy"` or `"numba"` |
-| `seed` | `None` | Random seed for reproducibility |
-
-**Performance note:** The computational bottleneck is `n_outer x T_steps` inner pricer calls. At production scale (n_outer=5000, T=52 weekly steps, n_inner=2000) this is ~260K inner MC invocations. European instruments are vectorized across all outer paths; path-dependent instruments fall back to per-path loops. Enable `numba` backend for JIT acceleration on large runs.
+Full payoff formulas, parameter lists, and economic commentary for every instrument and modifier live in the **[wiki](https://github.com/leeduoduo211/PFE-v2/wiki)**.
 
 ## Streamlit UI
 
@@ -241,43 +152,16 @@ trade = PayoffCap(
 python3 -m streamlit run ui/app.py
 ```
 
-Two modes:
-- **Wizard** — guided 4-step flow: Market Data -> Portfolio -> Configuration -> Results
-- **Dashboard** — single-page view for power users
+A 4-step wizard (**Market → Portfolio → Config → Results**) with a registry-driven form builder — add a new instrument to the registry and its trade-builder form, term sheet, and payoff display are generated automatically. There's also a single-page **Dashboard** mode for power users.
 
-The UI is driven by a registry pattern — adding a new instrument type to the registry automatically generates the trade builder form, term sheet, and payoff display.
+## Documentation
 
-## Examples
-
-| File | What it demonstrates |
-|---|---|
-| [`examples/basic_pfe.py`](examples/basic_pfe.py) | 2-asset equity portfolio (vanilla call + worst-of put) |
-| [`examples/fx_accumulator.py`](examples/fx_accumulator.py) | FX accumulator with KnockOut modifier, margined exposure |
-| [`examples/multi_asset_worst_of.py`](examples/multi_asset_worst_of.py) | 3-asset portfolio with capped worst-of put, best-of call, and vanilla hedge |
-
-```bash
-python3 examples/basic_pfe.py
-python3 examples/fx_accumulator.py
-python3 examples/multi_asset_worst_of.py
-```
-
-## Project Structure
-
-```
-pfev2/
-  core/           # Types (MarketData, PFEConfig), exceptions
-  engine/         # MultivariateGBM, Cholesky, simulation backends (numpy/numba)
-  instruments/    # 18 instrument classes (BaseInstrument ABC)
-  modifiers/      # 9 modifier classes (BaseModifier, decorator pattern)
-  pricing/        # InnerMCPricer — re-pricing engine at each scenario node
-  risk/           # compute_pfe() entry point, PFEResult, exposure aggregation
-  utils/          # Seed generation (Cantor pairing), helpers
-
-ui/               # Streamlit UI (registry-driven, wizard + dashboard modes)
-tests/            # 310 tests across instruments, modifiers, engine, risk, UI
-examples/         # Runnable example scripts
-docs/             # Product catalog with payoff formulas and use cases
-```
+- **[Wiki — Home](https://github.com/leeduoduo211/PFE-v2/wiki)** — full documentation
+- **[Architecture](https://github.com/leeduoduo211/PFE-v2/wiki/Architecture)** — how the engine is built
+- **[Instruments](https://github.com/leeduoduo211/PFE-v2/wiki/Instruments)** — every product with payoff formula and use case
+- **[Modifiers](https://github.com/leeduoduo211/PFE-v2/wiki/Modifiers)** — how wrapping works
+- **[Mathematical Foundations](https://github.com/leeduoduo211/PFE-v2/wiki/Mathematical-Foundations)** — the SDE, Cholesky, quantile estimator
+- **[FAQ](https://github.com/leeduoduo211/PFE-v2/wiki/FAQ)** — common questions and pitfalls
 
 ## Tests
 
@@ -285,16 +169,8 @@ docs/             # Product catalog with payoff formulas and use cases
 python3 -m pytest tests/ -v
 ```
 
-310 tests covering core types, instruments, modifiers, engine, pricing, risk, and UI converters.
-
-## Tech Stack
-
-- **Python 3.9+** (core)
-- **NumPy** (required — all simulation and payoff computation)
-- **Numba** (optional — JIT acceleration for the simulation backend)
-- **Streamlit + Plotly** (optional — interactive UI)
-- **matplotlib** (optional — static plotting)
+310 tests covering instruments, modifiers, engine, risk aggregation, and UI converters. See [`CHANGELOG.md`](CHANGELOG.md) for change history.
 
 ## License
 
-MIT
+MIT — see [LICENSE](LICENSE).
