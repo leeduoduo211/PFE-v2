@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="0" height="0" style="display:none">
+  
+  <symbol id="peak" viewBox="0 0 14 14">
+    <g fill="none" stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M1 11l3.5-4 2 2L10 4l3 5"></path>
+    </g>
+    <circle cx="10" cy="4" r="1" fill="#ef4444"></circle>
+  </symbol>
+  <symbol id="scale" viewBox="0 0 14 14">
+    <g fill="none" stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 1v12M2 4h10M3 7l-1.5 3h3zM11 7l-1.5 3h3z"></path>
+    </g>
+  </symbol>
+  <symbol id="money" viewBox="0 0 14 14">
+    <g fill="none" stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 1v12M9.5 3.5h-3a1.8 1.8 0 000 3.6h2a1.8 1.8 0 010 3.6h-3"></path>
+    </g>
+  </symbol>
+  <symbol id="clock" viewBox="0 0 14 14">
+    <g fill="none" stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="7" cy="7" r="5.5"></circle><path d="M7 4v3l2 1.5"></path>
+    </g>
+  </symbol>
+</svg>

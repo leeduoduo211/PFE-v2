@@ -1,0 +1,36 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  .pfe-kpi { background:#fff; border:1px solid #e2e8f0; border-radius:10px; padding:16px; box-shadow:0 1px 3px rgba(0,0,0,0.04); }
+  .pfe-kpi-red    { border-left:3px solid #ef4444; }
+  .pfe-kpi-accent { border-left:3px solid #3b82f6; }
+  .pfe-kpi-green  { border-left:3px solid #22c55e; }
+  .pfe-kpi-amber  { border-left:3px solid #f59e0b; }
+  .pfe-kpi-label { font-size:0.62rem; text-transform:uppercase; letter-spacing:0.06em; color:#94a3b8; font-weight:600; margin-bottom:4px; }
+  .pfe-kpi-value { font-size:1.5rem; font-weight:700; color:#1e293b; font-family:'JetBrains Mono',monospace; }
+  .pfe-kpi-sub   { font-size:0.68rem; color:#94a3b8; margin-top:2px; }
+</style></head>
+<body><div class="card">
+<div class="overline">KPI cards · four variants</div>
+<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:10px;">
+  <div class="pfe-kpi pfe-kpi-red">
+    <div class="pfe-kpi-label"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M1 11l3.5-4 2 2L10 4l3 5"/><circle cx="10" cy="4" r="1" fill="#ef4444" stroke="none"/></svg>PEAK PFE</div>
+    <div class="pfe-kpi-value">3,936,197</div>
+    <div class="pfe-kpi-sub">95th percentile</div>
+  </div>
+  <div class="pfe-kpi pfe-kpi-accent">
+    <div class="pfe-kpi-label"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M7 1v12M2 4h10M3 7l-1.5 3h3zM11 7l-1.5 3h3z"/></svg>PEAK EPE</div>
+    <div class="pfe-kpi-value">1,055,839</div>
+    <div class="pfe-kpi-sub">max of EPE profile</div>
+  </div>
+  <div class="pfe-kpi pfe-kpi-green">
+    <div class="pfe-kpi-label"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><path d="M7 1v12M9.5 3.5h-3a1.8 1.8 0 000 3.6h2a1.8 1.8 0 010 3.6h-3"/></svg>NET t=0 MtM</div>
+    <div class="pfe-kpi-value">+842,310</div>
+    <div class="pfe-kpi-sub">3 trades netted</div>
+  </div>
+  <div class="pfe-kpi pfe-kpi-amber">
+    <div class="pfe-kpi-label"><svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="#64748b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px;margin-right:5px;"><circle cx="7" cy="7" r="5.5"/><path d="M7 4v3l2 1.5"/></svg>PEAK TIME</div>
+    <div class="pfe-kpi-value">Week 44</div>
+    <div class="pfe-kpi-sub">of 52 weeks</div>
+  </div>
+</div>
+</div></body></html>

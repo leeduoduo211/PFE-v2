@@ -1,0 +1,38 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  .btn-p { background:#3b82f6; color:#fff; font-weight:500; border:none; border-radius:7px; padding:7px 16px; font-size:0.85rem; font-family:inherit; cursor:pointer; transition:all .15s ease; }
+  .btn-p:hover { background:#2563eb; }
+  .btn-s { background:#fff; border:1px solid #e2e8f0; color:#475569; border-radius:7px; padding:7px 16px; font-size:0.8rem; font-family:inherit; cursor:pointer; transition:all .15s ease; }
+  .btn-s:hover { background:#f8fafc; border-color:#cbd5e1; }
+  .btn-d { background:#f1f5f9; color:#94a3b8; border:1px solid #e2e8f0; border-radius:7px; padding:7px 16px; font-size:0.8rem; font-family:inherit; cursor:not-allowed; }
+  .lbl { font-size:10px; color:#94a3b8; text-transform:uppercase; letter-spacing:.06em; font-weight:600; margin-bottom:6px; }
+</style></head>
+<body><div class="card">
+<div class="overline">Buttons</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:16px;">
+  <div>
+    <div class="lbl">Primary — Run PFE</div>
+    <div class="row"><button class="btn-p">Run PFE</button><button class="btn-p" style="background:#2563eb;">hover</button></div>
+    <div class="mono" style="font-size:10px;color:#64748b;margin-top:6px;">#3b82f6 → #2563eb</div>
+  </div>
+  <div>
+    <div class="lbl">Secondary — Clone / Edit</div>
+    <div class="row"><button class="btn-s">Edit</button><button class="btn-s" style="background:#f8fafc;border-color:#cbd5e1;">hover</button></div>
+    <div class="mono" style="font-size:10px;color:#64748b;margin-top:6px;">1px border · 7px radius</div>
+  </div>
+  <div>
+    <div class="lbl">Disabled</div>
+    <div class="row"><button class="btn-d">Add to Portfolio</button></div>
+    <div class="mono" style="font-size:10px;color:#64748b;margin-top:6px;">+ caption explains why</div>
+  </div>
+</div>
+<div style="margin-top:16px;">
+  <div class="lbl">Inline text buttons (sidebar, modifiers)</div>
+  <div class="row">
+    <button class="btn-s" style="padding:4px 10px;font-size:0.74rem;">+ Add modifier</button>
+    <button class="btn-s" style="padding:4px 10px;font-size:0.74rem;">- Remove last</button>
+    <button class="btn-s" style="padding:4px 10px;font-size:0.74rem;">Clone</button>
+    <button class="btn-s" style="padding:4px 10px;font-size:0.74rem;color:#ef4444;">Del</button>
+  </div>
+</div>
+</div></body></html>

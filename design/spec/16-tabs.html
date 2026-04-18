@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  .tabs { display:flex; gap:0; border-bottom:1px solid #e2e8f0; }
+  .tab { font-family:'Inter',sans-serif; font-size:0.85rem; font-weight:500; padding:10px 20px; color:#94a3b8; border-bottom:2px solid transparent; white-space:nowrap; }
+  .tab.active { color:#3b82f6; border-bottom:2px solid #3b82f6; }
+</style></head>
+<body><div class="card">
+<div class="overline">Step tabs — workflow navigation</div>
+<div class="tabs">
+  <div class="tab">● 1. Market Data</div>
+  <div class="tab active">● 2. Portfolio (4)</div>
+  <div class="tab">▸ 3. Configuration</div>
+  <div class="tab">○ 4. Results</div>
+</div>
+<div style="margin-top:14px;font-size:12px;color:#64748b;line-height:1.7;">
+  <span class="mono" style="color:#3b82f6;">●</span> complete · step is done, can revisit<br>
+  <span class="mono" style="color:#3b82f6;">▸</span> next · highlighted as the logical next action<br>
+  <span class="mono" style="color:#94a3b8;">○</span> pending · greyed; requires prior steps
+</div>
+</div></body></html>

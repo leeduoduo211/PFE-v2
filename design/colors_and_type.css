@@ -1,0 +1,204 @@
+/* ==========================================================================
+   PFE-v2 Design Tokens
+   Lifted verbatim from ui/theme.py (source of truth: leeduoduo211/PFE-v2).
+   ========================================================================== */
+
+/* Self-hosted variable woff2 (latin). Single file per family covers every weight. */
+@font-face {
+  font-family: 'Inter';
+  font-style: normal;
+  font-weight: 100 900;
+  font-display: swap;
+  src: url('fonts/Inter.woff2') format('woff2-variations'),
+       url('fonts/Inter.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 100 800;
+  font-display: swap;
+  src: url('fonts/JetBrainsMono.woff2') format('woff2-variations'),
+       url('fonts/JetBrainsMono.woff2') format('woff2');
+}
+
+:root {
+  /* ── Surfaces ─────────────────────────────────────────────────────── */
+  --bg-page:    #f8fafc;   /* app background — slate-50 */
+  --bg-card:    #ffffff;   /* cards, panels, inputs */
+  --bg-surface: #f1f5f9;   /* subtle surface, gridlines fill */
+  --bg-hover:   #f8fafc;
+
+  /* ── Borders ──────────────────────────────────────────────────────── */
+  --border:        #e2e8f0;
+  --border-strong: #cbd5e1;
+  --border-focus:  #3b82f6;
+
+  /* ── Text ─────────────────────────────────────────────────────────── */
+  --fg1: #1e293b;   /* primary — slate-800 */
+  --fg2: #475569;   /* slate-600 (body) */
+  --fg3: #64748b;   /* secondary — slate-500 */
+  --fg4: #94a3b8;   /* muted/tertiary — slate-400 */
+
+  /* ── Accent / data palette ────────────────────────────────────────── */
+  --blue:   #3b82f6;   /* primary action, EPE curve */
+  --blue-2: #2563eb;   /* hover */
+  --blue-dim:  rgba(59,130,246,0.10);
+
+  --red:    #ef4444;   /* PFE curve, sells, warnings */
+  --red-dim:   rgba(239,68,68,0.12);
+
+  --green:  #22c55e;   /* gains, longs, positive MtM */
+  --green-dim: rgba(34,197,94,0.10);
+
+  --amber:  #f59e0b;   /* median, timing callouts */
+  --amber-dim: rgba(245,158,11,0.10);
+
+  --purple: #8b5cf6;   /* comparison run B */
+  --cyan:   #06b6d4;   /* chart colorway tail */
+
+  /* Fan-chart percentile bands (red-transparent stack) */
+  --fan-5-95:   rgba(239,68,68,0.05);
+  --fan-25-75:  rgba(239,68,68,0.12);
+  --fan-inner:  rgba(239,68,68,0.22);
+
+  /* Trade colorway (per-trade stacked area) */
+  --trade-1:#3b82f6; --trade-2:#ef4444; --trade-3:#22c55e;
+  --trade-4:#f59e0b; --trade-5:#8b5cf6; --trade-6:#06b6d4;
+  --trade-7:#ec4899; --trade-8:#14b8a6; --trade-9:#f97316; --trade-10:#a855f7;
+
+  /* ── Semantic tag backgrounds ─────────────────────────────────────── */
+  --tag-long-bg:    #dcfce7;
+  --tag-long-fg:    #16a34a;
+  --tag-short-bg:   #fef2f2;
+  --tag-short-fg:   #ef4444;
+
+  /* Category badges (product taxonomy) */
+  --cat-european:       #2563eb;
+  --cat-path-dependent: #d97706;
+  --cat-multi-asset:    #be185d;
+  --cat-periodic:       #7c3aed;
+
+  /* Modifier group badges */
+  --mod-barrier:    #f59e0b;
+  --mod-payoff:     #22c55e;
+  --mod-structural: #8b5cf6;
+
+  /* ── Typography ───────────────────────────────────────────────────── */
+  --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+
+  /* Type scale — matches theme.py metric/KPI/section-label sizing */
+  --fs-micro:     0.62rem;  /* KPI label, section overline */
+  --fs-caption:   0.70rem;  /* sidebar muted text */
+  --fs-small:     0.75rem;  /* sidebar item, tag */
+  --fs-body:      0.85rem;  /* body default */
+  --fs-base:      0.95rem;  /* read-only value */
+  --fs-kpi:       1.5rem;   /* KPI value */
+  --fs-metric:    1.3rem;   /* Streamlit metric value */
+  --fs-page:      24px;     /* Page title */
+  --fs-section:   1.1rem;   /* h3-ish */
+
+  --fw-regular:  400;
+  --fw-medium:   500;
+  --fw-semibold: 600;
+  --fw-bold:     700;
+
+  --tracking-uppercase: 0.06em;   /* overlines, section labels */
+  --tracking-sidebar:   0.08em;
+
+  /* ── Radii ────────────────────────────────────────────────────────── */
+  --r-xs: 4px;    /* tags */
+  --r-sm: 6px;    /* inputs, small buttons */
+  --r-md: 7px;    /* buttons */
+  --r-lg: 8px;    /* panels */
+  --r-xl: 10px;   /* cards, metric, KPI */
+
+  /* ── Elevation ────────────────────────────────────────────────────── */
+  --shadow-card:  0 1px 3px rgba(0,0,0,0.04);
+  --shadow-focus: 0 0 0 3px rgba(59,130,246,0.10);
+
+  /* ── Motion ───────────────────────────────────────────────────────── */
+  --ease-ui: cubic-bezier(.2,.8,.2,1);
+  --dur-fast: 0.15s;
+
+  /* ── Layout ───────────────────────────────────────────────────────── */
+  --container-max: 1200px;
+}
+
+/* ==========================================================================
+   Semantic element styles (use directly OR as a reference for React classes).
+   ========================================================================== */
+
+html, body {
+  background: var(--bg-page);
+  color: var(--fg1);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Headings */
+h1, .h1 {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-bold);
+  color: var(--fg1);
+  font-size: var(--fs-page);
+  letter-spacing: -0.01em;
+  margin: 0;
+}
+h2, .h2 {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  color: var(--fg1);
+  font-size: 1.25rem;
+  margin: 0;
+}
+h3, .h3 {
+  font-family: var(--font-sans);
+  font-weight: var(--fw-semibold);
+  color: var(--fg1);
+  font-size: var(--fs-section);
+  margin: 0;
+}
+
+/* Body + secondary */
+p, .body  { color: var(--fg2); font-size: var(--fs-body); }
+.subtle   { color: var(--fg3); font-size: 13px; }
+.muted    { color: var(--fg4); }
+
+/* Numeric / code — always mono */
+.num, .mono, code, kbd, samp, pre {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum";
+}
+
+/* Overline / section label */
+.overline {
+  font-size: var(--fs-micro);
+  font-weight: var(--fw-semibold);
+  color: var(--fg4);
+  text-transform: uppercase;
+  letter-spacing: var(--tracking-uppercase);
+}
+
+/* KPI card block */
+.kpi {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 16px;
+  box-shadow: var(--shadow-card);
+}
+.kpi-label { color: var(--fg4); font-size: var(--fs-micro);
+             text-transform: uppercase; letter-spacing: var(--tracking-uppercase);
+             font-weight: var(--fw-semibold); margin-bottom: 4px; }
+.kpi-value { font-family: var(--font-mono); font-size: var(--fs-kpi);
+             font-weight: var(--fw-bold); color: var(--fg1); }
+.kpi-sub   { font-size: 0.68rem; color: var(--fg4); margin-top: 2px; }
+
+.kpi--accent { border-left: 3px solid var(--blue); }
+.kpi--red    { border-left: 3px solid var(--red); }
+.kpi--green  { border-left: 3px solid var(--green); }
+.kpi--amber  { border-left: 3px solid var(--amber); }

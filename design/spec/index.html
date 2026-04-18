@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PFE-v2 · Design System Spec Cards</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>◈</text></svg>">
+<link rel="stylesheet" href="_base.css">
+<style>
+  body { background:#f8fafc; }
+  .gallery { max-width: 1100px; margin: 0 auto; padding: 32px 24px; }
+  h1 { font-size: 22px; font-weight: 700; color: #1e293b; margin: 0 0 4px 0; }
+  .sub { color: #64748b; font-size: 13px; margin-bottom: 24px; }
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 12px;
+  }
+  .tile {
+    background: #fff;
+    border: 1px solid #e2e8f0;
+    border-radius: 10px;
+    padding: 14px 16px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+    text-decoration: none;
+    color: inherit;
+    transition: border-color 0.15s ease;
+  }
+  .tile:hover { border-color: #cbd5e1; }
+  .num {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    color: #94a3b8;
+    font-size: 11px;
+    font-weight: 600;
+  }
+  .name {
+    font-size: 13px;
+    font-weight: 500;
+    color: #1e293b;
+    margin-top: 2px;
+  }
+  .footer { margin-top: 24px; font-size: 11px; color: #94a3b8; }
+  .footer a { color: #3b82f6; text-decoration: none; }
+</style>
+</head>
+<body>
+<div class="gallery">
+  <h1>PFE-v2 design system · spec cards</h1>
+  <div class="sub">22 reference cards covering tokens, typography, components, and voice. Source of truth: <code>ui/theme.py</code>.</div>
+  <div class="grid">
+    <a class="tile" href="01-surfaces.html"><div class="num">01</div><div class="name">Surface colors</div></a>
+    <a class="tile" href="02-text-ramp.html"><div class="num">02</div><div class="name">Text ramp</div></a>
+    <a class="tile" href="03-semantic-colors.html"><div class="num">03</div><div class="name">Semantic colors</div></a>
+    <a class="tile" href="04-trade-colorway.html"><div class="num">04</div><div class="name">Trade colorway</div></a>
+    <a class="tile" href="05-fan-bands.html"><div class="num">05</div><div class="name">Fan-chart bands</div></a>
+    <a class="tile" href="06-typefaces.html"><div class="num">06</div><div class="name">Typefaces</div></a>
+    <a class="tile" href="07-type-scale.html"><div class="num">07</div><div class="name">Type scale</div></a>
+    <a class="tile" href="08-radii-elevation.html"><div class="num">08</div><div class="name">Radii & elevation</div></a>
+    <a class="tile" href="09-kpi-cards.html"><div class="num">09</div><div class="name">KPI cards</div></a>
+    <a class="tile" href="10-buttons.html"><div class="num">10</div><div class="name">Buttons</div></a>
+    <a class="tile" href="11-inputs.html"><div class="num">11</div><div class="name">Inputs</div></a>
+    <a class="tile" href="12-tags-badges.html"><div class="num">12</div><div class="name">Tags & badges</div></a>
+    <a class="tile" href="13-icons.html"><div class="num">13</div><div class="name">SVG icons</div></a>
+    <a class="tile" href="14-unicode-glyphs.html"><div class="num">14</div><div class="name">Unicode glyphs</div></a>
+    <a class="tile" href="15-logo.html"><div class="num">15</div><div class="name">Logo mark</div></a>
+    <a class="tile" href="16-tabs.html"><div class="num">16</div><div class="name">Tabs</div></a>
+    <a class="tile" href="17-sidebar-rows.html"><div class="num">17</div><div class="name">Sidebar rows</div></a>
+    <a class="tile" href="18-chart-pfe-epe.html"><div class="num">18</div><div class="name">PFE / EPE chart</div></a>
+    <a class="tile" href="19-mtm-table.html"><div class="num">19</div><div class="name">MtM table</div></a>
+    <a class="tile" href="20-grouped-sections.html"><div class="num">20</div><div class="name">Grouped sections</div></a>
+    <a class="tile" href="21-scrollbar.html"><div class="num">21</div><div class="name">Scrollbar</div></a>
+    <a class="tile" href="22-voice.html"><div class="num">22</div><div class="name">Voice & tone</div></a>
+  </div>
+  <div class="footer">
+    Back to <a href="../preview/">app mock</a> · Tokens: <a href="../colors_and_type.css">colors_and_type.css</a> · <a href="../README.md">design brief</a>
+  </div>
+</div>
+</body>
+</html>

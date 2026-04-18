@@ -1,0 +1,20 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  .field { display:flex; flex-direction:column; gap:4px; }
+  .field > label { font-size:12px; color:#475569; font-weight:500; }
+  .inp { background:#fff; border:1px solid #e2e8f0; border-radius:6px; color:#1e293b; font-family:'JetBrains Mono',monospace; padding:7px 10px; font-size:13px; outline:none; width:100%; box-sizing:border-box; }
+  .inp:focus, .inp.focus { border-color:#3b82f6; box-shadow:0 0 0 3px rgba(59,130,246,.10); }
+  .sel { background:#fff; border:1px solid #e2e8f0; border-radius:6px; color:#1e293b; padding:7px 10px; font-size:13px; }
+</style></head>
+<body><div class="card">
+<div class="overline">Inputs</div>
+<div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px 16px;">
+  <div class="field"><label>Outer Paths</label><input class="inp" value="5000"></div>
+  <div class="field"><label>Inner Paths</label><input class="inp focus" value="2000"></div>
+  <div class="field"><label>Grid Freq</label><select class="sel"><option>weekly</option></select></div>
+  <div class="field"><label>Confidence</label><input class="inp" value="0.9500"></div>
+  <div class="field"><label>Seed</label><input class="inp" value="42"></div>
+  <div class="field"><label>Class</label><select class="sel"><option>EQUITY</option></select></div>
+</div>
+<div style="margin-top:12px;font-size:11px;color:#64748b;">Mono font on every numeric input. Focus = 1px <span class="mono" style="color:#3b82f6;">#3b82f6</span> border + 3px halo.</div>
+</div></body></html>

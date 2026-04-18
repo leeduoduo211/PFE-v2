@@ -1,0 +1,30 @@
+/* Shared preview-card base. Loaded by every preview/*.html.
+   Card is rendered at ~700×H, with generous padding, no framing title. */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap');
+
+* { box-sizing: border-box; }
+html, body {
+  margin: 0;
+  padding: 0;
+  background: #ffffff;
+  color: #1e293b;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 14px;
+  line-height: 1.45;
+  -webkit-font-smoothing: antialiased;
+}
+.card {
+  padding: 20px 24px;
+  min-height: 100%;
+}
+.mono { font-family: 'JetBrains Mono', 'SF Mono', Menlo, monospace; font-variant-numeric: tabular-nums; }
+.overline {
+  font-size: 10px;
+  font-weight: 600;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+.row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.row-tight { display: flex; gap: 4px; align-items: center; }
