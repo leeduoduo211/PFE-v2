@@ -130,6 +130,8 @@ def run_pfe_calculation():
             "confidence_level": config.confidence_level,
             "grid_frequency": config.grid_frequency,
             "margined": config.margined,
+            "seed": getattr(config, "seed", None),
+            "antithetic": getattr(config, "antithetic", False),
         },
         "unmargined_pfe_curve": pfe_result.unmargined_pfe_curve.tolist(),
         "unmargined_epe_curve": pfe_result.unmargined_epe_curve.tolist(),

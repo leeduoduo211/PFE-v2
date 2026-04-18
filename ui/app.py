@@ -26,6 +26,7 @@ from ui.components.results_viewer import (
     render_run_comparison,
     render_result_exports,
 )
+from ui.components.dashboard_view import render_dashboard
 
 apply_theme()
 init_session_state()
@@ -215,7 +216,33 @@ with st.sidebar:
             st.caption("Define assets first, then return here to save.")
 
 # ---------------------------------------------------------------------------
-# Main content — tabs
+# View mode toggle (Wizard / Dashboard) — top-right
+# ---------------------------------------------------------------------------
+
+if "view_mode" not in st.session_state:
+    st.session_state["view_mode"] = "wizard"
+
+_tog_left, _tog_right = st.columns([5, 2])
+with _tog_right:
+    _mode = st.radio(
+        "View",
+        options=["wizard", "dashboard"],
+        format_func=lambda v: "Wizard" if v == "wizard" else "Dashboard",
+        index=0 if st.session_state["view_mode"] == "wizard" else 1,
+        horizontal=True,
+        label_visibility="collapsed",
+        key="_view_mode_radio",
+    )
+    if _mode != st.session_state["view_mode"]:
+        st.session_state["view_mode"] = _mode
+        st.rerun()
+
+if st.session_state["view_mode"] == "dashboard":
+    render_dashboard()
+    st.stop()
+
+# ---------------------------------------------------------------------------
+# Main content — tabs (Wizard mode)
 # ---------------------------------------------------------------------------
 
 # Page header — gives orientation before the tabbed workflow
