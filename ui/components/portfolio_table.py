@@ -4,6 +4,16 @@
 import copy
 import streamlit as st
 from ui.components.term_sheet import render_term_sheet
+from ui.theme import category_badge
+from ui.utils.registry import INSTRUMENT_REGISTRY
+
+
+_CAT_KIND = {
+    "European": "european",
+    "Path-dependent": "path_dependent",
+    "Multi-asset": "multi_asset",
+    "Periodic": "periodic",
+}
 
 
 def render_portfolio_table(key_prefix: str = "pt"):
@@ -56,11 +66,23 @@ def render_portfolio_table(key_prefix: str = "pt"):
         else:
             cols[1].write(":green[L]")
 
-        type_str = trade["instrument_type"]
+        inst_type = trade["instrument_type"]
+        spec = INSTRUMENT_REGISTRY.get(inst_type, {})
+        cat_label = spec.get("category", "European")
+        cat_kind = _CAT_KIND.get(cat_label, "european")
+        inst_label = spec.get("label", inst_type)
+        mod_suffix = ""
         if trade.get("modifiers"):
             mod_names = [m["type"] for m in trade["modifiers"]]
-            type_str = " \u2192 ".join(mod_names) + " \u2192 " + type_str
-        cols[2].write(type_str)
+            mod_suffix = (
+                ' <span style="color:#94a3b8;font-size:11px;">'
+                + " \u2192 ".join(mod_names) + " \u2192</span>"
+            )
+        cols[2].markdown(
+            mod_suffix + " " + category_badge(cat_label.upper(), cat_kind)
+            + f' <span style="color:#475569;font-size:12px;margin-left:4px;">{inst_label}</span>',
+            unsafe_allow_html=True,
+        )
         cols[3].write(f"{trade['params']['maturity']:.2f}Y")
         cols[4].write(f"{trade['params']['notional']:,.0f}")
 

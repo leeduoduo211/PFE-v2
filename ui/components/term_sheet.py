@@ -231,4 +231,5 @@ def render_term_sheet(
             fig,
             use_container_width=True,
             config={"displayModeBar": False},
+            key=f"ts_spark_{spec.get('trade_id', 'x')}",
         )
