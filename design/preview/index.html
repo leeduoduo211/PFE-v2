@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PFE-v2 · UI Kit</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><text y='13' font-size='14'>◈</text></svg>">
+<link rel="stylesheet" href="styles.css">
+<script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+<script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel" src="Sidebar.jsx"></script>
+<script type="text/babel" src="StepTabs.jsx"></script>
+<script type="text/babel" src="MarketDataTab.jsx"></script>
+<script type="text/babel" src="PortfolioTab.jsx"></script>
+<script type="text/babel" src="ConfigTab.jsx"></script>
+<script type="text/babel" src="ResultsTab.jsx"></script>
+<script type="text/babel" src="Dashboard.jsx"></script>
+
+<script type="text/babel">
+const { useState } = React;
+
+const INITIAL_TRADES = [
+  { id:'TRD_001',     dir:'L', notional: 1000000, maturity:1.00, mtm:  12450 },
+  { id:'TRD_002',     dir:'S', notional:  800000, maturity:0.75, mtm:  -8320 },
+  { id:'AUTOCALL_01', dir:'L', notional: 2000000, maturity:1.50, mtm:  42110 },
+  { id:'TARF_A',      dir:'S', notional:  400000, maturity:0.50, mtm:  -1204 },
+];
+
+const RUNS = [
+  { id:1, label:'● Run A · 5k×2k · weekly', peak:'3.94M' },
+  { id:2, label:'○ Run B · baseline',       peak:'—'     },
+];
+
+function ViewToggle({ mode, setMode }) {
+  const btn = (m, label) => (
+    <button onClick={()=>setMode(m)} style={{
+      background: mode===m ? '#fff' : 'transparent',
+      border: 'none', padding:'5px 12px', borderRadius:5, fontSize:12, fontWeight:500,
+      color: mode===m ? 'var(--fg1)' : 'var(--fg3)', cursor:'pointer', fontFamily:'inherit',
+      boxShadow: mode===m ? '0 1px 2px rgba(0,0,0,0.05)' : 'none',
+    }}>{label}</button>
+  );
+  return (
+    <div style={{display:'inline-flex', background:'#f1f5f9', border:'1px solid var(--border)', borderRadius:7, padding:3, gap:2}}>
+      {btn('wizard', 'Wizard')}
+      {btn('dashboard', 'Dashboard')}
+    </div>
+  );
+}
+
+function App() {
+  const [mode, setMode] = useState('dashboard');
+  const [step, setStep] = useState(4);
+  const [selected, setSelected] = useState('AUTOCALL_01');
+  const [hasResults, setHasResults] = useState(true);
+
+  const goRun = () => { setStep(3); };
+  const run = () => { setHasResults(true); setStep(4); };
+
+  return (
+    <div className="app">
+      <Sidebar trades={INITIAL_TRADES} selectedId={selected} onSelect={setSelected} runs={RUNS} />
+      <main className="main">
+        <div style={{display:'flex', justifyContent:'flex-end', marginBottom:14}}>
+          <ViewToggle mode={mode} setMode={setMode} />
+        </div>
+        {mode==='wizard' ? (
+          <>
+            <StepTabs step={step} setStep={setStep} tradeCount={INITIAL_TRADES.length} />
+            {step===1 && <MarketDataTab />}
+            {step===2 && <PortfolioTab trades={INITIAL_TRADES} selectedId={selected} onSelect={setSelected} />}
+            {step===3 && <ConfigTab onRun={run} />}
+            {step===4 && <ResultsTab hasResults={hasResults} onRun={goRun} />}
+          </>
+        ) : (
+          <Dashboard trades={INITIAL_TRADES} runs={RUNS} selectedId={selected} onSelect={setSelected} />
+        )}
+      </main>
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
