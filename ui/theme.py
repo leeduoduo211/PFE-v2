@@ -2,6 +2,14 @@
 
 Provides CSS injection and Plotly chart templates for a professional
 light-mode quantitative finance aesthetic.
+
+v2 refinements (design-system alignment):
+  - Added text_body color stop (#475569).
+  - Added category-badge and modifier-group CSS + helpers.
+  - Added semantic number utility classes (pos/neg).
+  - Added grouped-section (left-stripe accent) helper.
+  - Nudged stMetric padding up for breathing room.
+  - Plotly template: horizontal top legend, softer margins.
 """
 
 import streamlit as st
@@ -19,11 +27,14 @@ COLORS = {
     "bg_surface": "#f1f5f9",
     "bg_hover": "#f8fafc",
     "border": "#e2e8f0",
+    "border_strong": "#cbd5e1",
     "border_focus": "#3b82f6",
     "text_primary": "#1e293b",
+    "text_body": "#475569",      # new: body copy, slate-600
     "text_secondary": "#64748b",
     "text_muted": "#94a3b8",
     "blue": "#3b82f6",
+    "blue_hover": "#2563eb",
     "blue_dim": "rgba(59,130,246,0.1)",
     "red": "#ef4444",
     "red_dim": "rgba(239,68,68,0.12)",
@@ -32,6 +43,16 @@ COLORS = {
     "amber": "#f59e0b",
     "amber_dim": "rgba(245,158,11,0.1)",
     "purple": "#8b5cf6",
+    "cyan": "#06b6d4",
+    # Product-category badge fills
+    "cat_european": "#2563eb",
+    "cat_path_dependent": "#d97706",
+    "cat_multi_asset": "#be185d",
+    "cat_periodic": "#7c3aed",
+    # Modifier group accents
+    "mod_barrier": "#f59e0b",
+    "mod_payoff": "#22c55e",
+    "mod_structural": "#8b5cf6",
 }
 
 # Chart trace colors
@@ -44,6 +65,11 @@ FAN_COLORS = [
     "rgba(239,68,68,0.05)",
     "rgba(239,68,68,0.12)",
     "rgba(239,68,68,0.22)",
+]
+# Per-trade colorway (10 colors; wraps for portfolios with more than 10 trades)
+TRADE_COLORWAY = [
+    "#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6",
+    "#06b6d4", "#ec4899", "#14b8a6", "#f97316", "#a855f7",
 ]
 
 
@@ -112,7 +138,7 @@ h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
     background: #ffffff !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 10px !important;
-    padding: 0.8rem 1rem !important;
+    padding: 1rem 1.2rem !important;
     box-shadow: 0 1px 3px rgba(0,0,0,0.04) !important;
 }
 
@@ -121,17 +147,18 @@ h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
 }
 
 [data-testid="stMetric"] label {
-    color: #64748b !important;
-    font-size: 0.7rem !important;
+    color: #94a3b8 !important;
+    font-size: 0.62rem !important;
     text-transform: uppercase !important;
     letter-spacing: 0.06em !important;
-    font-weight: 500 !important;
+    font-weight: 600 !important;
 }
 
 [data-testid="stMetric"] [data-testid="stMetricValue"] {
     color: #1e293b !important;
     font-family: 'JetBrains Mono', monospace !important;
-    font-weight: 600 !important;
+    font-variant-numeric: tabular-nums !important;
+    font-weight: 700 !important;
     font-size: 1.3rem !important;
 }
 
@@ -188,6 +215,7 @@ details[data-testid="stExpander"][open] {
     border-radius: 6px !important;
     color: #1e293b !important;
     font-family: 'JetBrains Mono', monospace !important;
+    font-variant-numeric: tabular-nums !important;
 }
 
 [data-testid="stNumberInput"] input:focus,
@@ -289,6 +317,7 @@ hr {
     font-weight: 700;
     color: #1e293b;
     font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
 }
 
 .pfe-kpi-sub {
@@ -330,6 +359,52 @@ hr {
     border-radius: 4px;
     font-weight: 600;
 }
+
+/* ── Product category badges ──────────────────────────────────────── */
+.pfe-cat {
+    color: #ffffff;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'Inter', sans-serif;
+    letter-spacing: 0.02em;
+}
+.pfe-cat-eu { background: #2563eb; }   /* EUROPEAN       */
+.pfe-cat-pd { background: #d97706; }   /* PATH-DEPENDENT */
+.pfe-cat-ma { background: #be185d; }   /* MULTI-ASSET    */
+.pfe-cat-pe { background: #7c3aed; }   /* PERIODIC       */
+
+/* ── Modifier group badges ───────────────────────────────────────── */
+.pfe-mg {
+    padding: 1px 6px;
+    border-radius: 3px;
+    font-size: 9px;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    margin-left: 6px;
+    font-family: 'Inter', sans-serif;
+}
+.pfe-mg-barrier { background: #fef3c7; color: #d97706; }
+.pfe-mg-payoff  { background: #dcfce7; color: #16a34a; }
+.pfe-mg-struct  { background: #ede9fe; color: #7c3aed; }
+
+/* ── Grouped-section (trade builder) ─────────────────────────────── */
+.pfe-group {
+    padding-left: 12px;
+    margin: 14px 0 10px;
+}
+.pfe-group-blue   { border-left: 3px solid #2563eb; }
+.pfe-group-amber  { border-left: 3px solid #f59e0b; }
+.pfe-group-green  { border-left: 3px solid #22c55e; }
+.pfe-group-purple { border-left: 3px solid #8b5cf6; }
+.pfe-group > h4 { margin: 0; font-size: 13px; font-weight: 600; color: #1e293b; }
+.pfe-group > p  { margin: 2px 0 0; font-size: 12px; color: #64748b; }
+
+/* ── Semantic number utilities (tables) ──────────────────────────── */
+.pfe-pos { color: #22c55e; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+.pfe-neg { color: #ef4444; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
+.pfe-num { color: #1e293b; font-family: 'JetBrains Mono', monospace; font-variant-numeric: tabular-nums; }
 
 /* ── Scrollbar ────────────────────────────────────────────────────── */
 ::-webkit-scrollbar {
@@ -389,10 +464,14 @@ _PLOTLY_TEMPLATE = go.layout.Template(
             title_font=dict(size=11, color="#64748b"),
         ),
         legend=dict(
-            bgcolor="rgba(255,255,255,0.9)",
-            bordercolor="#e2e8f0",
-            borderwidth=1,
-            font=dict(size=10, color="#475569"),
+            orientation="h",
+            yanchor="bottom",
+            y=1.02,
+            xanchor="right",
+            x=1,
+            bgcolor="rgba(255,255,255,0)",
+            bordercolor="rgba(0,0,0,0)",
+            font=dict(size=11, color="#475569"),
         ),
         hoverlabel=dict(
             bgcolor="#1e293b",
@@ -403,8 +482,8 @@ _PLOTLY_TEMPLATE = go.layout.Template(
                 color="#f8fafc",
             ),
         ),
-        margin=dict(l=40, r=15, t=30, b=40),
-        colorway=["#ef4444", "#3b82f6", "#22c55e", "#f59e0b", "#8b5cf6", "#06b6d4"],
+        margin=dict(l=50, r=20, t=30, b=44),
+        colorway=["#3b82f6", "#ef4444", "#22c55e", "#f59e0b", "#8b5cf6", "#06b6d4"],
     ),
 )
 
@@ -483,3 +562,63 @@ def sidebar_portfolio_item(name: str, direction: str, mtm: str = ""):
         f'</div>'
     )
     st.markdown(html, unsafe_allow_html=True)
+
+
+# ---------------------------------------------------------------------------
+# Taxonomy helpers (new in v2)
+# ---------------------------------------------------------------------------
+
+_CAT_CLS = {
+    "european":       "pfe-cat-eu",
+    "path_dependent": "pfe-cat-pd",
+    "multi_asset":    "pfe-cat-ma",
+    "periodic":       "pfe-cat-pe",
+}
+
+_MG_CLS = {
+    "barrier":    "pfe-mg-barrier",
+    "payoff":     "pfe-mg-payoff",
+    "structural": "pfe-mg-struct",
+}
+
+_GROUP_CLS = {
+    "blue":   "pfe-group-blue",
+    "amber":  "pfe-group-amber",
+    "green":  "pfe-group-green",
+    "purple": "pfe-group-purple",
+}
+
+
+def category_badge(label: str, kind: str) -> str:
+    """Return HTML for a product-category pill. kind ∈ {european, path_dependent, multi_asset, periodic}."""
+    cls = _CAT_CLS.get(kind, "pfe-cat-eu")
+    return f'<span class="pfe-cat {cls}">{label}</span>'
+
+
+def modifier_badge(label: str, group: str) -> str:
+    """Return HTML for a modifier-group pill. group ∈ {barrier, payoff, structural}."""
+    cls = _MG_CLS.get(group, "pfe-mg-struct")
+    return f'<span class="pfe-mg {cls}">{label}</span>'
+
+
+def grouped_section(title: str, subtitle: str = "", accent: str = "blue",
+                    trailing_html: str = ""):
+    """Render a left-stripe grouped section header.
+
+    accent ∈ {blue, amber, green, purple}.
+    trailing_html: optional HTML appended after the title (e.g. a modifier_badge).
+    """
+    cls = _GROUP_CLS.get(accent, "pfe-group-blue")
+    sub = f'<p>{subtitle}</p>' if subtitle else ''
+    st.markdown(
+        f'<div class="pfe-group {cls}">'
+        f'<h4>{title}{trailing_html}</h4>{sub}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def signed_number(value: float, fmt: str = ",.0f") -> str:
+    """Return HTML for a mono-tabular number colored by sign."""
+    cls = "pfe-pos" if value >= 0 else "pfe-neg"
+    sign = "+" if value >= 0 else "−"
+    return f'<span class="{cls}">{sign}{abs(value):{fmt}}</span>'
