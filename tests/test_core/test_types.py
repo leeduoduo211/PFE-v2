@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from pfev2.core.types import AssetClass, TimeGrid, MarketData, PFEConfig
-from pfev2.core.exceptions import MarketDataError, CorrelationMatrixError, ConfigError
+
+from pfev2.core.exceptions import ConfigError, CorrelationMatrixError, MarketDataError
+from pfev2.core.types import AssetClass, MarketData, PFEConfig, TimeGrid
 
 
 class TestAssetClass:

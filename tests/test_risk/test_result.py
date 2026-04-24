@@ -1,6 +1,7 @@
 import numpy as np
-from pfev2.risk.result import PFEResult
+
 from pfev2.core.types import PFEConfig
+from pfev2.risk.result import PFEResult
 
 
 def test_peak_pfe():

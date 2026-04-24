@@ -1,7 +1,8 @@
 import numpy as np
-from pfev2.risk.pfe import compute_pfe
-from pfev2.instruments.vanilla import VanillaOption
+
 from pfev2.core.types import MarketData, PFEConfig
+from pfev2.instruments.vanilla import VanillaOption
+from pfev2.risk.pfe import compute_pfe
 
 
 def test_margined_less_than_unmargined():

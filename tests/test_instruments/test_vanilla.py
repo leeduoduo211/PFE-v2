@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from pfev2.instruments.vanilla import VanillaOption
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.vanilla import VanillaOption
 
 
 class TestVanillaOption:

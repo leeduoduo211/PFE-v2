@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from pfev2.instruments.dispersion import Dispersion
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.dispersion import Dispersion
 
 
 class TestDispersionPayoff:

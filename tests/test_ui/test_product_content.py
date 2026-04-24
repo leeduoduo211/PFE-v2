@@ -5,18 +5,16 @@ These tests verify structural completeness and consistency with the registry,
 not rendering logic.
 """
 
-import pytest
-from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
 from ui.utils.product_content import (
-    PRODUCT_SECTIONS,
-    PRODUCT_DESCRIPTIONS,
     CATEGORY_COLORS,
-    MODIFIER_SECTIONS,
     MODIFIER_GROUP_COLORS,
+    MODIFIER_SECTIONS,
+    PRODUCT_DESCRIPTIONS,
     PRODUCT_SCENARIOS,
+    PRODUCT_SECTIONS,
     SPARKLINE_SUPPORTED,
 )
-
+from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
 
 # ---------------------------------------------------------------------------
 # TestProductSections

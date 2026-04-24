@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from pfev2.instruments.tarf import TARF
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.tarf import TARF
 
 
 def make_tarf(**kwargs):

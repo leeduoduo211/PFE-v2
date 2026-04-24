@@ -67,3 +67,62 @@ class BaseInstrument(ABC):
 
     def observation_dates(self) -> np.ndarray | None:
         return None
+
+    # ------------------------------------------------------------------
+    # Shared helpers for subclasses
+    # ------------------------------------------------------------------
+
+    def _resolve_obs_indices(
+        self,
+        schedule: np.ndarray,
+        n_steps: int,
+        t_grid: np.ndarray | None,
+    ) -> np.ndarray:
+        """Convert observation times in ``schedule`` to path indices.
+
+        Common helper for Asian / Cliquet / RangeAccrual / Accumulator /
+        Autocallable / TARF. Replaces the ~8 lines of identical
+        ``np.searchsorted + np.clip`` logic previously duplicated in each
+        payoff implementation.
+
+        Parameters
+        ----------
+        schedule : np.ndarray
+            Absolute observation times (in years).
+        n_steps : int
+            Number of time points in the simulated path (``path_history.shape[1]``).
+        t_grid : np.ndarray or None
+            Explicit simulation time grid (passed from nested pricing). When
+            ``None`` a uniform grid from ``0`` to ``self.maturity`` is assumed.
+
+        Returns
+        -------
+        obs_indices : np.ndarray[int]
+            Path-history indices at which to read spot prices, clipped to
+            ``[0, n_steps - 1]``.
+        """
+        if t_grid is not None:
+            obs_indices = np.searchsorted(t_grid, schedule, side="right") - 1
+        else:
+            t_grid_full = np.linspace(0.0, self.maturity, n_steps)
+            obs_indices = np.searchsorted(t_grid_full, schedule, side="right") - 1
+        return np.clip(obs_indices, 0, n_steps - 1)
+
+    @staticmethod
+    def _validate_schedule(schedule, maturity: float, name: str = "schedule") -> None:
+        """Validate that no scheduled observation date exceeds ``maturity``.
+
+        Called from ``__init__`` of path-scheduled instruments. Prevents
+        silent clipping at the path's final index when the user supplies
+        out-of-range dates.
+        """
+        arr = np.asarray(schedule, dtype=float)
+        if arr.size == 0:
+            return
+        if np.any(arr < 0):
+            raise InstrumentError(f"{name} must be non-negative; got min={arr.min():.4f}")
+        if np.any(arr > maturity + 1e-12):
+            raise InstrumentError(
+                f"{name} dates must be <= maturity ({maturity}); "
+                f"got max={arr.max():.4f}"
+            )

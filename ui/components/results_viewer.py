@@ -6,12 +6,16 @@ All Plotly charts use the pfe_light template registered by ui.theme.
 import io
 
 import numpy as np
-import streamlit as st
 import plotly.graph_objects as go
+import streamlit as st
 
 from ui.theme import (
-    section_label, kpi_card,
-    ICON_PEAK, ICON_SCALE, ICON_MONEY, ICON_CLOCK,
+    ICON_CLOCK,
+    ICON_MONEY,
+    ICON_PEAK,
+    ICON_SCALE,
+    kpi_card,
+    section_label,
 )
 
 # Chart trace colors
@@ -183,8 +187,6 @@ def _render_pfe_epe(result: dict):
     fig.update_layout(
         xaxis_title="Time (weeks)", yaxis_title="Exposure",
         hovermode="x unified", height=320,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-                    bgcolor="rgba(255,255,255,0)", bordercolor="rgba(0,0,0,0)"),
     )
     st.plotly_chart(fig, use_container_width=True, key="pfe_epe_chart")
 
@@ -223,8 +225,6 @@ def _render_fan(result: dict):
 
     fig.update_layout(
         xaxis_title="Time (weeks)", yaxis_title="Exposure", height=280,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-                    bgcolor="rgba(255,255,255,0)", bordercolor="rgba(0,0,0,0)"),
     )
     st.plotly_chart(fig, use_container_width=True, key="fan_chart")
 
@@ -264,26 +264,8 @@ def _render_per_trade(result: dict, trade_ids: list):
 
     fig.update_layout(
         xaxis_title="Time (weeks)", yaxis_title="PFE Contribution", height=280,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-                    bgcolor="rgba(255,255,255,0)", bordercolor="rgba(0,0,0,0)"),
     )
     st.plotly_chart(fig, use_container_width=True, key="per_trade_chart")
-
-
-# These are still called from app.py for backward compat — they delegate to internal fns
-def render_pfe_epe_chart(result: dict):
-    """Standalone PFE/EPE chart — now rendered inside summary sub-tabs."""
-    pass
-
-
-def render_fan_chart(result: dict):
-    """Standalone fan chart — now rendered inside summary sub-tabs."""
-    pass
-
-
-def render_per_trade_breakdown(result: dict, trade_ids: list):
-    """Standalone per-trade breakdown — now rendered inside summary sub-tabs."""
-    pass
 
 
 def render_run_comparison(key_prefix: str = "cmp"):
@@ -365,8 +347,6 @@ def render_run_comparison(key_prefix: str = "cmp"):
     fig.update_layout(
         xaxis_title="Time (weeks)", yaxis_title="Exposure",
         hovermode="x unified", height=300,
-        legend=dict(orientation="h", yanchor="bottom", y=1.02, xanchor="right", x=1,
-                    bgcolor="rgba(255,255,255,0)", bordercolor="rgba(0,0,0,0)"),
     )
     st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}_comparison_chart")
 

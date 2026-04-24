@@ -1,6 +1,6 @@
 import numpy as np
-import pytest
-from ui.utils.converters import build_market_data, build_instrument, build_portfolio, build_config
+
+from ui.utils.converters import build_config, build_instrument, build_market_data, build_portfolio
 
 
 class TestBuildMarketData:

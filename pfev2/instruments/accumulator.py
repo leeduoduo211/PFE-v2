@@ -1,6 +1,7 @@
 import numpy as np
-from pfev2.instruments.base import BaseInstrument
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.base import BaseInstrument
 
 
 class Accumulator(BaseInstrument):
@@ -46,6 +47,7 @@ class Accumulator(BaseInstrument):
         self.leverage = leverage
         self.side = side
         self.schedule = np.asarray(schedule)
+        self._validate_schedule(self.schedule, maturity)
 
     @property
     def requires_full_path(self) -> bool:

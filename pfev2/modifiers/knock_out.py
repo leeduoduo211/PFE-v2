@@ -1,6 +1,7 @@
 import numpy as np
-from pfev2.modifiers.base import BaseModifier
+
 from pfev2.core.exceptions import ModifierError
+from pfev2.modifiers.base import BaseModifier
 
 _VALID_OBSERVATION_STYLES = ("continuous", "discrete", "window")
 

@@ -44,6 +44,15 @@ class BaseModifier:
 
     @property
     def requires_full_path(self) -> bool:
+        """Whether this modifier needs the full simulated path.
+
+        The default returns ``True`` — safe for any modifier that observes
+        prices along the path (barriers, knock-in/out, realized-vol, schedule,
+        target-profit). Payoff-only modifiers (``PayoffCap``, ``PayoffFloor``,
+        ``LeverageModifier``) override this to delegate to
+        ``self._inner.requires_full_path`` so wrapping an otherwise-European
+        trade doesn't force path-dependent pricing.
+        """
         return True
 
     def is_alive(self, t: float) -> bool:

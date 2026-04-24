@@ -10,19 +10,19 @@ Returns a trade spec dict compatible with session state portfolio format:
 """
 
 import streamlit as st
-from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
-from ui.utils.session import get_asset_names
+
 from ui.components.payoff_display import payoff_formula, payoff_sparkline
 from ui.utils.product_content import (
-    PRODUCT_SECTIONS,
     CATEGORY_COLORS,
-    PRODUCT_DESCRIPTIONS,
     MODIFIER_GROUP_COLORS,
     MODIFIER_SECTIONS,
+    PRODUCT_DESCRIPTIONS,
     PRODUCT_SCENARIOS,
+    PRODUCT_SECTIONS,
     SPARKLINE_SUPPORTED,
 )
-
+from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
+from ui.utils.session import get_asset_names
 
 # ---------------------------------------------------------------------------
 # Edit-flow helper: seed widget session state from an existing trade spec.
@@ -198,7 +198,8 @@ def _render_field(field: dict, key: str, asset_names: list[str], n_selected: int
             st.warning(f"{label}: no assets defined yet")
             return None
         options = [None] + list(range(len(asset_names)))
-        fmt = lambda i: "None (first asset)" if i is None else f"[{i}] {asset_names[i]}"
+        def fmt(i):
+            return "None (first asset)" if i is None else f"[{i}] {asset_names[i]}"
         val = st.selectbox(label, options=options, format_func=fmt, help=help_, key=key)
         return val  # None or int
 
@@ -211,7 +212,6 @@ def _render_field(field: dict, key: str, asset_names: list[str], n_selected: int
             horizontal=True,
             key=f"{key}_mode",
         )
-        mat_key = f"{key}_maturity_ref"
         # We can't directly read the maturity widget here, so we ask the user
         # to supply the maturity numerically for auto-generation.
         if sched_mode == "Monthly":

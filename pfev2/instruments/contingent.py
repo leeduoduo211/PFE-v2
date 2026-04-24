@@ -1,6 +1,7 @@
 import numpy as np
-from pfev2.instruments.base import BaseInstrument
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.base import BaseInstrument
 
 
 class ContingentOption(BaseInstrument):
@@ -43,9 +44,9 @@ class ContingentOption(BaseInstrument):
     ):
         super().__init__(trade_id, maturity, notional, asset_indices)
         if trigger_direction not in ("up", "down"):
-            raise InstrumentError(f"trigger_direction must be 'up' or 'down'")
+            raise InstrumentError("trigger_direction must be 'up' or 'down'")
         if target_type not in ("call", "put"):
-            raise InstrumentError(f"target_type must be 'call' or 'put'")
+            raise InstrumentError("target_type must be 'call' or 'put'")
         self.trigger_asset_pos = list(asset_indices).index(trigger_asset_idx)
         self.target_asset_pos = list(asset_indices).index(target_asset_idx)
         self.trigger_barrier = trigger_barrier

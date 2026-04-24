@@ -1,4 +1,5 @@
 import numpy as np
+
 from pfev2.instruments.accumulator import Accumulator
 from pfev2.modifiers.target_profit import TargetProfit
 

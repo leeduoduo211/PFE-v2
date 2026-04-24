@@ -1,7 +1,8 @@
 import numpy as np
-from pfev2.engine.gbm import MultivariateGBM
-from pfev2.engine.backends.numpy_backend import NumpyBackend
+
 from pfev2.core.types import MarketData, TimeGrid
+from pfev2.engine.backends.numpy_backend import NumpyBackend
+from pfev2.engine.gbm import MultivariateGBM
 
 
 def test_same_seed_same_paths():

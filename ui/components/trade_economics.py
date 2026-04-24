@@ -8,13 +8,12 @@ import numpy as np
 import streamlit as st
 
 from ui.components.payoff_display import (
+    _PATH_DEPENDENT_MODIFIERS,
+    _PATH_DEPENDENT_TYPES,
+    _apply_non_path_modifier,
     _compute_european_payoff,
     _compute_path_dependent_payoff,
-    _apply_non_path_modifier,
-    _PATH_DEPENDENT_TYPES,
-    _PATH_DEPENDENT_MODIFIERS,
 )
-
 
 # ---------------------------------------------------------------------------
 # Formatting helpers
@@ -230,7 +229,7 @@ def _ts_accumulator_decumulator(params: dict, direction: str) -> str:
 
 
 def _ts_dispersion(params: dict, direction: str) -> str:
-    asset = _asset_phrase(params)
+    _asset_phrase(params)
     basket_type = params.get("basket_type", "call")
     basket_K = _fmt_num(params.get("basket_strike", 0.0))
     head = _header(direction, "dispersion trade", params) + f", basket {basket_type} strike {basket_K}."

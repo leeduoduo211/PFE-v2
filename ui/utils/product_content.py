@@ -6,14 +6,17 @@ and related UI components.
 """
 
 # ---------------------------------------------------------------------------
-# Category colors
+# Category colors — derived from the single source of truth in ui.theme.
+# The dict shape is preserved for call-site compatibility.
 # ---------------------------------------------------------------------------
 
+from ui.theme import COLORS as _THEME
+
 CATEGORY_COLORS = {
-    "European":       "#3b82f6",
-    "Path-dependent": "#22c55e",
-    "Multi-asset":    "#8b5cf6",
-    "Periodic":       "#f59e0b",
+    "European":       _THEME["cat_european"],
+    "Path-dependent": _THEME["cat_path_dependent"],
+    "Multi-asset":    _THEME["cat_multi_asset"],
+    "Periodic":       _THEME["cat_periodic"],
 }
 
 # ---------------------------------------------------------------------------
@@ -101,13 +104,15 @@ PRODUCT_DESCRIPTIONS = {
 # Product sections — field groupings for each instrument
 # ---------------------------------------------------------------------------
 
-# Colour shorthand
-_BLUE   = "#3b82f6"
-_GREEN  = "#22c55e"
-_AMBER  = "#f59e0b"
-_RED    = "#ef4444"
-_PURPLE = "#8b5cf6"
-_INDIGO = "#6366f1"
+# Form-section accent colours — aliased to the theme palette so the whole
+# UI draws from one source of truth. These are semantic accents for grouping
+# fields inside a trade builder form, NOT category colours.
+_BLUE   = _THEME["blue"]
+_GREEN  = _THEME["green"]
+_AMBER  = _THEME["amber"]
+_RED    = _THEME["red"]
+_PURPLE = _THEME["purple"]
+_INDIGO = "#6366f1"  # indigo is only used for the PFE-v2 sidebar logo gradient
 
 PRODUCT_SECTIONS = {
     # ── European ─────────────────────────────────────────────────────────────
@@ -329,20 +334,23 @@ PRODUCT_SECTIONS = {
 # ---------------------------------------------------------------------------
 
 MODIFIER_GROUP_COLORS = {
+    # Primary accent colours come from the theme; badge backgrounds and text
+    # are shade-matched pairs kept here since the theme doesn't currently
+    # encode them (a future refactor could move them into theme.COLORS).
     "Barrier": {
-        "color":      "#f59e0b",
+        "color":      _THEME["mod_barrier"],     # amber
         "badge_bg":   "#fef3c7",
         "badge_text": "#92400e",
     },
     "Payoff shaper": {
-        "color":      "#8b5cf6",
-        "badge_bg":   "#ede9fe",
-        "badge_text": "#6d28d9",
+        "color":      _THEME["mod_payoff"],      # green (semantic shift from purple)
+        "badge_bg":   "#dcfce7",
+        "badge_text": "#166534",
     },
     "Structural": {
-        "color":      "#3b82f6",
-        "badge_bg":   "#dbeafe",
-        "badge_text": "#1e40af",
+        "color":      _THEME["mod_structural"],  # purple
+        "badge_bg":   "#ede9fe",
+        "badge_text": "#5b21b6",
     },
 }
 

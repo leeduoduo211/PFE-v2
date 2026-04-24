@@ -2,14 +2,28 @@ __pycache__/
 *.pyc
 *.pyo
 .pytest_cache/
+.ruff_cache/
+.mypy_cache/
 *.egg-info/
 dist/
 build/
 .env
 .venv/
 *.log
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+.idea/
+.vscode/
+
+# Secrets
 .streamlit/secrets.toml
+
+# Agent / sandbox workspaces
 .claude/
+.claire/
 .superpowers/
 docs/superpowers/
 docs/ui-previews/
