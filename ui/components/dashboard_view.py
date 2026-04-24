@@ -6,15 +6,19 @@ Mirrors design/preview/Dashboard.jsx. Wired to real session state.
 from __future__ import annotations
 
 import numpy as np
-import streamlit as st
 import plotly.graph_objects as go
+import streamlit as st
 
 from ui.theme import (
-    kpi_card, category_badge, signed_number,
-    ICON_PEAK, ICON_SCALE, ICON_MONEY, ICON_CLOCK,
+    ICON_CLOCK,
+    ICON_MONEY,
+    ICON_PEAK,
+    ICON_SCALE,
+    category_badge,
+    kpi_card,
+    signed_number,
 )
 from ui.utils.registry import INSTRUMENT_REGISTRY
-
 
 _CAT_KIND = {
     "European": "european",

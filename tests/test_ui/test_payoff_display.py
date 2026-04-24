@@ -1,4 +1,5 @@
 import numpy as np
+
 from ui.components.payoff_display import payoff_formula, payoff_sparkline
 
 

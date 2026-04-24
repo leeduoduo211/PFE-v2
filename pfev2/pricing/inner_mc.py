@@ -1,7 +1,8 @@
 import numpy as np
+
 from pfev2.core.types import MarketData, TimeGrid
-from pfev2.engine.gbm import MultivariateGBM
 from pfev2.engine.cholesky import CholeskyDecomposer
+from pfev2.engine.gbm import MultivariateGBM
 from pfev2.utils.seeds import cantor_pair
 
 

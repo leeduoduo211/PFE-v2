@@ -1,8 +1,9 @@
 import numpy as np
 import pytest
-from pfev2.engine.gbm import MultivariateGBM
-from pfev2.engine.backends.numpy_backend import NumpyBackend
+
 from pfev2.core.types import MarketData, TimeGrid
+from pfev2.engine.backends.numpy_backend import NumpyBackend
+from pfev2.engine.gbm import MultivariateGBM
 
 
 @pytest.fixture

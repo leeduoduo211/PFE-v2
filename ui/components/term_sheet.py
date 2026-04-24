@@ -5,17 +5,17 @@ Counterpart to trade_builder.py: displays values instead of collecting them.
 """
 
 import streamlit as st
-from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
-from ui.utils.product_content import (
-    PRODUCT_SECTIONS,
-    CATEGORY_COLORS,
-    PRODUCT_DESCRIPTIONS,
-    MODIFIER_GROUP_COLORS,
-    MODIFIER_SECTIONS,
-)
+
 from ui.components.payoff_display import payoff_formula, payoff_sparkline
 from ui.components.trade_economics import render_trade_economics
-
+from ui.utils.product_content import (
+    CATEGORY_COLORS,
+    MODIFIER_GROUP_COLORS,
+    MODIFIER_SECTIONS,
+    PRODUCT_DESCRIPTIONS,
+    PRODUCT_SECTIONS,
+)
+from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
 
 # ---------------------------------------------------------------------------
 # Internal helpers

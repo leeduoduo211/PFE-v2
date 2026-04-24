@@ -1,5 +1,5 @@
 import numpy as np
-import pytest
+
 from pfev2.instruments.cliquet import Cliquet
 
 

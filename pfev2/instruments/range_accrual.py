@@ -1,6 +1,7 @@
 import numpy as np
-from pfev2.instruments.base import BaseInstrument
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.base import BaseInstrument
 
 
 class RangeAccrual(BaseInstrument):
@@ -18,6 +19,7 @@ class RangeAccrual(BaseInstrument):
         self.upper = upper
         self.coupon_rate = coupon_rate
         self.schedule = np.asarray(schedule)
+        self._validate_schedule(self.schedule, maturity)
 
     @property
     def requires_full_path(self) -> bool:
@@ -30,13 +32,7 @@ class RangeAccrual(BaseInstrument):
         prices = path_history[:, :, 0]
         n_paths, n_steps = prices.shape
 
-        if t_grid is not None:
-            obs_indices = np.searchsorted(t_grid, self.schedule, side="right") - 1
-            obs_indices = np.clip(obs_indices, 0, n_steps - 1)
-        else:
-            t_grid_full = np.linspace(0.0, self.maturity, n_steps)
-            obs_indices = np.searchsorted(t_grid_full, self.schedule, side="right") - 1
-            obs_indices = np.clip(obs_indices, 0, n_steps - 1)
+        obs_indices = self._resolve_obs_indices(self.schedule, n_steps, t_grid)
 
         obs_prices = prices[:, obs_indices]
         in_range = (obs_prices >= self.lower) & (obs_prices <= self.upper)

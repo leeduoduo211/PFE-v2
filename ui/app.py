@@ -2,6 +2,7 @@
 
 import sys
 from pathlib import Path
+
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 import streamlit as st
@@ -13,20 +14,20 @@ st.set_page_config(
     initial_sidebar_state="expanded",
 )
 
-from ui.theme import apply_theme, section_label, sidebar_portfolio_item
-from ui.utils.session import init_session_state
-from ui.utils.runner import run_pfe_calculation
-from ui.components.market_data_input import render_market_data_input
-from ui.components.trade_builder import render_trade_builder
-from ui.components.portfolio_table import render_portfolio_table
 from ui.components.config_panel import render_config_panel
-from ui.components.results_viewer import (
-    render_results_summary,
-    render_t0_mtm_table,
-    render_run_comparison,
-    render_result_exports,
-)
 from ui.components.dashboard_view import render_dashboard
+from ui.components.market_data_input import render_market_data_input
+from ui.components.portfolio_table import render_portfolio_table
+from ui.components.results_viewer import (
+    render_result_exports,
+    render_results_summary,
+    render_run_comparison,
+    render_t0_mtm_table,
+)
+from ui.components.trade_builder import render_trade_builder
+from ui.theme import apply_theme, section_label, sidebar_portfolio_item
+from ui.utils.runner import run_pfe_calculation
+from ui.utils.session import init_session_state
 
 apply_theme()
 init_session_state()
@@ -148,8 +149,10 @@ with st.sidebar:
     )
 
     from ui.utils.snapshots import (
-        serialize_snapshot, serialize_session,
-        deserialize_snapshot, deserialize_session,
+        deserialize_session,
+        deserialize_snapshot,
+        serialize_session,
+        serialize_snapshot,
         validate_snapshot,
     )
 

@@ -1,7 +1,8 @@
 import numpy as np
-from pfev2.modifiers.base import BaseModifier
+
 from pfev2.core.exceptions import ModifierError
-from pfev2.modifiers.knock_out import _validate_observation_params, _get_monitored_prices
+from pfev2.modifiers.base import BaseModifier
+from pfev2.modifiers.knock_out import _get_monitored_prices, _validate_observation_params
 
 
 class KnockIn(BaseModifier):

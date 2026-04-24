@@ -1,4 +1,5 @@
 import numpy as np
+
 from pfev2.instruments.digital import Digital, DualDigital, TripleDigital
 
 

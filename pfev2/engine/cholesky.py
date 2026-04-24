@@ -1,4 +1,5 @@
 import numpy as np
+
 from pfev2.core.exceptions import CorrelationMatrixError
 
 
@@ -10,7 +11,7 @@ class CholeskyDecomposer:
         regularized = corr_matrix + CholeskyDecomposer.EPSILON * np.eye(len(corr_matrix))
         try:
             return np.linalg.cholesky(regularized)
-        except np.linalg.LinAlgError:
+        except np.linalg.LinAlgError as e:
             raise CorrelationMatrixError(
                 "Cholesky decomposition failed — matrix is not positive semi-definite"
-            )
+            ) from e

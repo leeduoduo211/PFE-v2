@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from pfev2.instruments.asian import AsianOption
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.asian import AsianOption
 
 
 def _make_path(prices_1d):

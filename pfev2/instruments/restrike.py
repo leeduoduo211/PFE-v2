@@ -1,6 +1,7 @@
 import numpy as np
-from pfev2.instruments.base import BaseInstrument
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.base import BaseInstrument
 
 
 class RestrikeOption(BaseInstrument):
@@ -29,7 +30,7 @@ class RestrikeOption(BaseInstrument):
         if reset_time <= 0 or reset_time >= maturity:
             raise InstrumentError(f"reset_time must be in (0, maturity), got {reset_time}")
         if option_type not in ("call", "put"):
-            raise InstrumentError(f"option_type must be 'call' or 'put'")
+            raise InstrumentError("option_type must be 'call' or 'put'")
         self.reset_time = reset_time
         self.option_type = option_type
 

@@ -1,4 +1,5 @@
 import numpy as np
+
 from pfev2.utils.seeds import cantor_pair
 
 
