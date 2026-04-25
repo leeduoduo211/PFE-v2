@@ -1,7 +1,6 @@
-import pytest
-from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
-from ui.components.trade_economics import _TERM_SHEETS, _MODIFIER_ECONOMICS, compute_scenarios
+from ui.components.trade_economics import _MODIFIER_ECONOMICS, _TERM_SHEETS, compute_scenarios
 from ui.utils.product_content import PRODUCT_SCENARIOS
+from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
 
 
 def _make_default_params(inst_type):
@@ -86,7 +85,7 @@ class TestScenarios:
         assert len(rows) == 3
 
     def test_product_scenarios_structure(self):
-        for key, scenarios in PRODUCT_SCENARIOS.items():
+        for _key, scenarios in PRODUCT_SCENARIOS.items():
             for s in scenarios:
                 assert "label" in s
                 assert "description" in s

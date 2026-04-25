@@ -1,9 +1,10 @@
 import numpy as np
 import pytest
-from pfev2.instruments.vanilla import VanillaOption
-from pfev2.modifiers.knock_out import KnockOut
-from pfev2.modifiers.knock_in import KnockIn
+
 from pfev2.core.exceptions import ModifierError
+from pfev2.instruments.vanilla import VanillaOption
+from pfev2.modifiers.knock_in import KnockIn
+from pfev2.modifiers.knock_out import KnockOut
 
 
 class TestKnockOutObservationStyles:

@@ -1,7 +1,8 @@
 import numpy as np
+
 from pfev2.instruments.vanilla import VanillaOption
-from pfev2.modifiers.knock_out import KnockOut
 from pfev2.modifiers.cap_floor import PayoffCap
+from pfev2.modifiers.knock_out import KnockOut
 
 
 def test_ko_plus_cap():

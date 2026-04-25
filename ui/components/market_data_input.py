@@ -1,6 +1,7 @@
 """Market data input component: manual entry."""
 
 import streamlit as st
+
 from ui.components.correlation_matrix import render_correlation_matrix
 
 

@@ -1,4 +1,3 @@
-import pytest
 from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
 
 

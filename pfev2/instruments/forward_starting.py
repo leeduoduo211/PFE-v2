@@ -1,6 +1,7 @@
 import numpy as np
-from pfev2.instruments.base import BaseInstrument
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.base import BaseInstrument
 
 
 class ForwardStartingOption(BaseInstrument):

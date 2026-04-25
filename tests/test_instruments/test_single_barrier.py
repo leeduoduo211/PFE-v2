@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from pfev2.instruments.single_barrier import SingleBarrier
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.single_barrier import SingleBarrier
 
 
 def make_barrier(**kwargs):

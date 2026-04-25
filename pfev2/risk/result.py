@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Optional
 
 import numpy as np
 
@@ -18,9 +17,9 @@ class PFEResult:
     mtm_matrix: np.ndarray
     config: PFEConfig
     computation_time: float
-    per_trade_mtm: Optional[np.ndarray] = None
-    unmargined_pfe_curve: Optional[np.ndarray] = None
-    unmargined_epe_curve: Optional[np.ndarray] = None
+    per_trade_mtm: np.ndarray | None = None
+    unmargined_pfe_curve: np.ndarray | None = None
+    unmargined_epe_curve: np.ndarray | None = None
 
     def _periods_per_year(self) -> int:
         return {"daily": 252, "weekly": 52, "monthly": 12}.get(

@@ -2,11 +2,12 @@
 """Editable portfolio table with add/edit/clone/delete actions."""
 
 import copy
+
 import streamlit as st
+
 from ui.components.term_sheet import render_term_sheet
 from ui.theme import category_badge
 from ui.utils.registry import INSTRUMENT_REGISTRY
-
 
 _CAT_KIND = {
     "European": "european",

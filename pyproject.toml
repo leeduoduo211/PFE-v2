@@ -5,18 +5,82 @@ build-backend = "setuptools.build_meta"
 [project]
 name = "pfev2"
 version = "0.1.0"
-description = "Nested Monte Carlo PFE engine for light exotic derivatives"
+description = "Nested Monte Carlo Potential Future Exposure (PFE) engine for exotic derivatives, with an interactive Streamlit UI."
+readme = "README.md"
 requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [
+    { name = "Xuefeng Li", email = "lixuefeng1986@gmail.com" },
+]
+keywords = [
+    "pfe", "potential-future-exposure", "monte-carlo", "derivatives",
+    "counterparty-risk", "cva", "basel",
+]
+classifiers = [
+    "Development Status :: 4 - Beta",
+    "Intended Audience :: Financial and Insurance Industry",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Office/Business :: Financial",
+    "Topic :: Scientific/Engineering",
+]
 dependencies = ["numpy>=1.24"]
+
+[project.urls]
+Homepage = "https://github.com/leeduoduo211/PFE-v2"
+Repository = "https://github.com/leeduoduo211/PFE-v2"
+Wiki = "https://github.com/leeduoduo211/PFE-v2/wiki"
+Changelog = "https://github.com/leeduoduo211/PFE-v2/blob/master/CHANGELOG.md"
 
 [project.optional-dependencies]
 numba = ["numba>=0.59"]
 plot = ["matplotlib>=3.7"]
 ui = ["streamlit>=1.30", "plotly>=5.18"]
-dev = ["pytest>=7.0", "scipy>=1.10"]
+dev = [
+    "pytest>=7.0",
+    "scipy>=1.10",
+    "ruff>=0.5",
+]
 
 [tool.setuptools.packages.find]
 include = ["pfev2*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+
+# ---------------------------------------------------------------------------
+# Ruff: linter + formatter. Keep rules pragmatic — we want the tool to help,
+# not nag. Start strict-ish, relax false positives as they appear.
+# ---------------------------------------------------------------------------
+[tool.ruff]
+line-length = 100
+target-version = "py39"
+extend-exclude = [
+    "design/",
+    ".claude/",
+    ".claire/",
+    "docs/",
+]
+
+[tool.ruff.lint]
+select = [
+    "E", "F", "W",   # pycodestyle + pyflakes
+    "I",             # isort
+    "UP",            # pyupgrade
+    "B",             # flake8-bugbear
+]
+ignore = [
+    "E501",          # line-too-long — ruff format handles it
+    "E741",          # ambiguous var name (we use l / L for Cholesky factor)
+    "B008",          # function call in default arg (streamlit pattern)
+]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["B011", "B017"]         # allow bare assert in tests
+"ui/**" = ["F401"]                    # streamlit pages often need "unused" imports
+"ui/app.py" = ["E402", "F401"]        # set_page_config MUST precede other imports

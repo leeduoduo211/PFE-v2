@@ -2,7 +2,7 @@ import numpy as np
 import pytest
 
 try:
-    from pfev2.engine.backends.numba_backend import NumbaBackend, HAS_NUMBA
+    from pfev2.engine.backends.numba_backend import HAS_NUMBA, NumbaBackend
 except ImportError:
     HAS_NUMBA = False
 

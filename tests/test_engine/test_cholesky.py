@@ -1,7 +1,6 @@
 import numpy as np
-import pytest
+
 from pfev2.engine.cholesky import CholeskyDecomposer
-from pfev2.core.exceptions import CorrelationMatrixError
 
 
 def test_identity():

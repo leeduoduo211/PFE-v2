@@ -5,6 +5,44 @@ See [`/Users/xuefeng/.claude/CLAUDE.md`](file:///Users/xuefeng/.claude/CLAUDE.md
 
 ---
 
+## 2026-04-24 — Structural review cleanup: 20+ refactors across packaging, UI, core
+
+**Type**: Refactor + Feature
+**Summary**: Full-repo review on master identified 20+ structural issues. Fixed all actionable items in one pass: unified color tokens, split the monolithic registry, added CI, factored out duplicated observation-index logic, tightened package metadata, added ruff linting, and removed dead code. 310 tests still pass; ruff check clean.
+
+**Packaging & infrastructure**
+- `pyproject.toml` — added `readme`, `license`, `authors`, `keywords`, `classifiers`, `project.urls`. Added `ruff` as a dev dep, `[tool.ruff]` + `[tool.ruff.lint]` config with pragmatic rule set + per-file ignores.
+- Deleted `setup.cfg`, `setup.py`, `requirements.txt` — redundant with pyproject.
+- `.gitignore` — added `.DS_Store`, `.idea/`, `.vscode/`, `.ruff_cache/`, `.mypy_cache/`, `.claire/`, `Thumbs.db`.
+- `run_windows.bat` — corrected Python version hint (3.10+ → 3.9+) to match pyproject declaration.
+- `.github/workflows/ci.yml` **(new)** — ruff lint + pytest on Python 3.9/3.10/3.11/3.12.
+- `examples/README.md` **(new)** — gallery index with per-script summary.
+
+**Core library**
+- `pfev2/{core,risk,pricing,utils,engine/backends}/__init__.py` — populated previously-empty subpackage inits with proper exports (Instrument, compute_pfe, PFEResult, cantor_pair, InnerMCPricer, NumpyBackend). `from pfev2.risk import compute_pfe` now works.
+- `pfev2/instruments/base.py` — added `_resolve_obs_indices()` and `_validate_schedule()` helpers on `BaseInstrument`. The former eliminates ~8 lines of duplicated searchsorted/clip logic from 5 instruments (Asian, Cliquet, RangeAccrual, Autocallable, TARF). The latter prevents silent clipping when user supplies schedule dates past maturity.
+- `pfev2/modifiers/base.py` — documented the `requires_full_path` default + override pattern (barriers/schedule/target_profit accept default `True`; payoff-only modifiers override to delegate).
+- `pfev2/core/types.py`, `pfev2/engine/cholesky.py` — added `from err` exception chaining (ruff B904).
+
+**UI**
+- `ui/utils/product_content.py` — aliased all color constants to `ui.theme.COLORS`. Category colors, form-section accents, and modifier-group accents now derive from a single source of truth.
+- `ui/utils/registries/` **(new package)** — split 911-line `registry.py` into 5 category files (european, path_dependent, multi_asset, periodic, modifiers) plus an aggregator `__init__.py`. `registry.py` reduced to a 34-line thin re-export; all call sites unchanged.
+- `ui/utils/session_keys.py` **(new)** — central registry of `st.session_state` key names as a `SK` class, replacing scattered magic strings.
+- `ui/components/__init__.py` — cleaned exports; removed three stale stubs (`render_pfe_epe_chart`, `render_fan_chart`, `render_per_trade_breakdown`) that were all `pass`.
+- `ui/components/results_viewer.py` — dropped redundant per-chart `legend=dict(...)` overrides; the pfe_light Plotly template already provides them.
+
+**Auto-fixes (ruff --fix across 19 files)**
+- Import reordering (isort), pyupgrade modernisations (list[X] over List[X] where safe), dead imports removed.
+
+**Known intentionally-skipped items**
+- `DualDigital`/`TripleDigital` generalisation into `MultiDigital` — deferred (breaking API change, modest benefit).
+- `trade_builder.py` / `trade_economics.py` / `registry.py` further sub-splitting — deferred (high churn, low ROI at current size).
+- Comprehensive UI rendering test harness — deferred (needs Streamlit test infrastructure).
+
+**Verification**: `python3 -m pytest tests/ -v` → 310 passed, 4 skipped. `python3 -m ruff check pfev2/ ui/ tests/` → clean.
+
+---
+
 ## 2026-04-17 — UI design overhaul: 15 improvements across layout, flow, and features
 
 **Type**: Feature + Refactor

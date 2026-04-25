@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from pfev2.instruments.worst_best_of import WorstOfOption, BestOfOption
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.worst_best_of import BestOfOption, WorstOfOption
 
 
 class TestWorstOfOptionCall:

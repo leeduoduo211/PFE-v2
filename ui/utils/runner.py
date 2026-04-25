@@ -1,12 +1,14 @@
 # ui/utils/runner.py
 """Execute PFE computation with progress bar and result storage."""
 
-import traceback
 import threading
+import traceback
+
 import numpy as np
 import streamlit as st
+
 from pfev2.risk.pfe import compute_pfe
-from ui.utils.converters import build_market_data, build_portfolio, build_config
+from ui.utils.converters import build_config, build_market_data, build_portfolio
 from ui.utils.session import add_run
 
 

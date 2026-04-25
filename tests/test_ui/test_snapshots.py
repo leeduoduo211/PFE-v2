@@ -1,7 +1,8 @@
 import json
+
 import numpy as np
-import pytest
-from ui.utils.snapshots import serialize_snapshot, deserialize_snapshot, validate_snapshot
+
+from ui.utils.snapshots import deserialize_snapshot, serialize_snapshot, validate_snapshot
 
 
 class TestSerialize:

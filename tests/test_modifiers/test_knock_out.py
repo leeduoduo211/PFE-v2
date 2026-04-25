@@ -1,4 +1,5 @@
 import numpy as np
+
 from pfev2.instruments.vanilla import VanillaOption
 from pfev2.modifiers.knock_out import KnockOut
 

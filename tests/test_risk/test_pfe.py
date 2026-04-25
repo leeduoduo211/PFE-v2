@@ -1,10 +1,11 @@
 import numpy as np
 import pytest
-from pfev2.risk.pfe import compute_pfe
+
+from pfev2.core.types import MarketData, PFEConfig
+from pfev2.instruments.accumulator import Accumulator
 from pfev2.instruments.vanilla import VanillaOption
 from pfev2.instruments.worst_best_of import WorstOfOption
-from pfev2.instruments.accumulator import Accumulator
-from pfev2.core.types import MarketData, PFEConfig
+from pfev2.risk.pfe import compute_pfe
 
 
 @pytest.fixture

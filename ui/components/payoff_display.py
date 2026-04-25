@@ -8,7 +8,6 @@ import plotly.graph_objects as go
 from ui.utils.product_content import SPARKLINE_SUPPORTED
 from ui.utils.registry import INSTRUMENT_REGISTRY
 
-
 # ---------------------------------------------------------------------------
 # Formula text
 # ---------------------------------------------------------------------------
@@ -58,7 +57,7 @@ _BASE_FORMULAS = {
         f"N \u00b7 (days_in / total) \u00b7 {p.get('coupon_rate',0):.4g}"
     ),
     "Autocallable": lambda p: (
-        f"if called: coupon \u00d7 i | if not: max(worst_perf \u2212 1, put_strike \u2212 1)"
+        "if called: coupon \u00d7 i | if not: max(worst_perf \u2212 1, put_strike \u2212 1)"
     ),
     "TARF": lambda p: (
         f"\u03a3 units \u00b7 (S \u2212 {p.get('strike',0):.4g}) [target={p.get('target',0):.4g}]"

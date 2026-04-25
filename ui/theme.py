@@ -12,10 +12,9 @@ v2 refinements (design-system alignment):
   - Plotly template: horizontal top legend, softer margins.
 """
 
-import streamlit as st
 import plotly.graph_objects as go
 import plotly.io as pio
-
+import streamlit as st
 
 # ---------------------------------------------------------------------------
 # Color palette

@@ -1,4 +1,5 @@
 import numpy as np
+
 from pfev2.instruments.base import BaseInstrument
 
 
@@ -16,6 +17,7 @@ class Cliquet(BaseInstrument):
         self.local_floor = local_floor
         self.global_floor = global_floor
         self.schedule = np.asarray(schedule)
+        self._validate_schedule(self.schedule, maturity)
 
     @property
     def requires_full_path(self) -> bool:
@@ -28,13 +30,7 @@ class Cliquet(BaseInstrument):
         prices = path_history[:, :, 0]
         n_paths, n_steps = prices.shape
 
-        if t_grid is not None:
-            obs_indices = np.searchsorted(t_grid, self.schedule, side="right") - 1
-            obs_indices = np.clip(obs_indices, 0, n_steps - 1)
-        else:
-            t_grid_full = np.linspace(0.0, self.maturity, n_steps)
-            obs_indices = np.searchsorted(t_grid_full, self.schedule, side="right") - 1
-            obs_indices = np.clip(obs_indices, 0, n_steps - 1)
+        obs_indices = self._resolve_obs_indices(self.schedule, n_steps, t_grid)
 
         # Prepend index 0 as the initial reference price
         all_indices = np.concatenate([[0], obs_indices])

@@ -1,7 +1,8 @@
 import numpy as np
 import pytest
-from pfev2.instruments.range_accrual import RangeAccrual
+
 from pfev2.core.exceptions import InstrumentError
+from pfev2.instruments.range_accrual import RangeAccrual
 
 
 def make_instrument(**kwargs):

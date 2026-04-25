@@ -6,9 +6,9 @@ from enum import Enum
 import numpy as np
 
 from pfev2.core.exceptions import (
-    MarketDataError,
-    CorrelationMatrixError,
     ConfigError,
+    CorrelationMatrixError,
+    MarketDataError,
 )
 
 
@@ -84,8 +84,10 @@ class MarketData:
     def index_of(self, name: str) -> int:
         try:
             return self.asset_names.index(name)
-        except ValueError:
-            raise MarketDataError(f"Asset '{name}' not found in {self.asset_names}")
+        except ValueError as e:
+            raise MarketDataError(
+                f"Asset '{name}' not found in {self.asset_names}"
+            ) from e
 
     def evolve(self, new_spots: np.ndarray, t: float) -> MarketData:
         return MarketData(

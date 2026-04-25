@@ -3,7 +3,6 @@
 
 import streamlit as st
 
-
 _GRID_STEPS_PER_YEAR = {"daily": 252, "weekly": 52, "monthly": 12}
 
 
