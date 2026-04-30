@@ -164,12 +164,14 @@ def _compute_path_dependent_payoff(inst_type: str, params: dict, spots: np.ndarr
         return np.zeros_like(spots)
 
     n_steps = 20
+    maturity = float(params.get("maturity", getattr(inst, "maturity", 1.0)))
+    t_grid = np.linspace(0.0, maturity, n_steps)
     payoffs = np.zeros(len(spots))
     for i, s in enumerate(spots):
         path = np.full((1, n_steps, n_assets), s)
         spots_terminal = np.full((1, n_assets), s)
         try:
-            payoffs[i] = inst.payoff(spots_terminal, path)[0]
+            payoffs[i] = inst.payoff(spots_terminal, path, t_grid)[0]
         except Exception:
             payoffs[i] = 0.0
     return payoffs

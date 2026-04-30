@@ -12,6 +12,8 @@ v2 refinements (design-system alignment):
   - Plotly template: horizontal top legend, softer margins.
 """
 
+from html import escape as _html_escape
+
 import plotly.graph_objects as go
 import plotly.io as pio
 import streamlit as st
@@ -420,6 +422,205 @@ hr {
 ::-webkit-scrollbar-thumb:hover {
     background: #94a3b8;
 }
+
+/* Design-system shell refinements */
+.pfe-app-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    gap: 16px;
+    padding: 2px 0 14px 0;
+    border-bottom: 1px solid #f1f5f9;
+    margin-bottom: 14px;
+}
+.pfe-page-title {
+    font-size: 24px;
+    font-weight: 700;
+    line-height: 1.18;
+    color: #1e293b;
+    letter-spacing: 0;
+    margin: 0;
+}
+.pfe-page-sub {
+    font-size: 13px;
+    color: #64748b;
+    margin-top: 4px;
+}
+.pfe-chip-row {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    gap: 6px;
+}
+.pfe-chip {
+    display: inline-flex;
+    align-items: center;
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    border-radius: 999px;
+    color: #475569;
+    font-size: 11px;
+    font-weight: 500;
+    padding: 4px 8px;
+}
+.pfe-chip .num {
+    font-family: 'JetBrains Mono', monospace;
+    color: #1e293b;
+    margin-left: 4px;
+}
+.pfe-mode-shell {
+    display: flex;
+    justify-content: flex-end;
+    margin-bottom: 8px;
+}
+.pfe-mode-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+.pfe-workflow {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 8px;
+    margin: 4px 0 16px;
+}
+.pfe-step {
+    border: 1px solid #e2e8f0;
+    background: #ffffff;
+    border-radius: 10px;
+    padding: 10px 12px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+}
+.pfe-step.is-done {
+    border-color: rgba(59,130,246,0.30);
+    background: rgba(59,130,246,0.05);
+}
+.pfe-step.is-next {
+    border-color: rgba(245,158,11,0.35);
+    background: rgba(245,158,11,0.07);
+}
+.pfe-step-num {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px;
+    color: #94a3b8;
+}
+.pfe-step-title {
+    font-size: 13px;
+    color: #1e293b;
+    font-weight: 600;
+    margin-top: 2px;
+}
+.pfe-step-state {
+    font-size: 11px;
+    color: #64748b;
+    margin-top: 2px;
+}
+.pfe-card-title {
+    font-size: 15px;
+    font-weight: 600;
+    color: #1e293b;
+    margin: 6px 0 2px;
+}
+.pfe-card-sub {
+    font-size: 12px;
+    color: #64748b;
+    margin-bottom: 8px;
+}
+.pfe-run-banner {
+    background: rgba(59,130,246,0.10);
+    border: 1px solid rgba(59,130,246,0.25);
+    border-radius: 8px;
+    padding: 12px 16px;
+    color: #475569;
+    font-size: 13px;
+    margin: 12px 0;
+}
+.pfe-run-banner .mono {
+    color: #1e293b;
+    font-family: 'JetBrains Mono', monospace;
+}
+.pfe-sidebar-brand {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 4px 0 14px;
+    border-bottom: 1px solid #e2e8f0;
+    margin-bottom: 14px;
+}
+.pfe-sidebar-logo {
+    width: 32px;
+    height: 32px;
+    border-radius: 8px;
+    background: linear-gradient(135deg,#3b82f6,#6366f1);
+    color: #ffffff;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 14px;
+}
+.pfe-sidebar-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.1;
+}
+.pfe-sidebar-sub {
+    font-size: 11px;
+    color: #94a3b8;
+}
+.pfe-sidebar-overline {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: #94a3b8;
+    font-weight: 600;
+    margin: 14px 0 6px;
+}
+.pfe-sidebar-summary {
+    background: #f8fafc;
+    border: 1px solid #e2e8f0;
+    border-radius: 7px;
+    padding: 8px 10px;
+    font-size: 0.72rem;
+    color: #475569;
+    margin-bottom: 8px;
+    line-height: 1.5;
+}
+.pfe-sidebar-summary-row {
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+.pfe-sidebar-summary-row span:first-child {
+    color: #94a3b8;
+}
+.pfe-sidebar-summary-row span:last-child {
+    font-family: 'JetBrains Mono', monospace;
+    color: #1e293b;
+}
+
+@media (max-width: 900px) {
+    .pfe-app-header {
+        display: block;
+    }
+    .pfe-chip-row {
+        justify-content: flex-start;
+        margin-top: 10px;
+    }
+    .pfe-workflow {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
+}
+
+@media (max-width: 560px) {
+    .pfe-workflow {
+        grid-template-columns: 1fr;
+    }
+}
 </style>
 """
 
@@ -500,7 +701,22 @@ def apply_theme():
 
 def section_label(text: str):
     """Render an uppercase section divider label."""
-    st.markdown(f'<div class="pfe-section-label">{text}</div>', unsafe_allow_html=True)
+    st.markdown(
+        f'<div class="pfe-section-label">{_html_escape(str(text))}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def card_title(title: str, subtitle: str = ""):
+    """Render a compact card heading used by data-entry sections."""
+    sub_html = (
+        f'<div class="pfe-card-sub">{_html_escape(str(subtitle))}</div>'
+        if subtitle else ""
+    )
+    st.markdown(
+        f'<div class="pfe-card-title">{_html_escape(str(title))}</div>{sub_html}',
+        unsafe_allow_html=True,
+    )
 
 
 def kpi_card(label: str, value: str, sub: str = "", css_class: str = "", icon: str = ""):
@@ -514,9 +730,9 @@ def kpi_card(label: str, value: str, sub: str = "", css_class: str = "", icon: s
     ) if icon else ""
     html = (
         f'<div class="pfe-kpi {css_class}">'
-        f'<div class="pfe-kpi-label">{icon_html}{label}</div>'
-        f'<div class="pfe-kpi-value">{value}</div>'
-        f'<div class="pfe-kpi-sub">{sub}</div>'
+        f'<div class="pfe-kpi-label">{icon_html}{_html_escape(str(label))}</div>'
+        f'<div class="pfe-kpi-value">{_html_escape(str(value))}</div>'
+        f'<div class="pfe-kpi-sub">{_html_escape(str(sub))}</div>'
         f'</div>'
     )
     st.markdown(html, unsafe_allow_html=True)
@@ -553,14 +769,53 @@ def sidebar_portfolio_item(name: str, direction: str, mtm: str = ""):
     """Render a sidebar portfolio summary item."""
     tag_cls = "pfe-tag-long" if direction == "long" else "pfe-tag-short"
     tag_text = "L" if direction == "long" else "S"
-    mtm_html = f'<span style="font-family:JetBrains Mono,monospace;font-size:0.7rem;color:#64748b;">{mtm}</span>' if mtm else ""
+    mtm_html = (
+        f'<span style="font-family:JetBrains Mono,monospace;font-size:0.7rem;'
+        f'color:#64748b;">{_html_escape(str(mtm))}</span>'
+        if mtm else ""
+    )
     html = (
         f'<div class="pfe-sidebar-item">'
-        f'<span style="color:#334155;font-weight:500;">{name}</span>'
+        f'<span style="color:#334155;font-weight:500;">{_html_escape(str(name))}</span>'
         f'<span><span class="{tag_cls}">{tag_text}</span> {mtm_html}</span>'
         f'</div>'
     )
     st.markdown(html, unsafe_allow_html=True)
+
+
+def sidebar_brand():
+    """Render the app brand block used in the sidebar."""
+    st.markdown(
+        '<div class="pfe-sidebar-brand">'
+        '<div class="pfe-sidebar-logo">P</div>'
+        '<div><div class="pfe-sidebar-title">PFE-v2</div>'
+        '<div class="pfe-sidebar-sub">Monte Carlo engine</div></div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def sidebar_overline(text: str):
+    """Render a sidebar section overline."""
+    st.markdown(
+        f'<div class="pfe-sidebar-overline">{_html_escape(str(text))}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def sidebar_summary(rows: list[tuple[str, str]]):
+    """Render compact key/value rows in the sidebar."""
+    rows_html = "".join(
+        '<div class="pfe-sidebar-summary-row">'
+        f'<span>{_html_escape(str(label))}</span>'
+        f'<span>{_html_escape(str(value))}</span>'
+        '</div>'
+        for label, value in rows
+    )
+    st.markdown(
+        f'<div class="pfe-sidebar-summary">{rows_html}</div>',
+        unsafe_allow_html=True,
+    )
 
 
 # ---------------------------------------------------------------------------
@@ -591,13 +846,13 @@ _GROUP_CLS = {
 def category_badge(label: str, kind: str) -> str:
     """Return HTML for a product-category pill. kind ∈ {european, path_dependent, multi_asset, periodic}."""
     cls = _CAT_CLS.get(kind, "pfe-cat-eu")
-    return f'<span class="pfe-cat {cls}">{label}</span>'
+    return f'<span class="pfe-cat {cls}">{_html_escape(str(label))}</span>'
 
 
 def modifier_badge(label: str, group: str) -> str:
     """Return HTML for a modifier-group pill. group ∈ {barrier, payoff, structural}."""
     cls = _MG_CLS.get(group, "pfe-mg-struct")
-    return f'<span class="pfe-mg {cls}">{label}</span>'
+    return f'<span class="pfe-mg {cls}">{_html_escape(str(label))}</span>'
 
 
 def grouped_section(title: str, subtitle: str = "", accent: str = "blue",
@@ -608,10 +863,10 @@ def grouped_section(title: str, subtitle: str = "", accent: str = "blue",
     trailing_html: optional HTML appended after the title (e.g. a modifier_badge).
     """
     cls = _GROUP_CLS.get(accent, "pfe-group-blue")
-    sub = f'<p>{subtitle}</p>' if subtitle else ''
+    sub = f'<p>{_html_escape(str(subtitle))}</p>' if subtitle else ''
     st.markdown(
         f'<div class="pfe-group {cls}">'
-        f'<h4>{title}{trailing_html}</h4>{sub}</div>',
+        f'<h4>{_html_escape(str(title))}{trailing_html}</h4>{sub}</div>',
         unsafe_allow_html=True,
     )
 
@@ -619,5 +874,106 @@ def grouped_section(title: str, subtitle: str = "", accent: str = "blue",
 def signed_number(value: float, fmt: str = ",.0f") -> str:
     """Return HTML for a mono-tabular number colored by sign."""
     cls = "pfe-pos" if value >= 0 else "pfe-neg"
-    sign = "+" if value >= 0 else "−"
+    sign = "+" if value >= 0 else "-"
     return f'<span class="{cls}">{sign}{abs(value):{fmt}}</span>'
+
+
+def page_header(title: str, subtitle: str = "", right_html: str = ""):
+    """Render a tab page header — bold title + slate subtitle + optional right-aligned HTML.
+
+    right_html is raw HTML (e.g. a chip, badge, or link). For interactive
+    Streamlit widgets in the right slot, wrap the call in st.columns instead.
+    """
+    right = (
+        f'<div style="margin-left:auto;display:flex;align-items:center;gap:8px;">'
+        f'{right_html}</div>'
+    ) if right_html else ""
+    sub = (
+        f'<div style="font-size:13px;color:#64748b;margin-top:2px;">'
+        f'{_html_escape(str(subtitle))}</div>'
+    ) if subtitle else ""
+    st.markdown(
+        f'<div style="display:flex;align-items:flex-start;gap:12px;'
+        f'padding:4px 0 14px 0;border-bottom:1px solid #f1f5f9;margin-bottom:14px;">'
+        f'<div><div style="font-size:22px;font-weight:700;color:#1e293b;'
+        f'line-height:1.2;">{_html_escape(str(title))}</div>{sub}</div>{right}'
+        f'</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def app_header(title: str, subtitle: str = "", chips: list[tuple[str, str]] = None):
+    """Render the main app header with optional design-system chips."""
+    chips = chips or []
+    chips_html = "".join(
+        '<span class="pfe-chip">'
+        f'{_html_escape(str(label))}<span class="num">{_html_escape(str(value))}</span>'
+        '</span>'
+        for label, value in chips
+    )
+    chip_block = f'<div class="pfe-chip-row">{chips_html}</div>' if chips_html else ""
+    sub_html = (
+        f'<div class="pfe-page-sub">{_html_escape(str(subtitle))}</div>'
+        if subtitle else ""
+    )
+    st.markdown(
+        '<div class="pfe-app-header">'
+        f'<div><h1 class="pfe-page-title">{_html_escape(str(title))}</h1>{sub_html}</div>'
+        f'{chip_block}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def workflow_steps(steps: list[dict]):
+    """Render the four-step workflow state strip."""
+    state_label = {"done": "Complete", "next": "Next", "pending": "Pending"}
+    html = '<div class="pfe-workflow">'
+    for step in steps:
+        state = step.get("state", "pending")
+        css = "is-done" if state == "done" else ("is-next" if state == "next" else "")
+        html += (
+            f'<div class="pfe-step {css}">'
+            f'<div class="pfe-step-num">{_html_escape(str(step.get("number", "")))}</div>'
+            f'<div class="pfe-step-title">{_html_escape(str(step.get("title", "")))}</div>'
+            f'<div class="pfe-step-state">{state_label.get(state, "Pending")}</div>'
+            f'</div>'
+        )
+    html += '</div>'
+    st.markdown(html, unsafe_allow_html=True)
+
+
+def run_banner(text: str, detail: str = ""):
+    """Render a blue-tinted runtime/action banner."""
+    detail_html = f' <span class="mono">{_html_escape(str(detail))}</span>' if detail else ""
+    st.markdown(
+        f'<div class="pfe-run-banner">{_html_escape(str(text))}{detail_html}</div>',
+        unsafe_allow_html=True,
+    )
+
+
+def corr_cell_html(value: float, is_diag: bool = False) -> str:
+    """Return HTML span for a correlation matrix cell with color coding.
+
+    Positive values get a blue tint, negative red, intensity ∝ |value|.
+    Near-zero (|v| < 0.005) and diagonal cells render as muted neutral.
+    """
+    near_zero = abs(value) < 0.005
+    if is_diag or near_zero:
+        return (
+            f'<div style="text-align:right;padding:6px 8px;color:#94a3b8;'
+            f'font-family:\'JetBrains Mono\',monospace;font-variant-numeric:tabular-nums;'
+            f'font-size:13px;">{value:.2f}</div>'
+        )
+    intensity = min(abs(value), 1.0) * 0.18
+    if value > 0:
+        bg = f"rgba(59,130,246,{intensity:.3f})"
+        fg = "#1e293b"
+    else:
+        bg = f"rgba(239,68,68,{intensity:.3f})"
+        fg = "#b91c1c"
+    return (
+        f'<div style="text-align:right;padding:6px 8px;background:{bg};'
+        f'color:{fg};font-family:\'JetBrains Mono\',monospace;'
+        f'font-variant-numeric:tabular-nums;font-size:13px;border-radius:3px;">'
+        f'{value:.2f}</div>'
+    )

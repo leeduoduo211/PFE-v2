@@ -105,11 +105,21 @@ def run_pfe_calculation():
     else:
         exposure = np.maximum(pfe_result.mtm_matrix, 0.0)
 
-    # Build per-trade PFE curves
+    # Build standalone per-trade PFE curves. These are useful diagnostics, but
+    # they are not marginal/netted contributions to the portfolio PFE.
     per_trade_pfe = None
     per_trade_mtm_matrix = pfe_result.per_trade_mtm  # shape (n_trades, n_outer, n_steps)
     if per_trade_mtm_matrix is not None:
-        per_trade_exposure = np.maximum(per_trade_mtm_matrix, 0.0)
+        if config.margined:
+            per_trade_exposure = np.zeros_like(per_trade_mtm_matrix)
+            for t in range(per_trade_mtm_matrix.shape[2]):
+                lookback = max(t - mpor_steps, 0)
+                per_trade_exposure[:, :, t] = np.maximum(
+                    per_trade_mtm_matrix[:, :, t] - per_trade_mtm_matrix[:, :, lookback],
+                    0.0,
+                )
+        else:
+            per_trade_exposure = np.maximum(per_trade_mtm_matrix, 0.0)
         per_trade_pfe = np.quantile(per_trade_exposure, config.confidence_level, axis=1)
 
     # Compute per-trade t=0 MtM (mean across outer paths at time step 0)
@@ -150,6 +160,9 @@ def run_pfe_calculation():
     latest["exposure_matrix"] = exposure.tolist()
     if per_trade_pfe is not None:
         latest["per_trade_pfe"] = per_trade_pfe.tolist()
+        latest["per_trade_pfe_label"] = (
+            "Standalone margined PFE" if config.margined else "Standalone unmargined PFE"
+        )
     latest["per_trade_t0_mtm"] = per_trade_t0_mtm
     st.session_state["latest_result"] = latest
 

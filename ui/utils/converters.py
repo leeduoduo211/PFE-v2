@@ -15,6 +15,14 @@ from pfev2.core.types import MarketData, PFEConfig
 from ui.utils.registry import INSTRUMENT_REGISTRY, MODIFIER_REGISTRY
 
 
+def _coerce_modifier_params(mod_type: str, params: dict) -> dict:
+    """Normalize UI widget values before constructing modifier objects."""
+    coerced = dict(params)
+    if mod_type == "TargetProfit" and isinstance(coerced.get("partial_fill"), str):
+        coerced["partial_fill"] = coerced["partial_fill"].strip().lower() == "true"
+    return coerced
+
+
 def build_market_data(state: dict) -> MarketData:
     """Construct a MarketData from a flat UI state dict."""
     return MarketData(
@@ -77,7 +85,9 @@ def build_instrument(spec: dict, name_to_idx: dict):
     for mod_spec in spec.get("modifiers", []):
         mod_reg = MODIFIER_REGISTRY[mod_spec["type"]]
         mod_cls = mod_reg["cls"]
-        mod_params = dict(mod_spec.get("params", {}))
+        mod_params = _coerce_modifier_params(
+            mod_spec["type"], mod_spec.get("params", {})
+        )
         wrapped = mod_cls(wrapped, **mod_params)
 
     return wrapped

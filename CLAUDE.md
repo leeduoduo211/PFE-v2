@@ -5,6 +5,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 ## Commands
 
 ```bash
+# Windows local environment (preferred on this machine)
+PYTHONUTF8=1 /c/Users/Xuefeng/Anaconda3/envs/csi300/python.exe -X utf8 -m pytest tests/ -v
+PYTHONUTF8=1 /c/Users/Xuefeng/Anaconda3/envs/csi300/python.exe -X utf8 -c "from pfev2 import compute_pfe; print('OK')"
+PYTHONUTF8=1 /c/Users/Xuefeng/Anaconda3/envs/csi300/python.exe -X utf8 -m streamlit run ui/app.py
+
 # Install (editable, core only)
 pip3 install -e .
 

@@ -9,7 +9,7 @@ import streamlit as st
 
 st.set_page_config(
     page_title="PFE-v2",
-    page_icon="◈",
+    page_icon="P",
     layout="wide",
     initial_sidebar_state="expanded",
 )
@@ -25,7 +25,17 @@ from ui.components.results_viewer import (
     render_t0_mtm_table,
 )
 from ui.components.trade_builder import render_trade_builder
-from ui.theme import apply_theme, section_label, sidebar_portfolio_item
+from ui.theme import (
+    app_header,
+    apply_theme,
+    card_title,
+    run_banner,
+    sidebar_brand,
+    sidebar_overline,
+    sidebar_portfolio_item,
+    sidebar_summary,
+    workflow_steps,
+)
 from ui.utils.runner import run_pfe_calculation
 from ui.utils.session import init_session_state
 
@@ -37,29 +47,14 @@ init_session_state()
 # ---------------------------------------------------------------------------
 
 with st.sidebar:
-    st.markdown(
-        '<div style="display:flex;align-items:center;gap:10px;padding:4px 0 12px;">'
-        '<div style="width:32px;height:32px;background:linear-gradient(135deg,#3b82f6,#6366f1);'
-        'border-radius:8px;display:flex;align-items:center;justify-content:center;'
-        'color:#fff;font-weight:700;font-size:14px;">P</div>'
-        '<div><div style="font-size:18px;font-weight:700;color:#1e293b;">PFE-v2</div>'
-        '<div style="font-size:11px;color:#94a3b8;">Monte Carlo Engine</div></div>'
-        '</div>',
-        unsafe_allow_html=True,
-    )
-
-    st.markdown('<hr style="margin:0.5rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
+    sidebar_brand()
 
     # Portfolio summary
     portfolio = st.session_state["portfolio"]
     latest = st.session_state.get("latest_result")
     t0_mtm_list = latest.get("per_trade_t0_mtm", []) if latest else []
 
-    st.markdown(
-        f'<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;'
-        f'color:#94a3b8;font-weight:600;margin:8px 0 6px;">Portfolio ({len(portfolio)} trades)</div>',
-        unsafe_allow_html=True,
-    )
+    sidebar_overline(f"Portfolio ({len(portfolio)} trades)")
 
     if portfolio:
         # Portfolio summary: gross / net notional and max maturity.
@@ -81,22 +76,12 @@ with st.sidebar:
                 return f"{n / 1e3:.0f}K"
             return f"{n:.0f}"
 
-        st.markdown(
-            f'<div style="font-size:0.72rem;color:#475569;background:#f8fafc;'
-            f'border:1px solid #e2e8f0;border-radius:7px;padding:6px 9px;'
-            f'margin-bottom:8px;line-height:1.5;">'
-            f'<div style="display:flex;justify-content:space-between;">'
-            f'<span style="color:#94a3b8;">Gross notl.</span>'
-            f'<span style="font-family:JetBrains Mono,monospace;">{_fmt(gross)}</span></div>'
-            f'<div style="display:flex;justify-content:space-between;">'
-            f'<span style="color:#94a3b8;">Net notl.</span>'
-            f'<span style="font-family:JetBrains Mono,monospace;">'
-            f'{"+" if net >= 0 else ""}{_fmt(net)}</span></div>'
-            f'<div style="display:flex;justify-content:space-between;">'
-            f'<span style="color:#94a3b8;">Max maturity</span>'
-            f'<span style="font-family:JetBrains Mono,monospace;">{max_mat:.2f}y</span></div>'
-            f'</div>',
-            unsafe_allow_html=True,
+        sidebar_summary(
+            [
+                ("Gross notl.", _fmt(gross)),
+                ("Net notl.", f'{"+" if net >= 0 else ""}{_fmt(net)}'),
+                ("Max maturity", f"{max_mat:.2f}y"),
+            ]
         )
 
         for i, trade in enumerate(portfolio):
@@ -109,15 +94,9 @@ with st.sidebar:
     else:
         st.caption("No trades yet.")
 
-    st.markdown('<hr style="margin:0.5rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
-
     # Run history
     runs = st.session_state.get("runs", [])
-    st.markdown(
-        '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;'
-        'color:#94a3b8;font-weight:600;margin:8px 0 6px;">Run History</div>',
-        unsafe_allow_html=True,
-    )
+    sidebar_overline("Run history")
 
     if runs:
         _bullet = "\u25cf"
@@ -141,12 +120,7 @@ with st.sidebar:
     # Session save/load — grouped in a collapsed expander. A snapshot can be
     # either market-only (legacy v1) or a full session bundle (v2 = market +
     # portfolio + config).
-    st.markdown('<hr style="margin:0.5rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
-    st.markdown(
-        '<div style="font-size:10px;text-transform:uppercase;letter-spacing:0.8px;'
-        'color:#94a3b8;font-weight:600;margin:8px 0 6px;">Save &amp; load</div>',
-        unsafe_allow_html=True,
-    )
+    sidebar_overline("Save & load")
 
     from ui.utils.snapshots import (
         deserialize_session,
@@ -227,6 +201,7 @@ if "view_mode" not in st.session_state:
 
 _tog_left, _tog_right = st.columns([5, 2])
 with _tog_right:
+    st.markdown('<div class="pfe-mode-label">View mode</div>', unsafe_allow_html=True)
     _mode = st.radio(
         "View",
         options=["wizard", "dashboard"],
@@ -249,46 +224,47 @@ if st.session_state["view_mode"] == "dashboard":
 # ---------------------------------------------------------------------------
 
 # Page header — gives orientation before the tabbed workflow
-st.markdown(
-    '<div style="margin-bottom:0.6rem;">'
-    '<div style="font-size:24px;font-weight:700;color:#1e293b;letter-spacing:-0.01em;">'
-    'Portfolio Credit Exposure</div>'
-    '<div style="font-size:13px;color:#64748b;margin-top:2px;">'
-    'Nested Monte Carlo Potential Future Exposure on exotic derivative portfolios.'
-    '</div></div>',
-    unsafe_allow_html=True,
-)
-
 n_trades = len(st.session_state["portfolio"])
 has_market = bool(st.session_state["market"]["asset_names"])
 has_results = st.session_state.get("latest_result") is not None
+n_assets = len(st.session_state["market"]["asset_names"])
+latest = st.session_state.get("latest_result")
 
-# Step-numbered tabs with subtle state glyphs (● complete, ○ pending, ▸ next)
-def _step_label(n: int, name: str, done: bool, is_next: bool = False) -> str:
-    if done:
-        glyph = "\u25cf"        # ● complete
-    elif is_next:
-        glyph = "\u25b8"        # ▸ next
-    else:
-        glyph = "\u25cb"        # ○ pending
-    return f"{glyph}  {n}. {name}"
-
-tab_labels = [
-    _step_label(1, "Market Data", has_market, is_next=not has_market),
-    _step_label(
-        2, f"Portfolio ({n_trades})" if n_trades else "Portfolio",
-        n_trades > 0, is_next=has_market and n_trades == 0,
-    ),
-    _step_label(
-        3, "Configuration", has_results,
-        is_next=has_market and n_trades > 0 and not has_results,
-    ),
-    _step_label(4, "Results", has_results),
+header_chips = [
+    ("Assets", str(n_assets)),
+    ("Trades", str(n_trades)),
 ]
+if latest is not None:
+    header_chips.append(("Peak PFE", f'{latest.get("peak_pfe", 0):,.0f}'))
+
+app_header(
+    "Portfolio Credit Exposure",
+    "Nested Monte Carlo Potential Future Exposure on exotic derivative portfolios.",
+    chips=header_chips,
+)
+
+workflow_steps(
+    [
+        {"number": "01", "title": "Market Data", "state": "done" if has_market else "next"},
+        {
+            "number": "02",
+            "title": f"Portfolio ({n_trades})" if n_trades else "Portfolio",
+            "state": "done" if n_trades else ("next" if has_market else "pending"),
+        },
+        {
+            "number": "03",
+            "title": "Configuration",
+            "state": "done" if has_results else ("next" if has_market and n_trades else "pending"),
+        },
+        {"number": "04", "title": "Results", "state": "done" if has_results else "pending"},
+    ]
+)
+
+tab_labels = ["1. Market Data", f"2. Portfolio ({n_trades})", "3. Configuration", "4. Results"]
 tab_market, tab_portfolio, tab_config, tab_results = st.tabs(tab_labels)
 
 with tab_market:
-    st.caption("Define assets, spot prices, volatilities, and correlation structure.")
+    card_title("Market Data", "Define assets, spot prices, volatilities, and correlation structure.")
 
     # Quick-start presets — always visible, but collapsed once the user has
     # built more than one asset or added any trades. This keeps the prominent
@@ -333,7 +309,7 @@ with tab_market:
         st.warning("Correlation matrix is not positive semi-definite.")
 
 with tab_portfolio:
-    st.caption("Build trades and manage your portfolio.")
+    card_title("Portfolio", "Build trades, stack modifiers, and manage term sheets.")
 
     trade_spec = render_trade_builder(key_prefix="tab_tb")
     if trade_spec is not None:
@@ -363,7 +339,7 @@ with tab_portfolio:
     render_portfolio_table(key_prefix="tab_pt")
 
 with tab_config:
-    st.caption("Set simulation parameters and run PFE calculation.")
+    card_title("Configuration", "Set simulation parameters and run the nested Monte Carlo engine.")
 
     render_config_panel(key_prefix="tab_cfg")
 
@@ -374,6 +350,13 @@ with tab_config:
         st.button("Run PFE", key="tab_run", disabled=True)
         st.caption("Add at least one trade first.")
     else:
+        cfg = st.session_state["config"]
+        steps = {"daily": 252, "weekly": 52, "monthly": 12}.get(cfg["grid_frequency"], 52)
+        run_banner(
+            "Ready to run",
+            f'{cfg["n_outer"]:,} outer x {steps} steps x {cfg["n_inner"]:,} inner x '
+            f'{len(portfolio_specs)} trade{"s" if len(portfolio_specs) != 1 else ""}',
+        )
         if st.button("Run PFE", key="tab_run", type="primary"):
             run_pfe_calculation()
             st.session_state["_switch_to_results"] = True
@@ -382,14 +365,18 @@ with tab_config:
 with tab_results:
     latest = st.session_state.get("latest_result")
     if latest is None:
+        card_title("Results", "Peak PFE, EPE, per-trade standalone PFE, and exports.")
         st.info("No results yet. Configure and run PFE in the Configuration tab.")
     else:
         conf = latest["config"]
-        st.caption(
-            f'{latest.get("label", "Run")} \u00b7 '
-            f'{conf["n_outer"]:,} outer \u00d7 {conf["n_inner"]:,} inner \u00b7 '
-            f'{conf["confidence_level"]:.0%} confidence \u00b7 '
-            f'{latest["computation_time"]:.1f}s'
+        card_title(
+            "Results",
+            (
+                f'{latest.get("label", "Run")} | '
+                f'{conf["n_outer"]:,} outer x {conf["n_inner"]:,} inner | '
+                f'{conf["confidence_level"]:.0%} confidence | '
+                f'{latest["computation_time"]:.1f}s'
+            ),
         )
 
         render_results_summary(latest)

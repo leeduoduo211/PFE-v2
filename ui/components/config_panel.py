@@ -3,6 +3,8 @@
 
 import streamlit as st
 
+from ui.theme import card_title
+
 _GRID_STEPS_PER_YEAR = {"daily": 252, "weekly": 52, "monthly": 12}
 
 
@@ -40,6 +42,8 @@ def _fmt_seconds(s: float) -> str:
 def render_config_panel(key_prefix: str = "cfg"):
     """Render PFEConfig controls. Reads/writes st.session_state['config']."""
     config = st.session_state["config"]
+
+    card_title("Sampling", "Path counts, confidence level, grid frequency, and variance settings.")
 
     col1, col2, col3, col4 = st.columns(4)
     config["n_outer"] = col1.number_input(

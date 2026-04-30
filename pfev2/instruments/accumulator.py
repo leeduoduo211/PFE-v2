@@ -60,21 +60,12 @@ class Accumulator(BaseInstrument):
         prices = path_history[:, :, 0]
         n_paths, n_steps = prices.shape
 
-        if t_grid is not None:
-            # t_grid is relative to the current outer node: t_grid[-1] = remaining tau.
-            # Convert absolute schedule dates to relative times: t_abs = maturity - tau.
-            tau = float(t_grid[-1])
-            t_abs = self.maturity - tau
-            relative_schedule = self.schedule - t_abs
-            # Keep only observations still in the remaining path (relative time > 0)
-            future_mask = relative_schedule > 0.0
-            obs_times = relative_schedule[future_mask]
-            obs_indices = np.searchsorted(t_grid, obs_times, side="right") - 1
-            obs_indices = np.clip(obs_indices, 0, n_steps - 1)
-        else:
-            t_grid_full = np.linspace(0.0, self.maturity, n_steps)
-            obs_indices = np.searchsorted(t_grid_full, self.schedule, side="right") - 1
-            obs_indices = np.clip(obs_indices, 0, n_steps - 1)
+        obs_indices = self._resolve_obs_indices(
+            self.schedule,
+            n_steps,
+            t_grid,
+            include_past=False,
+        )
 
         sign = 1.0 if self.side == "buy" else -1.0
         total_pnl = np.zeros(n_paths)

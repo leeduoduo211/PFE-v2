@@ -42,23 +42,7 @@ class RestrikeOption(BaseInstrument):
         prices = path_history[:, :, 0]
         n_paths, n_steps = prices.shape
 
-        if t_grid is not None:
-            # t_grid is relative to the current outer node: t_grid[-1] = remaining tau.
-            # Convert absolute reset_time to relative: t_abs = maturity - tau.
-            tau = float(t_grid[-1])
-            t_abs = self.maturity - tau
-            relative_reset = self.reset_time - t_abs
-            if relative_reset <= 0.0:
-                # Strike-reset date has already passed; use the node spot (index 0)
-                # as the best available proxy for S(reset_time).
-                reset_idx = 0
-            else:
-                reset_idx = int(np.searchsorted(t_grid, relative_reset, side="right")) - 1
-                reset_idx = max(0, min(reset_idx, n_steps - 2))
-        else:
-            t_grid_full = np.linspace(0.0, self.maturity, n_steps)
-            reset_idx = int(np.searchsorted(t_grid_full, self.reset_time, side="right")) - 1
-            reset_idx = max(1, min(reset_idx, n_steps - 2))
+        reset_idx = self._resolve_event_index(self.reset_time, n_steps, t_grid)
 
         s_reset = prices[:, reset_idx]
         s_terminal = prices[:, -1]

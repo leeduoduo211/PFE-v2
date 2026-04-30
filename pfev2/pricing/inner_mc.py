@@ -1,6 +1,6 @@
 import numpy as np
 
-from pfev2.core.types import MarketData, TimeGrid
+from pfev2.core.types import MarketData, PayoffTimeGrid, TimeGrid
 from pfev2.engine.cholesky import CholeskyDecomposer
 from pfev2.engine.gbm import MultivariateGBM
 from pfev2.utils.seeds import cantor_pair
@@ -132,6 +132,8 @@ class InnerMCPricer:
         remaining_grid: TimeGrid,
         n_inner: int,
         seed: int,
+        realized_paths: np.ndarray | None = None,
+        realized_grid: np.ndarray | None = None,
     ) -> np.ndarray:
         """Batch-price a path-dependent trade across ALL outer paths at once.
 
@@ -142,12 +144,19 @@ class InnerMCPricer:
         Parameters
         ----------
         all_node_spots : (n_outer, n_assets) array of spot prices at each node
+        realized_paths : optional (n_outer, t_realized, n_assets) path prefix up
+            to the valuation node. When supplied, inner future paths are appended
+            to this prefix so path-dependent payoffs can condition on prior
+            fixings, barrier events, and accrued state.
+        realized_grid : optional absolute time grid for realized_paths.
         Returns : (n_outer,) array of MtM values
         """
         n_outer, n_assets = all_node_spots.shape
         tau = remaining_grid.dates[-1]
         if tau <= 0:
             return np.zeros(n_outer)
+        if (realized_paths is None) != (realized_grid is None):
+            raise ValueError("realized_paths and realized_grid must be provided together")
 
         asset_pos = list(trade.asset_indices)
         n_trade_assets = len(asset_pos)
@@ -185,11 +194,12 @@ class InnerMCPricer:
 
             # Correlated normals
             rng = np.random.Generator(np.random.PCG64(seed + start))
-            z = rng.standard_normal((chunk_n * n_half, n_steps_gen, n_assets))
+            z = rng.standard_normal((chunk_n, n_half, n_steps_gen, n_assets))
             w = z @ L.T
 
             if self._antithetic:
-                w = np.concatenate([w, -w], axis=0)  # (chunk_n * n_eff, n_steps_gen, n_assets)
+                w = np.concatenate([w, -w], axis=1)
+            w = w.reshape(chunk_n * n_eff, n_steps_gen, n_assets)
 
             # Select trade assets from correlated normals
             w_trade = w[:, :, asset_pos]
@@ -207,8 +217,19 @@ class InnerMCPricer:
             paths[:, 0, :] = s0
             paths[:, 1:, :] = np.exp(log_s0[:, np.newaxis, :] + log_paths)
 
+            payoff_grid = remaining_grid.dates
+            if realized_paths is not None:
+                realized_chunk = realized_paths[start:end, :, :][:, :, asset_pos]
+                realized_chunk = np.repeat(realized_chunk, n_eff, axis=0)
+                paths = np.concatenate([realized_chunk, paths[:, 1:, :]], axis=1)
+                valuation_time = float(realized_grid[-1])
+                payoff_grid = PayoffTimeGrid(
+                    np.concatenate([realized_grid, valuation_time + remaining_grid.dates[1:]]),
+                    valuation_time=valuation_time,
+                )
+
             terminal_spots = paths[:, -1, :]
-            payoffs = trade.payoff(terminal_spots, paths, remaining_grid.dates)
+            payoffs = trade.payoff(terminal_spots, paths, payoff_grid)
 
             payoffs_2d = payoffs.reshape(chunk_n, n_eff)
             mean_payoffs = np.mean(payoffs_2d, axis=1)
