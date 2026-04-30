@@ -33,6 +33,8 @@ class RangeAccrual(BaseInstrument):
         n_paths, n_steps = prices.shape
 
         obs_indices = self._resolve_obs_indices(self.schedule, n_steps, t_grid)
+        if obs_indices.size == 0:
+            return np.zeros(n_paths)
 
         obs_prices = prices[:, obs_indices]
         in_range = (obs_prices >= self.lower) & (obs_prices <= self.upper)

@@ -48,10 +48,11 @@ dev = [
 ]
 
 [tool.setuptools.packages.find]
-include = ["pfev2*"]
+include = ["pfev2*", "ui*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+addopts = "-p no:cacheprovider"
 
 # ---------------------------------------------------------------------------
 # Ruff: linter + formatter. Keep rules pragmatic — we want the tool to help,

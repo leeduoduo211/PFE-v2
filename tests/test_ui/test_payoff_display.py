@@ -1,6 +1,7 @@
 import numpy as np
 
 from ui.components.payoff_display import payoff_formula, payoff_sparkline
+from ui.components.trade_economics import compute_scenarios
 
 
 class TestPayoffFormula:
@@ -318,3 +319,24 @@ class TestSparklineGating:
         }
         result = payoff_sparkline(spec, asset_names=["X"])
         assert result is not None
+
+    def test_empty_schedule_scenarios_do_not_warn(self, recwarn):
+        spec = {
+            "direction": "long",
+            "instrument_type": "AsianOption",
+            "params": {
+                "strike": 100.0,
+                "maturity": 1.0,
+                "notional": 1.0,
+                "average_type": "price",
+                "option_type": "call",
+                "schedule": [],
+                "assets": ["X"],
+            },
+            "modifiers": [],
+        }
+
+        scenarios = compute_scenarios(spec, spot=100.0, notional=1.0)
+
+        assert len(scenarios) == 3
+        assert len(recwarn) == 0

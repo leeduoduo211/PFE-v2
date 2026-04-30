@@ -230,13 +230,14 @@ def _render_fan(result: dict):
 
 
 def _render_per_trade(result: dict, trade_ids: list):
-    """Per-trade PFE contribution stacked area."""
+    """Standalone per-trade PFE stacked area."""
     if "per_trade_pfe" not in result:
         st.info("No per-trade data available.")
         return
 
     time_points = _time_in_weeks(result["time_points"])
     per_trade = result["per_trade_pfe"]
+    label = result.get("per_trade_pfe_label", "Standalone per-trade PFE")
 
     # Guard: portfolio may have changed since this run was computed
     n_available = min(len(trade_ids), len(per_trade))
@@ -263,7 +264,7 @@ def _render_per_trade(result: dict, trade_ids: list):
         ))
 
     fig.update_layout(
-        xaxis_title="Time (weeks)", yaxis_title="PFE Contribution", height=280,
+        xaxis_title="Time (weeks)", yaxis_title=label, height=280,
     )
     st.plotly_chart(fig, use_container_width=True, key="per_trade_chart")
 

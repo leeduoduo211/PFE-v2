@@ -33,6 +33,9 @@ def compute_pfe(
                     f"but market has {len(market.spots)} assets"
                 )
 
+    if not portfolio:
+        raise ConfigError("portfolio must contain at least one trade")
+
     # Build time grid from longest maturity
     max_maturity = max(t.maturity for t in portfolio)
     grid = TimeGrid.from_maturity(max_maturity, config.grid_frequency)
@@ -69,23 +72,38 @@ def compute_pfe(
     # This is critical for margined PFE: exposure(t) = max(MtM(t) - MtM(t-MPoR), 0)
     # Without t=0 MtM, the early lookback clips to zero instead of the actual premium.
 
+    def _remaining_grid_to_maturity(t_idx, maturity):
+        """Return a relative grid from the valuation node to this trade's maturity."""
+        abs_time = grid.dates[t_idx]
+        future_dates = grid.dates[t_idx:][grid.dates[t_idx:] <= maturity + 1e-12]
+        if future_dates[-1] < maturity - 1e-12:
+            future_dates = np.append(future_dates, maturity)
+        remaining_dates = future_dates - abs_time
+        return TimeGrid(dates=remaining_dates, dt=np.diff(remaining_dates))
+
     def _price_one_step(t_idx):
         """Price all trades at one time step. Returns list of (trade_idx, mtm_array)."""
         abs_time = grid.dates[t_idx]
-        remaining = grid.remaining_grid(t_idx)
-        if remaining.dates[-1] <= 0:
-            return []
-
         all_node_spots = outer_paths[:, t_idx, :]
         results = []
 
         for trade_idx, trade in enumerate(portfolio):
             if not trade.is_alive(abs_time):
                 continue
+            remaining = _remaining_grid_to_maturity(t_idx, trade.maturity)
+            if remaining.dates[-1] <= 0:
+                continue
             batch_seed = backend.derive_seed(config.seed, 0, t_idx) + cantor_pair(trade_idx, 0)
             if trade.requires_full_path:
                 trade_mtms = pricer.batch_price_path_dependent(
-                    trade, market, all_node_spots, remaining, config.n_inner, batch_seed
+                    trade,
+                    market,
+                    all_node_spots,
+                    remaining,
+                    config.n_inner,
+                    batch_seed,
+                    realized_paths=outer_paths[:, : t_idx + 1, :],
+                    realized_grid=grid.dates[: t_idx + 1],
                 )
             else:
                 trade_mtms = pricer.batch_price_european(

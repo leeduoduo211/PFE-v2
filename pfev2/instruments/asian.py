@@ -41,6 +41,8 @@ class AsianOption(BaseInstrument):
         n_paths, n_steps = prices.shape
 
         obs_indices = self._resolve_obs_indices(self.schedule, n_steps, t_grid)
+        if obs_indices.size == 0:
+            return np.zeros(n_paths)
 
         avg = np.mean(prices[:, obs_indices], axis=1)
 

@@ -1,0 +1,33 @@
+<!doctype html><html><head><meta charset="utf-8"><link rel="stylesheet" href="_base.css">
+<style>
+  .scrolls::-webkit-scrollbar { width:6px; height:6px; }
+  .scrolls::-webkit-scrollbar-track { background:#f1f5f9; }
+  .scrolls::-webkit-scrollbar-thumb { background:#cbd5e1; border-radius:3px; }
+  .scrolls::-webkit-scrollbar-thumb:hover { background:#94a3b8; }
+</style></head>
+<body><div class="card">
+<div class="overline">Custom scrollbar</div>
+<div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:flex-start;">
+  <div class="scrolls" style="height:140px;overflow-y:scroll;border:1px solid #e2e8f0;border-radius:8px;padding:12px;background:#fff;">
+    <div style="font-size:12px;color:#475569;line-height:1.7;">
+      Scroll to see the custom scrollbar.<br>Thin · 6px · no arrows.<br>
+      <span class="mono">track #f1f5f9</span><br>
+      <span class="mono">thumb #cbd5e1</span><br>
+      <span class="mono">thumb:hover #94a3b8</span><br><br>
+      Used everywhere the UI overflows — sidebar, expanders, term sheets, comparison tables.<br><br>
+      Lorem ipsum filler so this actually overflows…<br>
+      Nested Monte Carlo runs can get long.<br>
+      5,000 × 52 × 2,000 = 260,000 inner invocations.<br>
+      …one more line to push past the bottom.
+    </div>
+  </div>
+  <div>
+    <div style="font-size:12px;color:#1e293b;margin-bottom:8px;"><b>Why custom?</b></div>
+    <ul style="font-size:12px;color:#64748b;line-height:1.7;padding-left:16px;margin:0;">
+      <li>Default OS scrollbars are too wide / chunky on macOS-default-hidden + Windows.</li>
+      <li>The 6px slate thumb disappears when idle and appears on hover.</li>
+      <li>Consistent across sidebar, expanders, tables, and snapshot uploader.</li>
+    </ul>
+  </div>
+</div>
+</div></body></html>

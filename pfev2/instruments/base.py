@@ -77,6 +77,8 @@ class BaseInstrument(ABC):
         schedule: np.ndarray,
         n_steps: int,
         t_grid: np.ndarray | None,
+        *,
+        include_past: bool = True,
     ) -> np.ndarray:
         """Convert observation times in ``schedule`` to path indices.
 
@@ -94,6 +96,9 @@ class BaseInstrument(ABC):
         t_grid : np.ndarray or None
             Explicit simulation time grid (passed from nested pricing). When
             ``None`` a uniform grid from ``0`` to ``self.maturity`` is assumed.
+        include_past : bool
+            Whether observations on or before the valuation time should be
+            included when the path contains realized history.
 
         Returns
         -------
@@ -101,12 +106,86 @@ class BaseInstrument(ABC):
             Path-history indices at which to read spot prices, clipped to
             ``[0, n_steps - 1]``.
         """
+        schedule = np.asarray(schedule, dtype=float)
+        if schedule.size == 0:
+            return np.array([], dtype=int)
+
         if t_grid is not None:
-            obs_indices = np.searchsorted(t_grid, schedule, side="right") - 1
+            valuation_time = self._valuation_time_from_grid(t_grid)
+            has_explicit_valuation = hasattr(t_grid, "valuation_time")
+            grid = np.asarray(t_grid, dtype=float)
+            if grid.size == 0:
+                return np.array([], dtype=int)
+
+            # Full conditional paths are passed with an absolute grid from
+            # inception. Legacy single-node pricing may pass only the remaining
+            # relative grid; in that case convert absolute schedule dates to
+            # times relative to the valuation node and drop already-past dates.
+            is_relative_remaining = (
+                not has_explicit_valuation
+                and abs(float(grid[0])) <= 1e-12
+                and float(grid[-1]) < self.maturity - 1e-12
+            )
+            if is_relative_remaining:
+                valuation_time = self.maturity - float(grid[-1])
+                schedule = schedule - valuation_time
+                schedule = schedule[schedule > 1e-12]
+                if schedule.size == 0:
+                    return np.array([], dtype=int)
+            elif not include_past:
+                schedule = schedule[schedule > valuation_time + 1e-12]
+                if schedule.size == 0:
+                    return np.array([], dtype=int)
+
+            obs_indices = np.searchsorted(grid, schedule, side="right") - 1
         else:
             t_grid_full = np.linspace(0.0, self.maturity, n_steps)
             obs_indices = np.searchsorted(t_grid_full, schedule, side="right") - 1
         return np.clip(obs_indices, 0, n_steps - 1)
+
+    def _resolve_event_index(
+        self,
+        event_time: float,
+        n_steps: int,
+        t_grid: np.ndarray | None,
+        *,
+        exclude_terminal: bool = True,
+    ) -> int:
+        """Resolve a single absolute event date to a path-history index."""
+        max_idx = n_steps - 2 if exclude_terminal and n_steps > 1 else n_steps - 1
+        max_idx = max(0, max_idx)
+
+        if t_grid is not None:
+            has_explicit_valuation = hasattr(t_grid, "valuation_time")
+            grid = np.asarray(t_grid, dtype=float)
+            if grid.size == 0:
+                return 0
+
+            is_relative_remaining = (
+                not has_explicit_valuation
+                and abs(float(grid[0])) <= 1e-12
+                and float(grid[-1]) < self.maturity - 1e-12
+            )
+            if is_relative_remaining:
+                valuation_time = self.maturity - float(grid[-1])
+                lookup_time = event_time - valuation_time
+                if lookup_time <= 0.0:
+                    return 0
+            else:
+                lookup_time = event_time
+
+            idx = int(np.searchsorted(grid, lookup_time, side="right")) - 1
+            return max(0, min(idx, max_idx))
+
+        t_grid_full = np.linspace(0.0, self.maturity, n_steps)
+        idx = int(np.searchsorted(t_grid_full, event_time, side="right")) - 1
+        return max(1 if n_steps > 1 else 0, min(idx, max_idx))
+
+    @staticmethod
+    def _valuation_time_from_grid(t_grid: np.ndarray | None) -> float:
+        if t_grid is None:
+            return 0.0
+        return float(getattr(t_grid, "valuation_time", 0.0))
 
     @staticmethod
     def _validate_schedule(schedule, maturity: float, name: str = "schedule") -> None:

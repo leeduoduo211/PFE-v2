@@ -10,6 +10,9 @@ build/
 .env
 .venv/
 *.log
+.streamlit_*.pid
+.streamlit_*.jobid
+.tmp_apptest/
 
 # OS / editor cruft
 .DS_Store

@@ -151,6 +151,24 @@ class TestBuildInstrument:
         assert hasattr(inst, "cap")
         assert inst.cap == 0.5
 
+    def test_target_profit_false_string_is_coerced_to_bool(self):
+        spec = {
+            "trade_id": "C4",
+            "instrument_type": "VanillaOption",
+            "params": {
+                "maturity": 1.0,
+                "notional": 100_000,
+                "asset_indices": [0],
+                "strike": 100.0,
+                "option_type": "call",
+            },
+            "modifiers": [
+                {"type": "TargetProfit", "params": {"target": 10.0, "partial_fill": "false"}},
+            ],
+        }
+        inst = build_instrument(spec, {"AAPL": 0})
+        assert inst.partial_fill is False
+
 
 class TestBuildInstrumentDirection:
     def test_long_direction_preserves_notional(self):

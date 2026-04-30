@@ -38,6 +38,19 @@ class TimeGrid:
         return TimeGrid(dates=remaining_dates, dt=np.diff(remaining_dates))
 
 
+class PayoffTimeGrid(np.ndarray):
+    """Numpy time grid carrying the valuation time used to build a path."""
+
+    def __new__(cls, dates, valuation_time: float = 0.0):
+        obj = np.asarray(dates, dtype=float).view(cls)
+        obj.valuation_time = float(valuation_time)
+        return obj
+
+    def __array_finalize__(self, obj):
+        if obj is not None:
+            self.valuation_time = getattr(obj, "valuation_time", 0.0)
+
+
 @dataclass(frozen=True)
 class MarketData:
     spots: np.ndarray

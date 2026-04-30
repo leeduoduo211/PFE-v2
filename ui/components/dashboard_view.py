@@ -146,7 +146,7 @@ def _render_run_card(result: dict):
 
 
 def _render_per_trade_table(result: dict):
-    """Per-trade contribution: trade id + tag, category, MtM, std err, share, sparkline."""
+    """Standalone per-trade diagnostics: trade id, category, MtM, share, sparkline."""
     portfolio = st.session_state.get("portfolio", [])
     t0_mtm = result.get("per_trade_t0_mtm", [])
     per_trade_pfe = result.get("per_trade_pfe", None)
@@ -156,7 +156,7 @@ def _render_per_trade_table(result: dict):
         return
 
     n = min(len(portfolio), len(t0_mtm))
-    # PFE share: peak per-trade / sum(peak per-trade)
+    # Standalone PFE share: peak per-trade / sum(peak per-trade)
     if per_trade_pfe is not None and len(per_trade_pfe) >= n:
         peaks = [float(np.max(per_trade_pfe[i])) for i in range(n)]
         total_peak = sum(peaks) or 1.0
@@ -234,9 +234,9 @@ def _render_per_trade_table(result: dict):
         f'<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;'
         f'padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
         f'<div style="font-size:1.05rem;font-weight:600;color:#1e293b;margin-bottom:2px;">'
-        f'Per-trade contribution</div>'
+        f'Per-trade standalone PFE</div>'
         f'<div style="font-size:12px;color:#64748b;margin-bottom:10px;">'
-        f't=0 MtM, % of gross PFE, and MtM shape over time.</div>'
+        f't=0 MtM, % of gross standalone PFE, and MtM shape over time.</div>'
         f'<table style="width:100%;border-collapse:collapse;">{header}<tbody>{rows_html}</tbody></table>'
         f'</div>',
         unsafe_allow_html=True,
