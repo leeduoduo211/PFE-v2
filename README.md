@@ -60,7 +60,7 @@ flowchart TB
 
 The outer loop generates the *market* (what could happen). The inner loop prices the *book* in each of those markets. Correlation across assets is handled via Cholesky decomposition of the input correlation matrix.
 
-Because inner MC at every outer node is expensive, the engine vectorises European payoffs across all outer paths at once, falling back to per-path loops only for genuinely path-dependent instruments. At production scale (`5000 × 52 × 2000` = 260K inner invocations) a typical run takes ~60 seconds on one CPU; the optional Numba backend cuts that further.
+Because inner MC at every outer node is expensive, the engine vectorises European payoffs across all outer paths at once, falling back to per-path loops only for genuinely path-dependent instruments. At production scale (`5000 × 52 × 2000` = 260K inner invocations) a typical run takes ~60 seconds on one CPU. (The optional Numba backend currently only accelerates the outer GBM simulation; the inner MC chunked pricer uses NumPy directly. Wiring the backend through inner MC is a known follow-up.)
 
 ## Install
 

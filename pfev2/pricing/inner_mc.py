@@ -11,10 +11,21 @@ class InnerMCPricer:
         self._engine = engine
         self._antithetic = antithetic
         self._mem_budget = 200_000_000 // max(n_workers, 1)
-        # Cholesky cache: keyed by id(corr_matrix). Since MarketData is frozen and the
-        # same market object is reused across all time steps in compute_pfe, this avoids
-        # recomputing the identical decomposition hundreds of times per run.
-        self._chol_cache: dict = {}
+        # Cholesky factor for the market correlation matrix, populated once
+        # per pricing run via ``set_market``. The previous implementation
+        # cached factors in a dict keyed on ``id(corr_matrix)``, which (a)
+        # was not thread-safe when ``n_workers > 1`` and (b) is unsound in
+        # general because Python may reuse memory ids after GC.
+        self._chol_factor: np.ndarray | None = None
+
+    def set_market(self, market: MarketData) -> None:
+        """Precompute the Cholesky factor for ``market.corr_matrix``.
+
+        Called once per ``compute_pfe`` run before any batch pricing. Removes
+        the per-call decomposition and avoids racy lazy caching when the
+        engine pricer is shared across worker threads.
+        """
+        self._chol_factor = CholeskyDecomposer.decompose(market.corr_matrix)
 
     def price_trade(
         self,
@@ -51,7 +62,7 @@ class InnerMCPricer:
         all_node_spots: np.ndarray,
         remaining_grid: TimeGrid,
         n_inner: int,
-        seed: int,
+        seed_seq: np.random.SeedSequence,
     ) -> np.ndarray:
         """Batch-price a European trade across ALL outer paths at once.
 
@@ -62,6 +73,10 @@ class InnerMCPricer:
         Parameters
         ----------
         all_node_spots : (n_outer, n_assets) array of spot prices at each node
+        seed_seq : np.random.SeedSequence
+            Seed sequence for this (trade, time-step) — chunks spawn child
+            sequences from it. Avoids the collision-prone integer addition
+            previously used (`seed + start`).
         Returns : (n_outer,) array of MtM values
         """
         n_outer, n_assets = all_node_spots.shape
@@ -72,11 +87,9 @@ class InnerMCPricer:
         asset_pos = list(trade.asset_indices)
         n_trade_assets = len(asset_pos)
 
-        # Cholesky factor for correlated normals (cached for the lifetime of this pricer)
-        corr_id = id(market.corr_matrix)
-        if corr_id not in self._chol_cache:
-            self._chol_cache[corr_id] = CholeskyDecomposer.decompose(market.corr_matrix)
-        L = self._chol_cache[corr_id]
+        L = self._chol_factor
+        if L is None:
+            L = CholeskyDecomposer.decompose(market.corr_matrix)
 
         # Memory budget: process in chunks to stay under ~200MB
         bytes_per_element = 8
@@ -94,13 +107,16 @@ class InnerMCPricer:
         # Antithetic: generate n_inner/2 normals, mirror to -Z
         n_half = n_inner // 2 if self._antithetic else n_inner
 
-        for start in range(0, n_outer, chunk_size):
+        n_chunks = (n_outer + chunk_size - 1) // chunk_size
+        chunk_seeds = seed_seq.spawn(n_chunks)
+
+        for chunk_idx, start in enumerate(range(0, n_outer, chunk_size)):
             end = min(start + chunk_size, n_outer)
             chunk_n = end - start
             chunk_spots = all_node_spots[start:end]  # (chunk_n, n_assets)
 
             # Generate correlated normals
-            rng = np.random.Generator(np.random.PCG64(seed + start))
+            rng = np.random.Generator(np.random.PCG64(chunk_seeds[chunk_idx]))
             z = rng.standard_normal((chunk_n, n_half, n_assets))
             w = z @ L.T
 
@@ -131,7 +147,7 @@ class InnerMCPricer:
         all_node_spots: np.ndarray,
         remaining_grid: TimeGrid,
         n_inner: int,
-        seed: int,
+        seed_seq: np.random.SeedSequence,
         realized_paths: np.ndarray | None = None,
         realized_grid: np.ndarray | None = None,
     ) -> np.ndarray:
@@ -162,10 +178,9 @@ class InnerMCPricer:
         n_trade_assets = len(asset_pos)
         n_steps_gen = len(remaining_grid.dt)  # number of GBM increments
 
-        corr_id = id(market.corr_matrix)
-        if corr_id not in self._chol_cache:
-            self._chol_cache[corr_id] = CholeskyDecomposer.decompose(market.corr_matrix)
-        L = self._chol_cache[corr_id]
+        L = self._chol_factor
+        if L is None:
+            L = CholeskyDecomposer.decompose(market.corr_matrix)
         dt = remaining_grid.dt  # (n_steps_gen,)
         drift = (market.rates[asset_pos] - 0.5 * market.vols[asset_pos] ** 2)  # (n_trade_assets,)
         diffusion_scale = market.vols[asset_pos]  # (n_trade_assets,)
@@ -184,7 +199,10 @@ class InnerMCPricer:
 
         mtm_all = np.empty(n_outer)
 
-        for start in range(0, n_outer, chunk_size):
+        n_chunks = (n_outer + chunk_size - 1) // chunk_size
+        chunk_seeds = seed_seq.spawn(n_chunks)
+
+        for chunk_idx, start in enumerate(range(0, n_outer, chunk_size)):
             end = min(start + chunk_size, n_outer)
             chunk_n = end - start
 
@@ -193,7 +211,7 @@ class InnerMCPricer:
             s0 = np.repeat(chunk_trade_spots, n_eff, axis=0)
 
             # Correlated normals
-            rng = np.random.Generator(np.random.PCG64(seed + start))
+            rng = np.random.Generator(np.random.PCG64(chunk_seeds[chunk_idx]))
             z = rng.standard_normal((chunk_n, n_half, n_steps_gen, n_assets))
             w = z @ L.T
 

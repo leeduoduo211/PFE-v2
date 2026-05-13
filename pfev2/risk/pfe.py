@@ -9,7 +9,7 @@ from pfev2.engine.backends.numpy_backend import NumpyBackend
 from pfev2.engine.gbm import MultivariateGBM
 from pfev2.pricing.inner_mc import InnerMCPricer
 from pfev2.risk.result import PFEResult
-from pfev2.utils.seeds import cantor_pair
+from pfev2.utils.seeds import make_inner_mc_seed_sequence
 
 
 def compute_pfe(
@@ -56,6 +56,10 @@ def compute_pfe(
         antithetic=config.antithetic,
         n_workers=config.n_workers if use_parallel else 1,
     )
+    # Precompute the Cholesky factor for the market correlation matrix.
+    # Done once before any worker threads start, so the batch pricer has
+    # no shared mutable cache to race on under n_workers > 1.
+    pricer.set_market(market)
 
     # Generate outer paths
     outer_paths = engine.simulate(market, grid, config.n_outer, config.seed)
@@ -93,7 +97,7 @@ def compute_pfe(
             remaining = _remaining_grid_to_maturity(t_idx, trade.maturity)
             if remaining.dates[-1] <= 0:
                 continue
-            batch_seed = backend.derive_seed(config.seed, 0, t_idx) + cantor_pair(trade_idx, 0)
+            batch_seed_seq = make_inner_mc_seed_sequence(config.seed, t_idx, trade_idx)
             if trade.requires_full_path:
                 trade_mtms = pricer.batch_price_path_dependent(
                     trade,
@@ -101,13 +105,13 @@ def compute_pfe(
                     all_node_spots,
                     remaining,
                     config.n_inner,
-                    batch_seed,
+                    batch_seed_seq,
                     realized_paths=outer_paths[:, : t_idx + 1, :],
                     realized_grid=grid.dates[: t_idx + 1],
                 )
             else:
                 trade_mtms = pricer.batch_price_european(
-                    trade, market, all_node_spots, remaining, config.n_inner, batch_seed
+                    trade, market, all_node_spots, remaining, config.n_inner, batch_seed_seq
                 )
             results.append((trade_idx, trade_mtms))
         return results
