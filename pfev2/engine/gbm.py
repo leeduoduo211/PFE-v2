@@ -47,5 +47,5 @@ class MultivariateGBM:
         seed: int,
     ) -> np.ndarray:
         """Generate inner paths from a node. Returns (n_paths, T_remaining, N_assets)."""
-        inner_market = market.evolve(node_spots, t=0.0)
+        inner_market = market.evolve(node_spots)
         return self.simulate(inner_market, remaining_grid, n_paths, seed)

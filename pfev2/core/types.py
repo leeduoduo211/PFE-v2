@@ -102,7 +102,8 @@ class MarketData:
                 f"Asset '{name}' not found in {self.asset_names}"
             ) from e
 
-    def evolve(self, new_spots: np.ndarray, t: float) -> MarketData:
+    def evolve(self, new_spots: np.ndarray) -> MarketData:
+        """Return a copy of this market with only ``spots`` replaced."""
         return MarketData(
             spots=new_spots,
             vols=self.vols,

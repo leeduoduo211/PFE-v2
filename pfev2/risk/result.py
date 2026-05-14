@@ -31,14 +31,27 @@ class PFEResult:
             self.config.grid_frequency, "weeks"
         )
 
-    def time_points_in_weeks(self) -> np.ndarray:
-        """Return time points converted from years to display periods.
+    def time_points_in_periods(self) -> np.ndarray:
+        """Return time points scaled to the display period of this grid.
 
-        For weekly grids this is weeks (×52), daily grids days (×252),
-        monthly grids months (×12).  The method name is kept for backwards
-        compatibility; use ``_period_label()`` to get the correct unit string.
+        For weekly grids the result is in weeks (×52), daily in days
+        (×252), monthly in months (×12). The unit is given by
+        :meth:`period_label`.
         """
         return self.time_points * self._periods_per_year()
+
+    def period_label(self) -> str:
+        """Return the display unit string for ``time_points_in_periods``."""
+        return self._period_label()
+
+    def time_points_in_weeks(self) -> np.ndarray:
+        """Deprecated alias of :meth:`time_points_in_periods`.
+
+        Kept because UI code calls it by name; despite the name, it returns
+        days for daily grids and months for monthly grids. New code should
+        prefer :meth:`time_points_in_periods` plus :meth:`period_label`.
+        """
+        return self.time_points_in_periods()
 
     def summary(self) -> str:
         horizon = self.time_points[-1] * self._periods_per_year()

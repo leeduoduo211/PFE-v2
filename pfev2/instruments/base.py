@@ -41,6 +41,11 @@ class BaseInstrument(ABC):
             raise InstrumentError(f"notional must be non-zero, got {notional}")
         if not asset_indices:
             raise InstrumentError("asset_indices must not be empty")
+        # The 5-underlying cap matches the UI registry's variable-asset-count
+        # widgets (``"n_assets": "2-5"``) and the default sizes of
+        # ``float_list``/``select_list`` fields in the trade-builder. Lifting
+        # it here without updating the registry would let users build trades
+        # that the UI cannot round-trip.
         if len(asset_indices) > 5:
             raise InstrumentError(f"max 5 underlyings per trade, got {len(asset_indices)}")
 

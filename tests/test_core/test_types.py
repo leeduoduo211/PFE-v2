@@ -45,7 +45,7 @@ class TestMarketData:
 
     def test_evolve(self, single_asset_market):
         md = MarketData(**single_asset_market)
-        new = md.evolve(np.array([110.0]), t=0.5)
+        new = md.evolve(np.array([110.0]))
         assert new.spots[0] == 110.0
         assert new.vols[0] == md.vols[0]
 
