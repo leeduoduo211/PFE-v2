@@ -138,3 +138,13 @@ class PFEConfig:
             )
         if self.backend not in ("numpy", "numba"):
             raise ConfigError(f"backend must be 'numpy' or 'numba', got '{self.backend}'")
+        # Antithetic variates split n_inner into n_inner/2 base draws and their
+        # negations. Odd n_inner silently dropped a path (n_inner=3 ran 2);
+        # n_inner=1 yielded an empty payoff matrix whose mean was NaN, which
+        # then propagated into peak_pfe/eepe. Reject explicitly so the user
+        # gets a clear error rather than silent under-sampling.
+        if self.antithetic and (self.n_inner < 2 or self.n_inner % 2 != 0):
+            raise ConfigError(
+                f"antithetic=True requires n_inner to be even and >= 2, "
+                f"got {self.n_inner}"
+            )

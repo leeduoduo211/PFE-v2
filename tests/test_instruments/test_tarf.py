@@ -123,3 +123,27 @@ def test_invalid_target_rejected():
 def test_invalid_leverage_rejected():
     with pytest.raises(InstrumentError, match="leverage must be positive"):
         make_tarf(leverage=-1.0)
+
+
+# ── regression: target-hit-before-valuation paths must have zero MtM ────────
+
+
+def test_target_hit_before_valuation_has_zero_mtm():
+    """A TARF path that hit its target before the valuation time has no
+    future cashflow — the target amount was paid at the hit date, not at
+    maturity. MtM at later valuation nodes must therefore be zero."""
+    from pfev2.core.types import PayoffTimeGrid
+
+    tarf = TARF(
+        trade_id="T", maturity=1.0, notional=1.0,
+        asset_indices=(0,), strike=100.0, target=15.0,
+        leverage=2.0, side="buy",
+        schedule=np.array([0.25, 0.5, 0.75, 1.0]),
+    )
+    # Path: target hit at t=0.5 (cumulative PnL 10 + 20 = 30 > target 15)
+    full_path = np.array([[[100.0], [110.0], [120.0], [115.0], [105.0]]])
+    grid = PayoffTimeGrid(
+        np.array([0.0, 0.25, 0.5, 0.75, 1.0]), valuation_time=0.75
+    )
+    payoff = tarf.payoff(full_path[:, -1, :], full_path, grid)
+    np.testing.assert_allclose(payoff[0], 0.0, atol=1e-12)

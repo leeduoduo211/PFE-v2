@@ -48,12 +48,24 @@ class TARF(BaseInstrument):
 
         obs_indices = self._resolve_obs_indices(self.schedule, n_steps, t_grid)
 
+        # Past observations relative to the valuation node: paths that hit
+        # the target in the past had their cashflow paid at termination —
+        # MtM at any later node must be zero. (The accrued PnL of surviving
+        # paths is left unchanged here; that's a related but separate
+        # accrual-accounting question outside the scope of this fix.)
+        valuation_time = self._valuation_time_from_grid(t_grid)
+        schedule_arr = np.asarray(self.schedule, dtype=float)
+        if obs_indices.size == schedule_arr.size:
+            is_past_obs = schedule_arr < valuation_time - 1e-12
+        else:
+            is_past_obs = np.zeros(obs_indices.size, dtype=bool)
+
         sign = 1.0 if self.side == "buy" else -1.0
         cumulative = np.zeros(n_paths)
         terminated = np.zeros(n_paths, dtype=bool)
         result = np.zeros(n_paths)
 
-        for idx in obs_indices:
+        for i, idx in enumerate(obs_indices):
             s_obs = prices[:, idx]
             if self.side == "buy":
                 units = np.where(s_obs >= self.strike, 1.0, self.leverage)
@@ -65,7 +77,9 @@ class TARF(BaseInstrument):
 
             # Check target hit (only for non-terminated paths)
             hits_target = (~terminated) & (new_cumulative >= self.target)
-            result[hits_target] = self.target  # partial fill: cap at target
+            if not is_past_obs[i]:
+                result[hits_target] = self.target  # partial fill: cap at target
+            # else: past hit — cashflow already paid at the hit date, no MtM
             terminated |= hits_target
 
             # Update cumulative for non-terminated paths

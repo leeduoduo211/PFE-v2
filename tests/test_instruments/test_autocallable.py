@@ -93,3 +93,48 @@ def test_observation_dates_returned():
     schedule = np.array([0.25, 0.5, 0.75, 1.0])
     ac = make_autocallable(schedule=schedule)
     np.testing.assert_array_equal(ac.observation_dates(), schedule)
+
+
+# ── regression: past-call paths must have zero remaining MtM ────────────────
+
+
+def test_already_called_path_has_zero_mtm():
+    """Path autocalled at t=0.5 must have MtM=0 at later valuation node t=0.75.
+
+    The coupon was paid at the call date; no future cashflow remains, so
+    PFE/exposure at any node after the call should be zero. The previous
+    implementation re-processed the past observation and credited a coupon
+    into the future payoff, materially overstating PFE for early-redemption
+    products.
+    """
+    from pfev2.core.types import PayoffTimeGrid
+
+    ac = Autocallable(
+        trade_id="AC", maturity=1.0, notional=1.0,
+        asset_indices=(0,),
+        autocall_trigger=1.0, coupon_rate=0.05, put_strike=0.7,
+        schedule=np.array([0.5]),
+    )
+    # Path went up to 110 at t=0.5 (above 1.0 trigger), then drifted back.
+    full_path = np.array([[[100.0], [105.0], [110.0], [95.0], [90.0]]])
+    grid = PayoffTimeGrid(np.array([0.0, 0.25, 0.5, 0.75, 1.0]), valuation_time=0.75)
+    payoff = ac.payoff(full_path[:, -1, :], full_path, grid)
+    np.testing.assert_allclose(payoff[0], 0.0, atol=1e-12)
+
+
+def test_future_call_still_pays_coupon():
+    """Sanity: when the call observation is in the future (valuation < obs),
+    the coupon credit must still appear in the payoff (current behaviour)."""
+    from pfev2.core.types import PayoffTimeGrid
+
+    ac = Autocallable(
+        trade_id="AC", maturity=1.0, notional=1.0,
+        asset_indices=(0,),
+        autocall_trigger=1.0, coupon_rate=0.05, put_strike=0.7,
+        schedule=np.array([0.5]),
+    )
+    full_path = np.array([[[100.0], [105.0], [110.0], [115.0], [120.0]]])
+    # Valuation at t=0.25 — the 0.5 observation is in the future.
+    grid = PayoffTimeGrid(np.array([0.0, 0.25, 0.5, 0.75, 1.0]), valuation_time=0.25)
+    payoff = ac.payoff(full_path[:, -1, :], full_path, grid)
+    np.testing.assert_allclose(payoff[0], 0.05, atol=1e-12)

@@ -85,3 +85,23 @@ class TestPFEConfig:
     def test_rejects_zero_paths(self):
         with pytest.raises(ConfigError):
             PFEConfig(n_outer=0)
+
+    def test_antithetic_requires_even_n_inner(self):
+        # n_inner=1 with antithetic=True produces an empty payoff matrix
+        # (floor division -> n_half=0) and NaN MtM. Reject explicitly.
+        with pytest.raises(ConfigError, match="antithetic"):
+            PFEConfig(n_inner=1, antithetic=True)
+
+    def test_antithetic_rejects_odd_n_inner(self):
+        # Odd n_inner with antithetic silently truncates to n_inner-1 paths.
+        with pytest.raises(ConfigError, match="antithetic"):
+            PFEConfig(n_inner=3, antithetic=True)
+
+    def test_antithetic_accepts_even_n_inner(self):
+        PFEConfig(n_inner=2, antithetic=True)
+        PFEConfig(n_inner=100, antithetic=True)
+
+    def test_non_antithetic_allows_any_positive_n_inner(self):
+        # Without antithetic, n_inner=1 is wasteful but mathematically valid.
+        PFEConfig(n_inner=1, antithetic=False)
+        PFEConfig(n_inner=3, antithetic=False)
