@@ -147,3 +147,23 @@ def test_target_hit_before_valuation_has_zero_mtm():
     )
     payoff = tarf.payoff(full_path[:, -1, :], full_path, grid)
     np.testing.assert_allclose(payoff[0], 0.0, atol=1e-12)
+
+
+def test_surviving_path_excludes_past_settled_pnl_from_mtm():
+    """Past fixings consume target capacity but should not be paid again."""
+    from pfev2.core.types import PayoffTimeGrid
+
+    tarf = TARF(
+        trade_id="T", maturity=1.0, notional=1.0,
+        asset_indices=(0,), strike=100.0, target=50.0,
+        leverage=2.0, side="buy",
+        schedule=np.array([0.25, 0.5, 0.75, 1.0]),
+    )
+    # Past settled PnL through valuation t=0.5 is +15. Future fixings add
+    # +20 and +30, so remaining MtM is 35: +20 plus residual +15 to target.
+    full_path = np.array([[[100.0], [105.0], [110.0], [120.0], [130.0]]])
+    grid = PayoffTimeGrid(
+        np.array([0.0, 0.25, 0.5, 0.75, 1.0]), valuation_time=0.5
+    )
+    payoff = tarf.payoff(full_path[:, -1, :], full_path, grid)
+    np.testing.assert_allclose(payoff[0], 35.0, atol=1e-12)

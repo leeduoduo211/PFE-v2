@@ -4,7 +4,7 @@ from concurrent.futures import ThreadPoolExecutor
 import numpy as np
 
 from pfev2.core.exceptions import ConfigError
-from pfev2.core.types import MarketData, PFEConfig, TimeGrid
+from pfev2.core.types import MarketData, PayoffTimeGrid, PFEConfig, TimeGrid
 from pfev2.engine.backends.numpy_backend import NumpyBackend
 from pfev2.engine.gbm import MultivariateGBM
 from pfev2.pricing.inner_mc import InnerMCPricer
@@ -92,8 +92,23 @@ def compute_pfe(
         results = []
 
         for trade_idx, trade in enumerate(portfolio):
-            if not trade.is_alive(abs_time):
+            if abs_time > trade.maturity + 1e-12:
                 continue
+            if abs(abs_time - trade.maturity) <= 1e-12:
+                asset_pos = list(trade.asset_indices)
+                terminal_spots = all_node_spots[:, asset_pos]
+                if trade.requires_full_path:
+                    path = outer_paths[:, : t_idx + 1, :][:, :, asset_pos]
+                    payoff_grid = PayoffTimeGrid(
+                        grid.dates[: t_idx + 1],
+                        valuation_time=float(abs_time),
+                    )
+                    payoffs = trade.payoff(terminal_spots, path, payoff_grid)
+                else:
+                    payoffs = trade.payoff(terminal_spots, None)
+                results.append((trade_idx, trade.notional * payoffs))
+                continue
+
             remaining = _remaining_grid_to_maturity(t_idx, trade.maturity)
             if remaining.dates[-1] <= 0:
                 continue

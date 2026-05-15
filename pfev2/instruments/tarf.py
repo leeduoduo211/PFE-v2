@@ -56,7 +56,7 @@ class TARF(BaseInstrument):
         valuation_time = self._valuation_time_from_grid(t_grid)
         schedule_arr = np.asarray(self.schedule, dtype=float)
         if obs_indices.size == schedule_arr.size:
-            is_past_obs = schedule_arr < valuation_time - 1e-12
+            is_past_obs = schedule_arr <= valuation_time + 1e-12
         else:
             is_past_obs = np.zeros(obs_indices.size, dtype=bool)
 
@@ -77,17 +77,22 @@ class TARF(BaseInstrument):
 
             # Check target hit (only for non-terminated paths)
             hits_target = (~terminated) & (new_cumulative >= self.target)
-            if not is_past_obs[i]:
-                result[hits_target] = self.target  # partial fill: cap at target
-            # else: past hit — cashflow already paid at the hit date, no MtM
-            terminated |= hits_target
+            active = ~terminated
+            if is_past_obs[i]:
+                # Past cashflows are settled. They affect target capacity and
+                # termination state, but are not part of remaining MtM.
+                terminated |= hits_target
+            else:
+                non_hit = active & ~hits_target
+                result[non_hit] += period_pnl[non_hit]
+                # Partial fill: only the residual target amount is still paid
+                # at the hit fixing, not the full target again.
+                residual = np.maximum(self.target - cumulative, 0.0)
+                result[hits_target] += residual[hits_target]
+                terminated |= hits_target
 
             # Update cumulative for non-terminated paths
             active = ~terminated
             cumulative[active] = new_cumulative[active]
-
-        # Paths that never hit target
-        still_active = ~terminated
-        result[still_active] = cumulative[still_active]
 
         return result

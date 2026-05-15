@@ -118,7 +118,14 @@ def _parse_n_assets_spec(spec) -> tuple[int, int]:
     return 1, 1
 
 
-def _render_field(field: dict, key: str, asset_names: list[str], n_selected: int):
+def _render_field(
+    field: dict,
+    key: str,
+    asset_names: list[str],
+    n_selected: int,
+    schedule_maturity: float = 1.0,
+    monitor_asset_indices: list[int] = None,
+):
     """Render a single field widget and return its value.
 
     Parameters
@@ -197,9 +204,15 @@ def _render_field(field: dict, key: str, asset_names: list[str], n_selected: int
         if not asset_names:
             st.warning(f"{label}: no assets defined yet")
             return None
-        options = [None] + list(range(len(asset_names)))
+        selectable = (
+            list(monitor_asset_indices)
+            if monitor_asset_indices is not None and len(monitor_asset_indices) > 0
+            else list(range(len(asset_names)))
+        )
+        options = [None] + selectable
         def fmt(i):
-            return "None (first asset)" if i is None else f"[{i}] {asset_names[i]}"
+            first = selectable[0] if selectable else 0
+            return f"None (first asset: {asset_names[first]})" if i is None else f"[{i}] {asset_names[i]}"
         val = st.selectbox(label, options=options, format_func=fmt, help=help_, key=key)
         return val  # None or int
 
@@ -212,26 +225,18 @@ def _render_field(field: dict, key: str, asset_names: list[str], n_selected: int
             horizontal=True,
             key=f"{key}_mode",
         )
-        # We can't directly read the maturity widget here, so we ask the user
-        # to supply the maturity numerically for auto-generation.
         if sched_mode == "Monthly":
-            mat = st.number_input(
-                "Maturity for schedule (years)", value=1.0, min_value=0.01,
-                format="%.2f", key=f"{key}_mat",
-            )
+            mat = float(schedule_maturity)
             n_months = max(1, round(mat * 12))
             dates = [round((i + 1) / 12, 6) for i in range(n_months) if (i + 1) / 12 <= mat + 1e-9]
-            st.caption(f"Generated {len(dates)} monthly dates")
+            st.caption(f"Generated {len(dates)} monthly dates through {mat:.2f}Y")
             return dates
 
         if sched_mode == "Weekly":
-            mat = st.number_input(
-                "Maturity for schedule (years)", value=1.0, min_value=0.01,
-                format="%.2f", key=f"{key}_mat",
-            )
+            mat = float(schedule_maturity)
             n_weeks = max(1, round(mat * 52))
             dates = [round((i + 1) / 52, 6) for i in range(n_weeks) if (i + 1) / 52 <= mat + 1e-9]
-            st.caption(f"Generated {len(dates)} weekly dates")
+            st.caption(f"Generated {len(dates)} weekly dates through {mat:.2f}Y")
             return dates
 
         # Custom: free-text comma-separated
@@ -253,7 +258,7 @@ def _render_field(field: dict, key: str, asset_names: list[str], n_selected: int
     return st.text_input(label, value=str(default or ""), help=help_, key=key)
 
 
-def _render_section(section: dict, inst_spec: dict, key_prefix: str, asset_names, n_selected):
+def _render_section(section: dict, inst_spec: dict, key_prefix: str, asset_names, n_selected, maturity):
     """Render a grouped section with colored left border."""
     st.markdown(
         f'<div style="border-left:3px solid {section["color"]};padding-left:12px;margin-bottom:4px;">'
@@ -268,11 +273,17 @@ def _render_section(section: dict, inst_spec: dict, key_prefix: str, asset_names
     for field_name in section["fields"]:
         field = next(f for f in inst_spec["fields"] if f["name"] == field_name)
         fkey = f"{key_prefix}_inst_{field_name}"
-        values[field_name] = _render_field(field, fkey, asset_names, n_selected)
+        values[field_name] = _render_field(
+            field,
+            fkey,
+            asset_names,
+            n_selected,
+            schedule_maturity=maturity,
+        )
     return values
 
 
-def _render_modifier_styled(idx, key_prefix, asset_names, n_trade_assets):
+def _render_modifier_styled(idx, key_prefix, asset_names, n_trade_assets, maturity, selected_assets):
     """Render one modifier with group badge and structured sections."""
     mod_key = f"{key_prefix}_mod_{idx}"
 
@@ -289,6 +300,7 @@ def _render_modifier_styled(idx, key_prefix, asset_names, n_trade_assets):
     section_config = MODIFIER_SECTIONS.get(chosen_type, {})
     group = section_config.get("group", "")
     group_style = MODIFIER_GROUP_COLORS.get(group, {})
+    monitor_asset_indices = [asset_names.index(a) for a in selected_assets if a in asset_names]
 
     # Section header with group badge
     st.markdown(
@@ -304,19 +316,40 @@ def _render_modifier_styled(idx, key_prefix, asset_names, n_trade_assets):
     # Core fields
     for field_name in section_config.get("core_fields", []):
         field = next(f for f in mod_spec["fields"] if f["name"] == field_name)
-        params[field_name] = _render_field(field, f"{mod_key}_{field_name}", asset_names, n_trade_assets)
+        params[field_name] = _render_field(
+            field,
+            f"{mod_key}_{field_name}",
+            asset_names,
+            n_trade_assets,
+            schedule_maturity=maturity,
+            monitor_asset_indices=monitor_asset_indices,
+        )
 
     # Observation style sub-section (barrier modifiers only)
     obs_fields = section_config.get("observation_fields", [])
     if obs_fields:
         for field_name in obs_fields:
             field = next(f for f in mod_spec["fields"] if f["name"] == field_name)
-            params[field_name] = _render_field(field, f"{mod_key}_{field_name}", asset_names, n_trade_assets)
+            params[field_name] = _render_field(
+                field,
+                f"{mod_key}_{field_name}",
+                asset_names,
+                n_trade_assets,
+                schedule_maturity=maturity,
+                monitor_asset_indices=monitor_asset_indices,
+            )
 
     # Extra fields (e.g., rebate)
     for field_name in section_config.get("extra_fields", []):
         field = next(f for f in mod_spec["fields"] if f["name"] == field_name)
-        params[field_name] = _render_field(field, f"{mod_key}_{field_name}", asset_names, n_trade_assets)
+        params[field_name] = _render_field(
+            field,
+            f"{mod_key}_{field_name}",
+            asset_names,
+            n_trade_assets,
+            schedule_maturity=maturity,
+            monitor_asset_indices=monitor_asset_indices,
+        )
 
     return {"type": chosen_type, "params": params}
 
@@ -475,13 +508,21 @@ def render_trade_builder(key_prefix="tb"):
     instrument_params: dict = {}
     if sections:
         for section in sections:
-            section_values = _render_section(section, inst_spec, key_prefix, asset_names, n_selected)
+            section_values = _render_section(
+                section, inst_spec, key_prefix, asset_names, n_selected, maturity
+            )
             instrument_params.update(section_values)
     else:
         # Fallback to flat rendering for any unlisted product
         for field in inst_spec["fields"]:
             fkey = f"{key_prefix}_inst_{field['name']}"
-            val = _render_field(field, fkey, asset_names, n_selected)
+            val = _render_field(
+                field,
+                fkey,
+                asset_names,
+                n_selected,
+                schedule_maturity=maturity,
+            )
             instrument_params[field["name"]] = val
 
     # -----------------------------------------------------------------------
@@ -525,7 +566,9 @@ def render_trade_builder(key_prefix="tb"):
 
     for i in range(n_mods):
         with st.expander(f"Modifier #{i + 1}", expanded=True):
-            mod = _render_modifier_styled(i, key_prefix, asset_names, n_selected)
+            mod = _render_modifier_styled(
+                i, key_prefix, asset_names, n_selected, maturity, selected_assets
+            )
             if mod is not None:
                 modifiers.append(mod)
 

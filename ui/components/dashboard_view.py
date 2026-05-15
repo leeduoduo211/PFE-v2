@@ -72,18 +72,27 @@ def _sparkline_svg(values: np.ndarray, color: str, width: int = 140, height: int
     )
 
 
+def _time_axis(result: dict):
+    freq = result.get("config", {}).get("grid_frequency", "weekly")
+    factors = {"daily": 252, "weekly": 52, "monthly": 12}
+    labels = {"daily": "days", "weekly": "weeks", "monthly": "months"}
+    factor = factors.get(freq, 52)
+    label = labels.get(freq, "weeks")
+    return [t * factor for t in result["time_points"]], label
+
+
 def _render_main_chart(result: dict):
     """PFE 95% (red) and EPE (blue) over horizon — matches Dashboard.jsx layout."""
-    weeks = [t * 52 for t in result["time_points"]]
+    periods, period_label = _time_axis(result)
     fig = go.Figure()
     fig.add_trace(go.Scatter(
-        x=weeks, y=result["pfe_curve"], mode="lines",
+        x=periods, y=result["pfe_curve"], mode="lines",
         name=f"PFE {result['config']['confidence_level']:.0%}",
         line=dict(color="#ef4444", width=2.5),
         fill="tozeroy", fillcolor="rgba(239,68,68,0.10)",
     ))
     fig.add_trace(go.Scatter(
-        x=weeks, y=result["epe_curve"], mode="lines", name="EPE",
+        x=periods, y=result["epe_curve"], mode="lines", name="EPE",
         line=dict(color="#3b82f6", width=2),
     ))
     fig.update_layout(
@@ -93,7 +102,7 @@ def _render_main_chart(result: dict):
         legend=dict(orientation="h", yanchor="bottom", y=1.02,
                     xanchor="right", x=1,
                     bgcolor="rgba(255,255,255,0)"),
-        xaxis=dict(title="Time (weeks)"),
+        xaxis=dict(title=f"Time ({period_label})"),
         yaxis=dict(title="Exposure", tickformat=",.0f"),
     )
     st.plotly_chart(fig, use_container_width=True, key="dash_main_chart")
@@ -351,8 +360,9 @@ def render_dashboard():
     pfe_curve = latest["pfe_curve"]
     time_pts = latest["time_points"]
     peak_idx = int(np.argmax(pfe_curve))
-    peak_time_weeks = int(round(time_pts[peak_idx] * 52))
-    total_weeks = int(round(time_pts[-1] * 52)) if len(time_pts) else 0
+    time_axis, period_label = _time_axis(latest)
+    peak_time = int(round(time_axis[peak_idx]))
+    total_time = int(round(time_axis[-1])) if len(time_axis) else 0
     peak_epe = float(np.max(latest["epe_curve"]))
     eepe = latest.get("eepe", 0.0)
     t0 = latest.get("per_trade_t0_mtm", [])
@@ -361,7 +371,7 @@ def render_dashboard():
     k1, k2, k3, k4 = st.columns(4)
     with k1:
         kpi_card("Peak PFE", f"{latest['peak_pfe']:,.0f}",
-                 f"95th percentile · week {peak_time_weeks}",
+                 f"95th percentile · {peak_time} {period_label}",
                  "pfe-kpi-red", icon=ICON_PEAK)
     with k2:
         kpi_card("Peak EPE", f"{peak_epe:,.0f}", f"EEPE {eepe:,.0f}",
@@ -371,8 +381,8 @@ def render_dashboard():
                  f"{latest.get('n_trades', len(t0))} trades netted",
                  "pfe-kpi-green", icon=ICON_MONEY)
     with k4:
-        kpi_card("Peak Time", f"Week {peak_time_weeks}",
-                 f"of {total_weeks} · T+{time_pts[peak_idx]:.2f}y",
+        kpi_card("Peak Time", f"{peak_time} {period_label}",
+                 f"of {total_time} · T+{time_pts[peak_idx]:.2f}y",
                  "pfe-kpi-amber", icon=ICON_CLOCK)
 
     st.markdown('<div style="height:8px;"></div>', unsafe_allow_html=True)

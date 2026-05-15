@@ -54,6 +54,21 @@ class TestMarketData:
         with pytest.raises(MarketDataError, match="NaN"):
             MarketData(**single_asset_market)
 
+    def test_rejects_non_positive_spots(self, single_asset_market):
+        single_asset_market["spots"] = np.array([0.0])
+        with pytest.raises(MarketDataError, match="spot"):
+            MarketData(**single_asset_market)
+
+    def test_rejects_infinite_rates(self, single_asset_market):
+        single_asset_market["rates"] = np.array([np.inf])
+        with pytest.raises(MarketDataError, match="infinite"):
+            MarketData(**single_asset_market)
+
+    def test_rejects_nan_correlation(self, single_asset_market):
+        single_asset_market["corr_matrix"] = np.array([[np.nan]])
+        with pytest.raises(CorrelationMatrixError, match="Correlation"):
+            MarketData(**single_asset_market)
+
     def test_rejects_negative_vol(self, single_asset_market):
         single_asset_market["vols"] = np.array([-0.1])
         with pytest.raises(MarketDataError, match="vol"):

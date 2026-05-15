@@ -42,8 +42,9 @@ def render_results_summary(result: dict):
     pfe_curve = result["pfe_curve"]
     time_pts = result["time_points"]
     peak_idx = int(np.argmax(pfe_curve))
-    peak_time_weeks = int(round(time_pts[peak_idx] * 52))
-    total_weeks = int(round(time_pts[-1] * 52)) if len(time_pts) > 0 else 0
+    time_axis, period_label = _time_axis(result)
+    peak_time = int(round(time_axis[peak_idx]))
+    total_time = int(round(time_axis[-1])) if len(time_axis) > 0 else 0
 
     col_kpi, col_chart = st.columns([1, 2.5])
 
@@ -65,8 +66,8 @@ def render_results_summary(result: dict):
                      f"{result.get('n_trades', 0)} trades netted",
                      "pfe-kpi-green", icon=ICON_MONEY)
 
-        kpi_card("Peak Time", f"Week {peak_time_weeks}",
-                 f"of {total_weeks} weeks", "pfe-kpi-amber", icon=ICON_CLOCK)
+        kpi_card("Peak Time", f"{peak_time} {period_label}",
+                 f"of {total_time} {period_label}", "pfe-kpi-amber", icon=ICON_CLOCK)
 
     with col_chart:
         chart_tab1, chart_tab2, chart_tab3 = st.tabs(["PFE / EPE", "Fan Chart", "Per Trade"])
@@ -139,13 +140,18 @@ def render_t0_mtm_table(result: dict, trade_ids: list):
     st.markdown(html, unsafe_allow_html=True)
 
 
-def _time_in_weeks(time_points):
-    return [t * 52 for t in time_points]
+def _time_axis(result: dict):
+    freq = result.get("config", {}).get("grid_frequency", "weekly")
+    factors = {"daily": 252, "weekly": 52, "monthly": 12}
+    labels = {"daily": "days", "weekly": "weeks", "monthly": "months"}
+    factor = factors.get(freq, 52)
+    label = labels.get(freq, "weeks")
+    return [t * factor for t in result["time_points"]], label
 
 
 def _render_pfe_epe(result: dict):
     """PFE and EPE curves."""
-    time_points = _time_in_weeks(result["time_points"])
+    time_points, period_label = _time_axis(result)
     is_margined = result["config"].get("margined", False)
 
     show_unmargined = False
@@ -185,7 +191,7 @@ def _render_pfe_epe(result: dict):
         ))
 
     fig.update_layout(
-        xaxis_title="Time (weeks)", yaxis_title="Exposure",
+        xaxis_title=f"Time ({period_label})", yaxis_title="Exposure",
         hovermode="x unified", height=320,
     )
     st.plotly_chart(fig, use_container_width=True, key="pfe_epe_chart")
@@ -198,7 +204,7 @@ def _render_fan(result: dict):
         return
 
     exposure = np.array(result["exposure_matrix"])
-    time_points = _time_in_weeks(result["time_points"])
+    time_points, period_label = _time_axis(result)
 
     percentiles = [5, 25, 50, 75, 95]
     quantiles = np.percentile(exposure, percentiles, axis=0)
@@ -224,7 +230,7 @@ def _render_fan(result: dict):
     ))
 
     fig.update_layout(
-        xaxis_title="Time (weeks)", yaxis_title="Exposure", height=280,
+        xaxis_title=f"Time ({period_label})", yaxis_title="Exposure", height=280,
     )
     st.plotly_chart(fig, use_container_width=True, key="fan_chart")
 
@@ -235,7 +241,7 @@ def _render_per_trade(result: dict, trade_ids: list):
         st.info("No per-trade data available.")
         return
 
-    time_points = _time_in_weeks(result["time_points"])
+    time_points, period_label = _time_axis(result)
     per_trade = result["per_trade_pfe"]
     label = result.get("per_trade_pfe_label", "Standalone per-trade PFE")
 
@@ -264,7 +270,7 @@ def _render_per_trade(result: dict, trade_ids: list):
         ))
 
     fig.update_layout(
-        xaxis_title="Time (weeks)", yaxis_title=label, height=280,
+        xaxis_title=f"Time ({period_label})", yaxis_title=label, height=280,
     )
     st.plotly_chart(fig, use_container_width=True, key="per_trade_chart")
 
@@ -328,25 +334,28 @@ def render_run_comparison(key_prefix: str = "cmp"):
     )
 
     fig = go.Figure()
+    time_a, label_a = _time_axis(run_a)
+    time_b, label_b = _time_axis(run_b)
+    axis_label = label_a if label_a == label_b else "periods"
     fig.add_trace(go.Scatter(
-        x=_time_in_weeks(run_a["time_points"]), y=run_a["pfe_curve"],
+        x=time_a, y=run_a["pfe_curve"],
         mode="lines", name="A: PFE", line=dict(color=_PFE, width=2.5),
     ))
     fig.add_trace(go.Scatter(
-        x=_time_in_weeks(run_b["time_points"]), y=run_b["pfe_curve"],
+        x=time_b, y=run_b["pfe_curve"],
         mode="lines", name="B: PFE", line=dict(color=_PFE, width=1.5, dash="dot"),
     ))
     fig.add_trace(go.Scatter(
-        x=_time_in_weeks(run_a["time_points"]), y=run_a["epe_curve"],
+        x=time_a, y=run_a["epe_curve"],
         mode="lines", name="A: EPE", line=dict(color=_EPE, width=2.5),
     ))
     fig.add_trace(go.Scatter(
-        x=_time_in_weeks(run_b["time_points"]), y=run_b["epe_curve"],
+        x=time_b, y=run_b["epe_curve"],
         mode="lines", name="B: EPE", line=dict(color=_EPE, width=1.5, dash="dot"),
     ))
 
     fig.update_layout(
-        xaxis_title="Time (weeks)", yaxis_title="Exposure",
+        xaxis_title=f"Time ({axis_label})", yaxis_title="Exposure",
         hovermode="x unified", height=300,
     )
     st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}_comparison_chart")
@@ -395,10 +404,11 @@ def _result_to_csv(result: dict) -> str:
     t = np.asarray(result["time_points"])
     pfe = np.asarray(result["pfe_curve"])
     epe = np.asarray(result["epe_curve"])
+    x, label = _time_axis(result)
     buf = io.StringIO()
-    buf.write("time_years,time_weeks,pfe,epe\n")
-    for ti, pi, ei in zip(t, pfe, epe):
-        buf.write(f"{ti:.6f},{ti * 52:.3f},{pi:.6f},{ei:.6f}\n")
+    buf.write(f"time_years,time_{label},pfe,epe\n")
+    for ti, xi, pi, ei in zip(t, x, pfe, epe):
+        buf.write(f"{ti:.6f},{xi:.3f},{pi:.6f},{ei:.6f}\n")
     return buf.getvalue()
 
 
@@ -455,4 +465,3 @@ def render_result_exports(result: dict, key_prefix: str = "export"):
         st.caption(
             "Tip: use Plotly's camera icon on the chart above to save a PNG."
         )
-

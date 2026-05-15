@@ -138,3 +138,25 @@ def test_batch_reproducibility():
     r1 = compute_pfe(portfolio, market, config)
     r2 = compute_pfe(portfolio, market, config)
     np.testing.assert_array_equal(r1.mtm_matrix, r2.mtm_matrix)
+
+
+def test_terminal_node_uses_settlement_payoff():
+    """At exact maturity, European exposure should be payoff, not forced zero."""
+    market = MarketData(
+        spots=np.array([100.0]),
+        vols=np.array([0.20]),
+        rates=np.array([0.05]),
+        domestic_rate=0.05,
+        corr_matrix=np.array([[1.0]]),
+        asset_names=["X"],
+        asset_classes=["EQ"],
+    )
+    portfolio = [
+        VanillaOption(trade_id="C1", maturity=1.0, notional=1_000.0,
+                      asset_indices=(0,), strike=1.0, option_type="call"),
+    ]
+    config = PFEConfig(n_outer=50, n_inner=100, seed=42, grid_frequency="monthly")
+    result = compute_pfe(portfolio, market, config)
+
+    assert result.pfe_curve[-1] > 0.0
+    assert np.any(result.mtm_matrix[:, -1] > 0.0)

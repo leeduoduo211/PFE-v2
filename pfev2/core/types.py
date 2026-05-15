@@ -77,8 +77,14 @@ class MarketData:
                 f"asset_names/asset_classes length doesn't match spots shape ({n},)"
             )
         for name, arr in [("spots", self.spots), ("vols", self.vols), ("rates", self.rates)]:
-            if np.any(np.isnan(arr)):
-                raise MarketDataError(f"NaN detected in {name}")
+            if not np.all(np.isfinite(arr)):
+                raise MarketDataError(f"NaN or infinite value detected in {name}")
+        if not np.isfinite(self.domestic_rate):
+            raise MarketDataError("domestic_rate must be finite")
+        if not np.all(np.isfinite(self.corr_matrix)):
+            raise CorrelationMatrixError("Correlation matrix contains non-finite values")
+        if np.any(self.spots <= 0):
+            raise MarketDataError(f"All spot values must be positive, got min={self.spots.min()}")
         if np.any(self.vols <= 0):
             raise MarketDataError(f"All vol values must be positive, got min={self.vols.min()}")
         corr = self.corr_matrix
