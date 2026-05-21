@@ -7,6 +7,7 @@ Demonstrates:
 - Margined PFE with 10-day MPoR
 """
 import numpy as np
+
 from pfev2 import MarketData, PFEConfig, compute_pfe
 from pfev2.instruments import Accumulator
 from pfev2.modifiers import KnockOut

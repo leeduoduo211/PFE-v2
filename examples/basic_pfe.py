@@ -1,5 +1,6 @@
 """Basic PFE example: 2-asset portfolio with a vanilla call and a worst-of put."""
 import numpy as np
+
 from pfev2 import MarketData, PFEConfig, compute_pfe
 from pfev2.instruments import VanillaOption, WorstOfOption
 

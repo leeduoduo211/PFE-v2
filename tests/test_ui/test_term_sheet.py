@@ -71,3 +71,22 @@ class TestTermSheetRenderer:
         ]
         render_term_sheet(trade, ["AAPL"], [100.0])
         assert mock_streamlit.markdown.call_count > 0
+
+    def test_user_text_is_html_escaped(self, mock_streamlit):
+        from ui.components.term_sheet import render_term_sheet
+
+        trade = _make_trade_spec("VanillaOption")
+        trade["trade_id"] = "<script>alert(1)</script>"
+        trade["params"]["assets"] = ["<b>AAPL</b>"]
+
+        render_term_sheet(trade, trade["params"]["assets"], [100.0])
+
+        rendered_html = "\n".join(
+            str(call.args[0])
+            for call in mock_streamlit.markdown.call_args_list
+            if call.args
+        )
+        assert "<script>" not in rendered_html
+        assert "<b>AAPL</b>" not in rendered_html
+        assert "&lt;script&gt;alert(1)&lt;/script&gt;" in rendered_html
+        assert "&lt;b&gt;AAPL&lt;/b&gt;" in rendered_html

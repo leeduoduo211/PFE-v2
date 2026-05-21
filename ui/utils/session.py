@@ -48,6 +48,13 @@ def add_run(result_summary: dict):
         runs.pop(0)
 
 
+def invalidate_results():
+    """Clear run outputs after market, portfolio, or config inputs change."""
+    st.session_state.pop("latest_result", None)
+    if "runs" in st.session_state:
+        st.session_state["runs"] = []
+
+
 def get_asset_names():
     """Get current asset names from session state."""
     return st.session_state["market"]["asset_names"]

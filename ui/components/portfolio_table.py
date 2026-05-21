@@ -2,12 +2,14 @@
 """Editable portfolio table with add/edit/clone/delete actions."""
 
 import copy
+from html import escape
 
 import streamlit as st
 
 from ui.components.term_sheet import render_term_sheet
 from ui.theme import category_badge
 from ui.utils.registry import INSTRUMENT_REGISTRY
+from ui.utils.session import invalidate_results
 
 _CAT_KIND = {
     "European": "european",
@@ -74,7 +76,7 @@ def render_portfolio_table(key_prefix: str = "pt"):
         inst_label = spec.get("label", inst_type)
         mod_suffix = ""
         if trade.get("modifiers"):
-            mod_names = [m["type"] for m in trade["modifiers"]]
+            mod_names = [escape(str(m["type"]), quote=True) for m in trade["modifiers"]]
             mod_suffix = (
                 ' <span style="color:#94a3b8;font-size:11px;">'
                 + " \u2192 ".join(mod_names) + " \u2192</span>"
@@ -103,6 +105,7 @@ def render_portfolio_table(key_prefix: str = "pt"):
             # Stash the trade for the trade builder to consume on next run
             st.session_state["_pending_edit_trade"] = copy.deepcopy(trade)
             portfolio.pop(i)
+            invalidate_results()
             st.session_state["_switch_to_portfolio"] = True
             st.rerun()
 
@@ -110,10 +113,12 @@ def render_portfolio_table(key_prefix: str = "pt"):
             clone = copy.deepcopy(trade)
             clone["trade_id"] = f"{trade['trade_id']}_copy"
             portfolio.append(clone)
+            invalidate_results()
             st.rerun()
 
         if del_col.button("Del", key=f"{key_prefix}_del_{i}"):
             portfolio.pop(i)
+            invalidate_results()
             st.rerun()
 
         # Term-sheet view

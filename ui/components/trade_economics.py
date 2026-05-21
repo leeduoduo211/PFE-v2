@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from html import escape
 from typing import Optional
 
 import numpy as np
@@ -37,11 +38,12 @@ def _asset_phrase(params: dict) -> str:
     assets = params.get("assets") or []
     if not assets:
         return "the underlying"
+    safe_assets = [escape(str(asset), quote=True) for asset in assets]
     if len(assets) == 1:
-        return assets[0]
+        return safe_assets[0]
     if len(assets) == 2:
-        return f"{assets[0]} and {assets[1]}"
-    return ", ".join(assets[:-1]) + f", and {assets[-1]}"
+        return f"{safe_assets[0]} and {safe_assets[1]}"
+    return ", ".join(safe_assets[:-1]) + f", and {safe_assets[-1]}"
 
 
 def _strikes_phrase(params: dict) -> str:
@@ -582,7 +584,9 @@ def render_trade_economics(
     if ts_fn is not None:
         term_sheet_html = ts_fn(params, direction)
     else:
-        term_sheet_html = f"{inst_type} &mdash; no description available."
+        term_sheet_html = (
+            f"{escape(str(inst_type), quote=True)} &mdash; no description available."
+        )
 
     # --- Modifier texts ---
     modifier_lines: list = []
@@ -631,7 +635,7 @@ def render_trade_economics(
         rows_html += (
             f'<tr style="border-bottom:1px solid #f1f5f9; {bg}">'
             f'<td style="padding:0.25rem 0.5rem; color:#334155; font-size:0.72rem;">'
-            f"{row['label']}</td>"
+            f"{escape(str(row['label']), quote=True)}</td>"
             f'<td style="padding:0.25rem 0.5rem; text-align:right; color:#64748b; font-size:0.72rem;">'
             f"{row['spot']:.4f}</td>"
             f'<td style="padding:0.25rem 0.5rem; text-align:right; color:#64748b; font-size:0.72rem;">'

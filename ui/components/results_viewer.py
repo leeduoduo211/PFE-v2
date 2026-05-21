@@ -4,6 +4,7 @@ All Plotly charts use the pfe_light template registered by ui.theme.
 """
 
 import io
+from html import escape
 
 import numpy as np
 import plotly.graph_objects as go
@@ -17,6 +18,7 @@ from ui.theme import (
     kpi_card,
     section_label,
 )
+from ui.utils.formatting import confidence_percentile_label
 
 # Chart trace colors
 _PFE = "#ef4444"
@@ -35,12 +37,17 @@ _TRADE_PALETTE = [
 ]
 
 
+def _confidence_label(result: dict) -> str:
+    return confidence_percentile_label(
+        result.get("config", {}).get("confidence_level", 0.95)
+    )
+
+
 def render_results_summary(result: dict):
     """Side-by-side layout: KPI cards left, main chart right."""
 
     # Find peak time
     pfe_curve = result["pfe_curve"]
-    time_pts = result["time_points"]
     peak_idx = int(np.argmax(pfe_curve))
     time_axis, period_label = _time_axis(result)
     peak_time = int(round(time_axis[peak_idx]))
@@ -49,7 +56,7 @@ def render_results_summary(result: dict):
     col_kpi, col_chart = st.columns([1, 2.5])
 
     with col_kpi:
-        kpi_card("Peak PFE", f"{result['peak_pfe']:,.0f}", "95th percentile",
+        kpi_card("Peak PFE", f"{result['peak_pfe']:,.0f}", _confidence_label(result),
                  "pfe-kpi-red", icon=ICON_PEAK)
         # Peak EPE replaces EEPE on the dashboard: it's a point on the plotted
         # blue curve, so the scalar matches what the user sees. EEPE is still
@@ -95,6 +102,7 @@ def render_t0_mtm_table(result: dict, trade_ids: list):
 
     rows_html = ""
     for tid, mtm in zip(trade_ids, per_trade_t0):
+        safe_tid = escape(str(tid), quote=True)
         pct = mtm / abs(total) * 100 if total != 0 else 0.0
         if mtm > 0:
             mtm_color = "#22c55e"
@@ -105,7 +113,7 @@ def render_t0_mtm_table(result: dict, trade_ids: list):
 
         rows_html += (
             f'<tr style="border-bottom:1px solid #f1f5f9;">'
-            f'<td style="padding:0.35rem 0.6rem;color:#334155;">{tid}</td>'
+            f'<td style="padding:0.35rem 0.6rem;color:#334155;">{safe_tid}</td>'
             f'<td style="padding:0.35rem 0.6rem;text-align:right;color:{mtm_color};'
             f'font-family:JetBrains Mono,monospace;">{mtm:,.0f}</td>'
             f'<td style="padding:0.35rem 0.6rem;text-align:right;color:#94a3b8;'
