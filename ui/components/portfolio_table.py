@@ -319,7 +319,7 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
             portfolio.pop(i)
             st.session_state[selected_key] = _resolve_selected_trade_id(
                 portfolio,
-                None,
+                selected_trade_id,
             )
             invalidate_results()
             st.rerun()
