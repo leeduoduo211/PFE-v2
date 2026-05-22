@@ -1,9 +1,12 @@
 """Market data input component: manual entry."""
 
+import copy
+
 import streamlit as st
 
 from ui.components.correlation_matrix import render_correlation_matrix
 from ui.theme import card_title
+from ui.utils.session import invalidate_results
 
 _ASSET_CAP = 10
 
@@ -26,6 +29,7 @@ def render_market_data_input(key_prefix: str = "mkt"):
     Returns True if correlation matrix is valid PSD.
     """
     market = st.session_state["market"]
+    before = copy.deepcopy(market)
 
     card_title("Assets", "Tickers are free-form. Match the pricer lookup.")
 
@@ -81,6 +85,8 @@ def render_market_data_input(key_prefix: str = "mkt"):
     )
 
     is_psd = render_correlation_matrix(market["asset_names"], key_prefix=f"{key_prefix}_corr")
+    if market != before:
+        invalidate_results()
     return is_psd
 
 

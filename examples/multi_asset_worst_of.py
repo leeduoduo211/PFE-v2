@@ -7,8 +7,9 @@ Demonstrates:
 - Per-trade detail for exposure breakdown
 """
 import numpy as np
+
 from pfev2 import MarketData, PFEConfig, compute_pfe
-from pfev2.instruments import VanillaOption, WorstOfOption, BestOfOption
+from pfev2.instruments import BestOfOption, VanillaOption, WorstOfOption
 from pfev2.modifiers import PayoffCap
 
 # 3-asset equity market

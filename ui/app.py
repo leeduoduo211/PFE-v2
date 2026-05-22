@@ -37,7 +37,7 @@ from ui.theme import (
     workflow_steps,
 )
 from ui.utils.runner import run_pfe_calculation
-from ui.utils.session import init_session_state
+from ui.utils.session import init_session_state, invalidate_results
 
 apply_theme()
 init_session_state()
@@ -156,6 +156,7 @@ with st.sidebar:
                         st.error("Invalid: " + "; ".join(errors2))
                     else:
                         st.session_state["market"] = legacy
+                        invalidate_results()
                         st.rerun()
                 else:
                     st.session_state["market"] = market_data
@@ -163,6 +164,7 @@ with st.sidebar:
                         st.session_state["portfolio"] = bundle["portfolio"]
                     if bundle.get("config"):
                         st.session_state["config"].update(bundle["config"])
+                    invalidate_results()
                     st.rerun()
 
         market = st.session_state["market"]
@@ -297,6 +299,7 @@ with tab_market:
                         )
                         st.session_state["market"] = market
                         st.session_state["portfolio"] = portfolio
+                        invalidate_results()
                         st.rerun()
                 st.caption(desc)
 
@@ -332,6 +335,7 @@ with tab_portfolio:
         # instantiating its trade_id widget next run (Streamlit forbids
         # modifying a widget's session_state key after instantiation).
         st.session_state["_pending_next_trade_id"] = next_id
+        invalidate_results()
 
         st.rerun()
 

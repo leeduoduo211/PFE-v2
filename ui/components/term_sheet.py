@@ -4,6 +4,8 @@ Renders a trade spec dict as formatted HTML using st.markdown — no input widge
 Counterpart to trade_builder.py: displays values instead of collecting them.
 """
 
+from html import escape
+
 import streamlit as st
 
 from ui.components.payoff_display import payoff_formula, payoff_sparkline
@@ -55,11 +57,13 @@ def _render_readonly_value(label: str, value, field_type: str) -> str:
     else:
         display = str(value) if value is not None else "—"
 
+    safe_label = escape(str(label), quote=True)
+    safe_display = escape(str(display), quote=True)
     return (
         f'<div style="min-width:100px;margin-right:20px;">'
         f'<div style="font-size:10px;color:#94a3b8;text-transform:uppercase;'
-        f'letter-spacing:0.5px;font-weight:600;">{label}</div>'
-        f'<div style="font-size:13px;color:#1e293b;font-weight:500;">{display}</div>'
+        f'letter-spacing:0.5px;font-weight:600;">{safe_label}</div>'
+        f'<div style="font-size:13px;color:#1e293b;font-weight:500;">{safe_display}</div>'
         f'</div>'
     )
 
@@ -104,12 +108,14 @@ def render_term_sheet(
     cat_color = CATEGORY_COLORS.get(category, "#94a3b8")
     label = inst_spec.get("label", inst_type)
     description = PRODUCT_DESCRIPTIONS.get(inst_type, "")
+    safe_category = escape(str(category), quote=True)
+    safe_label = escape(str(label), quote=True)
 
     st.markdown(
         f'<div style="display:flex;align-items:center;gap:8px;margin-bottom:4px;">'
         f'<span style="background:{cat_color};color:#fff;padding:2px 8px;border-radius:4px;'
-        f'font-size:11px;font-weight:600;">{category}</span>'
-        f'<span style="font-weight:700;font-size:15px;color:#1e293b;">{label}</span>'
+        f'font-size:11px;font-weight:600;">{safe_category}</span>'
+        f'<span style="font-weight:700;font-size:15px;color:#1e293b;">{safe_label}</span>'
         f'</div>',
         unsafe_allow_html=True,
     )
@@ -141,7 +147,7 @@ def render_term_sheet(
 
     for section in sections:
         color = section.get("color", "#94a3b8")
-        sec_label = section.get("label", "")
+        sec_label = escape(str(section.get("label", "")), quote=True)
         sec_help = section.get("help", "")
 
         st.markdown(
@@ -177,7 +183,7 @@ def render_term_sheet(
 
         group = section_config.get("group", "")
         group_style = MODIFIER_GROUP_COLORS.get(group, {})
-        mod_label = mod_spec["label"] if mod_spec else mod_type
+        mod_label = escape(str(mod_spec["label"] if mod_spec else mod_type), quote=True)
 
         st.markdown(
             f'<div style="border-left:3px solid {group_style.get("color","#94a3b8")};'

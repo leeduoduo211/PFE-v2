@@ -45,6 +45,8 @@ dev = [
     "pytest>=7.0",
     "scipy>=1.10",
     "ruff>=0.5",
+    "streamlit>=1.30",
+    "plotly>=5.18",
 ]
 
 [tool.setuptools.packages.find]

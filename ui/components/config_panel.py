@@ -4,6 +4,7 @@
 import streamlit as st
 
 from ui.theme import card_title
+from ui.utils.session import invalidate_results
 
 _GRID_STEPS_PER_YEAR = {"daily": 252, "weekly": 52, "monthly": 12}
 
@@ -42,6 +43,7 @@ def _fmt_seconds(s: float) -> str:
 def render_config_panel(key_prefix: str = "cfg"):
     """Render PFEConfig controls. Reads/writes st.session_state['config']."""
     config = st.session_state["config"]
+    before = dict(config)
 
     card_title("Sampling", "Path counts, confidence level, grid frequency, and variance settings.")
 
@@ -121,3 +123,6 @@ def render_config_panel(key_prefix: str = "cfg"):
             f"\u00d7 {config['n_inner']:,} inner \u00d7 {len(portfolio)} trade"
             f"{'s' if len(portfolio) != 1 else ''})"
         )
+
+    if config != before:
+        invalidate_results()

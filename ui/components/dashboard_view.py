@@ -5,6 +5,8 @@ Mirrors design/preview/Dashboard.jsx. Wired to real session state.
 
 from __future__ import annotations
 
+from html import escape
+
 import numpy as np
 import plotly.graph_objects as go
 import streamlit as st
@@ -18,6 +20,7 @@ from ui.theme import (
     kpi_card,
     signed_number,
 )
+from ui.utils.formatting import confidence_percentile_label
 from ui.utils.registry import INSTRUMENT_REGISTRY
 
 _CAT_KIND = {
@@ -82,7 +85,7 @@ def _time_axis(result: dict):
 
 
 def _render_main_chart(result: dict):
-    """PFE 95% (red) and EPE (blue) over horizon — matches Dashboard.jsx layout."""
+    """PFE (red) and EPE (blue) over horizon — matches Dashboard.jsx layout."""
     periods, period_label = _time_axis(result)
     fig = go.Figure()
     fig.add_trace(go.Scatter(
@@ -141,7 +144,7 @@ def _render_run_card(result: dict):
             f'</tr>'
         )
 
-    label = result.get("label", "Run")
+    label = escape(str(result.get("label", "Run")), quote=True)
     st.markdown(
         f'<div style="background:#fff;border:1px solid #e2e8f0;border-radius:10px;'
         f'padding:14px 16px 8px;box-shadow:0 1px 3px rgba(0,0,0,0.04);">'
@@ -176,7 +179,7 @@ def _render_per_trade_table(result: dict):
     rows_html = ""
     for i in range(n):
         trade = portfolio[i]
-        tid = trade["trade_id"]
+        tid = escape(str(trade["trade_id"]), quote=True)
         direction = trade.get("direction", "long")
         dir_short = "L" if direction == "long" else "S"
         tag_bg = "#dcfce7" if direction == "long" else "#fef2f2"
@@ -272,13 +275,14 @@ def _render_recent_runs():
         peak_pfe = run.get("peak_pfe", 0)
         peak_epe = float(np.max(run.get("epe_curve", [0]))) if "epe_curve" in run else 0
         runtime = run.get("computation_time", 0)
+        run_label = escape(str(run.get("label", f"Run #{i+1}")), quote=True)
         suffix = ('<span style="font-size:11px;color:#3b82f6;">current</span>'
                   if is_current else "")
 
         rows_html += (
             f'<tr style="{bg}border-bottom:1px solid #f1f5f9;">'
             f'<td style="padding:0.4rem 0.6rem;color:#1e293b;font-size:0.82rem;">'
-            f'<span style="color:{dot_color};">{dot}</span> {run.get("label", f"Run #{i+1}")}</td>'
+            f'<span style="color:{dot_color};">{dot}</span> {run_label}</td>'
             f'<td style="padding:0.4rem 0.6rem;color:#64748b;font-family:JetBrains Mono,monospace;'
             f'font-size:0.74rem;">{cfg_str}</td>'
             f'<td style="padding:0.4rem 0.6rem;text-align:right;color:#1e293b;'
@@ -340,7 +344,7 @@ def render_dashboard():
         return
 
     conf = latest["config"]
-    label = latest.get("label", "Run")
+    label = escape(str(latest.get("label", "Run")), quote=True)
     sub = (f"{label} · {conf['n_outer']:,} × {conf['n_inner']:,} · "
            f"{conf['grid_frequency']} · {len(latest['time_points'])} steps · "
            f"seed {conf.get('seed', '—')} · {latest.get('computation_time', 0):.1f}s")
@@ -371,7 +375,8 @@ def render_dashboard():
     k1, k2, k3, k4 = st.columns(4)
     with k1:
         kpi_card("Peak PFE", f"{latest['peak_pfe']:,.0f}",
-                 f"95th percentile · {peak_time} {period_label}",
+                 f"{confidence_percentile_label(conf['confidence_level'])} · "
+                 f"{peak_time} {period_label}",
                  "pfe-kpi-red", icon=ICON_PEAK)
     with k2:
         kpi_card("Peak EPE", f"{peak_epe:,.0f}", f"EEPE {eepe:,.0f}",
@@ -396,7 +401,8 @@ def render_dashboard():
             '<div style="font-size:1.05rem;font-weight:600;color:#1e293b;margin-bottom:2px;">'
             'Exposure profile</div>'
             '<div style="font-size:12px;color:#64748b;margin-bottom:6px;">'
-            'PFE 95% (red) and EPE (blue) over the simulation horizon.</div>',
+            f'PFE {conf["confidence_level"]:.0%} (red) and EPE (blue) '
+            f'over the simulation horizon.</div>',
             unsafe_allow_html=True,
         )
         _render_main_chart(latest)
