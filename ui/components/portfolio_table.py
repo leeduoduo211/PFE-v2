@@ -107,32 +107,103 @@ def _cell(content: str, *, mono: bool = False, center: bool = False):
     return f'<div class="{" ".join(classes)}">{content}</div>'
 
 
-def render_portfolio_table(key_prefix: str = "pt"):
-    """Render the portfolio table from session_state['portfolio'].
-    Returns the index of a trade to edit (or None).
-    """
-    portfolio = st.session_state["portfolio"]
-
-    trade_word = "trade" if len(portfolio) == 1 else "trades"
+def _render_summary_strip(portfolio, latest_result):
+    items = []
+    for label, value in _portfolio_summary_rows(portfolio, latest_result):
+        items.append(
+            '<div class="pfe-portfolio-kpi">'
+            f'<div class="pfe-portfolio-kpi-label">{escape(label, quote=True)}</div>'
+            f'<div class="pfe-portfolio-kpi-value">{escape(value, quote=True)}</div>'
+            '</div>'
+        )
     st.markdown(
-        f'<div class="pfe-table-title">Portfolio '
-        f'<span>({len(portfolio)} {trade_word})</span></div>',
+        f'<div class="pfe-portfolio-summary">{"".join(items)}</div>',
         unsafe_allow_html=True,
     )
 
+
+def _selected_trade(portfolio, selected_trade_id):
+    for trade in portfolio:
+        if str(trade.get("trade_id", "")) == selected_trade_id:
+            return trade
+    return None
+
+
+def _render_detail_panel(trade):
+    trade_id = escape(str(trade.get("trade_id", "")), quote=True)
+    inst_type = trade.get("instrument_type", "")
+    inst_spec = INSTRUMENT_REGISTRY.get(inst_type, {})
+    inst_label = escape(str(inst_spec.get("label", inst_type)), quote=True)
+
+    st.markdown(
+        '<div class="pfe-detail-panel">'
+        '<div class="pfe-detail-head">'
+        '<div>'
+        f'<div class="pfe-detail-title">Selected trade: {trade_id}</div>'
+        f'<div class="pfe-detail-sub">{inst_label}</div>'
+        '</div>'
+        '</div>'
+        '</div>',
+        unsafe_allow_html=True,
+    )
+
+    asset_names_list = st.session_state.get("market", {}).get("asset_names", [])
+    market_spots = st.session_state.get("market", {}).get("spots", [])
+    if asset_names_list:
+        render_term_sheet(trade, asset_names_list, market_spots)
+    else:
+        st.caption("Add market data to see term-sheet details.")
+
+
+def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
+    """Render the portfolio table from session_state['portfolio']."""
+    portfolio = st.session_state["portfolio"]
+    latest = st.session_state.get("latest_result") or {}
+
+    _render_summary_strip(portfolio, latest)
+
+    trade_word = "trade" if len(portfolio) == 1 else "trades"
+    toolbar_cols = st.columns([0.75, 0.25])
+    toolbar_cols[0].markdown(
+        '<div class="pfe-portfolio-toolbar-title">Portfolio Review</div>'
+        f'<div class="pfe-portfolio-toolbar-sub">{len(portfolio)} {trade_word}</div>',
+        unsafe_allow_html=True,
+    )
+    if toolbar_cols[1].button(
+        "Add Trade",
+        key=f"{key_prefix}_add_trade",
+        type="primary",
+        use_container_width=True,
+    ):
+        if builder_open_key:
+            st.session_state[builder_open_key] = True
+            st.session_state["_switch_to_portfolio"] = True
+            st.rerun()
+
     if not portfolio:
-        st.info("No trades yet. Use the trade builder to add instruments.")
+        st.markdown(
+            '<div class="pfe-portfolio-empty">'
+            "No trades yet. Use Add Trade to build the portfolio."
+            '</div>',
+            unsafe_allow_html=True,
+        )
         return None
 
-    # Check if t=0 MtM data is available
-    latest = st.session_state.get("latest_result", {})
     t0_mtm_list = latest.get("per_trade_t0_mtm", [])
     has_t0 = len(t0_mtm_list) == len(portfolio)
+    selected_key = f"{key_prefix}_selected_trade_id"
+    selected_trade_id = _resolve_selected_trade_id(
+        portfolio,
+        st.session_state.get(selected_key),
+    )
+    st.session_state[selected_key] = selected_trade_id
 
     if has_t0:
-        cols = st.columns([2, 0.5, 1.8, 1.2, 1.2, 1.2, 0.8, 0.8, 0.8])
+        widths = [2, 0.5, 1.8, 1.1, 1.1, 1.1, 0.7, 0.7, 0.8, 0.7]
     else:
-        cols = st.columns([2, 0.5, 2, 1.5, 1.5, 1, 1, 1])
+        widths = [2, 0.5, 2, 1.2, 1.2, 0.7, 0.7, 0.8, 0.7]
+
+    cols = st.columns(widths)
     cols[0].markdown(_header("Trade ID"), unsafe_allow_html=True)
     cols[1].markdown(_header("Dir"), unsafe_allow_html=True)
     cols[2].markdown(_header("Type"), unsafe_allow_html=True)
@@ -140,22 +211,23 @@ def render_portfolio_table(key_prefix: str = "pt"):
     cols[4].markdown(_header("Notional"), unsafe_allow_html=True)
     if has_t0:
         cols[5].markdown(_header("t=0 MtM"), unsafe_allow_html=True)
+        cols[6].markdown(_header("View"), unsafe_allow_html=True)
+        cols[7].markdown(_header("Edit"), unsafe_allow_html=True)
+        cols[8].markdown(_header("Clone"), unsafe_allow_html=True)
+        cols[9].markdown(_header("Delete"), unsafe_allow_html=True)
+    else:
+        cols[5].markdown(_header("View"), unsafe_allow_html=True)
         cols[6].markdown(_header("Edit"), unsafe_allow_html=True)
         cols[7].markdown(_header("Clone"), unsafe_allow_html=True)
         cols[8].markdown(_header("Delete"), unsafe_allow_html=True)
-    else:
-        cols[5].markdown(_header("Edit"), unsafe_allow_html=True)
-        cols[6].markdown(_header("Clone"), unsafe_allow_html=True)
-        cols[7].markdown(_header("Delete"), unsafe_allow_html=True)
 
-    edit_idx = None
     for i, trade in enumerate(portfolio):
-        if has_t0:
-            cols = st.columns([2, 0.5, 1.8, 1.2, 1.2, 1.2, 0.8, 0.8, 0.8])
-        else:
-            cols = st.columns([2, 0.5, 2, 1.5, 1.5, 1, 1, 1])
+        cols = st.columns(widths)
+        trade_id = str(trade["trade_id"])
+        is_selected = trade_id == selected_trade_id
+        selected_dot = '<span class="pfe-selected-dot"></span>' if is_selected else ""
         cols[0].markdown(
-            _cell(escape(str(trade["trade_id"]), quote=True), mono=True),
+            _cell(selected_dot + escape(trade_id, quote=True), mono=True),
             unsafe_allow_html=True,
         )
 
@@ -209,37 +281,51 @@ def render_portfolio_table(key_prefix: str = "pt"):
             else:
                 mtm_html = '<span class="pfe-num">0</span>'
             cols[5].markdown(_cell(mtm_html), unsafe_allow_html=True)
-            edit_col, clone_col, del_col = cols[6], cols[7], cols[8]
+            view_col, edit_col, clone_col, del_col = cols[6], cols[7], cols[8], cols[9]
         else:
-            edit_col, clone_col, del_col = cols[5], cols[6], cols[7]
+            view_col, edit_col, clone_col, del_col = cols[5], cols[6], cols[7], cols[8]
+
+        if view_col.button(
+            "View",
+            key=f"{key_prefix}_view_{i}",
+            disabled=is_selected,
+        ):
+            st.session_state[selected_key] = trade_id
+            st.rerun()
 
         if edit_col.button("Edit", key=f"{key_prefix}_edit_{i}"):
             # Stash the trade for the trade builder to consume on next run
             st.session_state["_pending_edit_trade"] = copy.deepcopy(trade)
+            if builder_open_key:
+                st.session_state[builder_open_key] = True
             portfolio.pop(i)
+            st.session_state[selected_key] = _resolve_selected_trade_id(
+                portfolio,
+                selected_trade_id,
+            )
             invalidate_results()
             st.session_state["_switch_to_portfolio"] = True
             st.rerun()
 
         if clone_col.button("Clone", key=f"{key_prefix}_clone_{i}"):
             clone = copy.deepcopy(trade)
-            clone["trade_id"] = f"{trade['trade_id']}_copy"
+            clone["trade_id"] = f"{trade_id}_copy"
             portfolio.append(clone)
+            st.session_state[selected_key] = str(clone["trade_id"])
             invalidate_results()
             st.rerun()
 
         if del_col.button("Del", key=f"{key_prefix}_del_{i}"):
             portfolio.pop(i)
+            st.session_state[selected_key] = _resolve_selected_trade_id(
+                portfolio,
+                None,
+            )
             invalidate_results()
             st.rerun()
 
-        # Term-sheet view
-        with st.expander(f"Term Sheet: {trade['trade_id']}", expanded=False):
-            asset_names_list = st.session_state.get("market", {}).get("asset_names", [])
-            market_spots = st.session_state.get("market", {}).get("spots", [])
-            if asset_names_list:
-                render_term_sheet(trade, asset_names_list, market_spots)
-            else:
-                st.caption("Add market data to see term-sheet details.")
+    selected = _selected_trade(portfolio, selected_trade_id)
+    if selected:
+        _render_detail_panel(selected)
 
-    return edit_idx
+    return selected_trade_id
