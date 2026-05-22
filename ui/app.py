@@ -312,35 +312,44 @@ with tab_market:
         st.warning("Correlation matrix is not positive semi-definite.")
 
 with tab_portfolio:
-    card_title("Portfolio", "Build trades, stack modifiers, and manage term sheets.")
+    card_title("Portfolio", "Review trades, inspect terms, and add or edit instruments.")
 
-    trade_spec = render_trade_builder(key_prefix="tab_tb")
-    if trade_spec is not None:
-        st.session_state["portfolio"].append(trade_spec)
-        st.session_state["tab_tb_modifier_count"] = 0
-        st.session_state["_switch_to_portfolio"] = True
+    builder_open_key = "tab_portfolio_builder_open"
+    if builder_open_key not in st.session_state:
+        st.session_state[builder_open_key] = not st.session_state["portfolio"]
+    if not st.session_state["portfolio"] or st.session_state.get("_pending_edit_trade") is not None:
+        st.session_state[builder_open_key] = True
 
-        # Auto-increment trade ID for the next trade. Parses a trailing
-        # numeric suffix (e.g. "TRD_001" -> "TRD_002"). If no suffix is
-        # found, appends "_2", "_3", ...
-        import re
-        last_id = trade_spec["trade_id"]
-        m = re.match(r"^(.*?)(\d+)$", last_id)
-        if m:
-            prefix, num = m.group(1), m.group(2)
-            next_id = f"{prefix}{int(num) + 1:0{len(num)}d}"
-        else:
-            next_id = f"{last_id}_2"
-        # Stash in a pending slot; the trade builder consumes it before
-        # instantiating its trade_id widget next run (Streamlit forbids
-        # modifying a widget's session_state key after instantiation).
-        st.session_state["_pending_next_trade_id"] = next_id
-        invalidate_results()
+    render_portfolio_table(key_prefix="tab_pt", builder_open_key=builder_open_key)
 
-        st.rerun()
+    builder_expanded = bool(st.session_state.get(builder_open_key, False))
+    with st.expander("Add / edit trade", expanded=builder_expanded):
+        trade_spec = render_trade_builder(key_prefix="tab_tb")
+        if trade_spec is not None:
+            st.session_state["portfolio"].append(trade_spec)
+            st.session_state["tab_pt_selected_trade_id"] = trade_spec["trade_id"]
+            st.session_state["tab_tb_modifier_count"] = 0
+            st.session_state[builder_open_key] = False
+            st.session_state["_switch_to_portfolio"] = True
 
-    st.markdown('<hr style="margin:1rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
-    render_portfolio_table(key_prefix="tab_pt")
+            # Auto-increment trade ID for the next trade. Parses a trailing
+            # numeric suffix (e.g. "TRD_001" -> "TRD_002"). If no suffix is
+            # found, appends "_2", "_3", ...
+            import re
+            last_id = trade_spec["trade_id"]
+            m = re.match(r"^(.*?)(\d+)$", last_id)
+            if m:
+                prefix, num = m.group(1), m.group(2)
+                next_id = f"{prefix}{int(num) + 1:0{len(num)}d}"
+            else:
+                next_id = f"{last_id}_2"
+            # Stash in a pending slot; the trade builder consumes it before
+            # instantiating its trade_id widget next run (Streamlit forbids
+            # modifying a widget's session_state key after instantiation).
+            st.session_state["_pending_next_trade_id"] = next_id
+            invalidate_results()
+
+            st.rerun()
 
 with tab_config:
     card_title("Configuration", "Set simulation parameters and run the nested Monte Carlo engine.")
