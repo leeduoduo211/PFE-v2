@@ -633,6 +633,96 @@ hr {
 }
 .pfe-dir-long { color: #16a34a; }
 .pfe-dir-short { color: #ef4444; }
+.pfe-portfolio-toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin: 12px 0 8px;
+}
+.pfe-portfolio-toolbar-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.25;
+}
+.pfe-portfolio-toolbar-sub {
+    font-size: 12px;
+    color: #64748b;
+    line-height: 1.35;
+    margin-top: 2px;
+}
+.pfe-portfolio-summary {
+    display: grid;
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+    gap: 8px;
+    margin: 4px 0 14px;
+}
+.pfe-portfolio-kpi {
+    background: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    padding: 10px 12px;
+    min-height: 62px;
+}
+.pfe-portfolio-kpi-label {
+    font-size: 10px;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: #94a3b8;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.pfe-portfolio-kpi-value {
+    color: #1e293b;
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+    font-size: 18px;
+    font-weight: 700;
+    line-height: 1.25;
+    margin-top: 6px;
+}
+.pfe-portfolio-empty {
+    background: #ffffff;
+    border: 1px dashed #cbd5e1;
+    border-radius: 8px;
+    padding: 18px 16px;
+    color: #475569;
+    font-size: 13px;
+    margin: 8px 0 12px;
+}
+.pfe-selected-dot {
+    width: 7px;
+    height: 7px;
+    border-radius: 999px;
+    background: #3b82f6;
+    display: inline-block;
+    margin-right: 7px;
+}
+.pfe-detail-panel {
+    border-top: 1px solid #e2e8f0;
+    margin-top: 14px;
+    padding-top: 12px;
+}
+.pfe-detail-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 8px;
+}
+.pfe-detail-title {
+    color: #1e293b;
+    font-size: 15px;
+    font-weight: 700;
+    line-height: 1.25;
+}
+.pfe-detail-sub {
+    color: #64748b;
+    font-size: 12px;
+    line-height: 1.35;
+    margin-top: 2px;
+}
 .pfe-run-banner {
     background: rgba(59,130,246,0.10);
     border: 1px solid rgba(59,130,246,0.25);
@@ -718,11 +808,21 @@ hr {
     .pfe-workflow {
         grid-template-columns: repeat(2, minmax(0, 1fr));
     }
+    .pfe-portfolio-summary {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+    }
 }
 
 @media (max-width: 560px) {
     .pfe-workflow {
         grid-template-columns: 1fr;
+    }
+    .pfe-portfolio-summary {
+        grid-template-columns: 1fr;
+    }
+    .pfe-portfolio-toolbar,
+    .pfe-detail-head {
+        display: block;
     }
 }
 </style>
