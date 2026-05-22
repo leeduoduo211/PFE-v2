@@ -88,6 +88,11 @@ html, body, [class*="css"] {
     font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
 }
 
+body {
+    color: #1e293b !important;
+    font-size: 13px !important;
+}
+
 /* Hide default Streamlit header chrome */
 header[data-testid="stHeader"] {
     background: transparent !important;
@@ -130,8 +135,24 @@ section[data-testid="stSidebar"] [data-testid="stMarkdown"] h1 {
 /* ── Headers ──────────────────────────────────────────────────────── */
 h1, h2, h3, .stMarkdown h1, .stMarkdown h2, .stMarkdown h3 {
     font-family: 'Inter', sans-serif !important;
-    font-weight: 600 !important;
+    font-weight: 700 !important;
     color: #1e293b !important;
+    letter-spacing: 0 !important;
+}
+
+[data-testid="stMarkdown"] p,
+[data-testid="stCaptionContainer"] {
+    color: #64748b !important;
+    font-size: 12px !important;
+    line-height: 1.45 !important;
+}
+
+[data-testid="stWidgetLabel"] p {
+    color: #334155 !important;
+    font-size: 12px !important;
+    font-weight: 600 !important;
+    line-height: 1.35 !important;
+    margin-bottom: 4px !important;
 }
 
 /* ── Metric cards ─────────────────────────────────────────────────── */
@@ -186,6 +207,9 @@ button[kind="secondary"],
     color: #475569 !important;
     border-radius: 7px !important;
     font-size: 0.8rem !important;
+    min-height: 36px !important;
+    height: 36px !important;
+    padding: 0 12px !important;
     transition: all 0.15s ease !important;
 }
 
@@ -217,6 +241,20 @@ details[data-testid="stExpander"][open] {
     color: #1e293b !important;
     font-family: 'JetBrains Mono', monospace !important;
     font-variant-numeric: tabular-nums !important;
+    font-size: 13px !important;
+    min-height: 36px !important;
+    padding: 0 12px !important;
+}
+
+[data-testid="stNumberInput"],
+[data-testid="stTextInput"] {
+    margin-bottom: 2px !important;
+}
+
+[data-testid="stNumberInput"] button {
+    min-height: 36px !important;
+    height: 36px !important;
+    color: #334155 !important;
 }
 
 [data-testid="stNumberInput"] input:focus,
@@ -229,6 +267,21 @@ details[data-testid="stExpander"][open] {
     background: #ffffff !important;
     border: 1px solid #e2e8f0 !important;
     border-radius: 6px !important;
+    min-height: 36px !important;
+    font-size: 13px !important;
+}
+
+[data-baseweb="select"],
+[data-baseweb="select"] * {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif !important;
+    font-size: 13px !important;
+}
+
+input[aria-label$=" correlation"] {
+    height: 38px !important;
+    line-height: 38px !important;
+    text-align: center !important;
+    padding: 0 10px !important;
 }
 
 /* ── Dividers ─────────────────────────────────────────────────────── */
@@ -434,7 +487,7 @@ hr {
     margin-bottom: 14px;
 }
 .pfe-page-title {
-    font-size: 24px;
+    font-size: 30px !important;
     font-weight: 700;
     line-height: 1.18;
     color: #1e293b;
@@ -518,17 +571,68 @@ hr {
     color: #64748b;
     margin-top: 2px;
 }
+.pfe-card-head {
+    border-left: 3px solid #3b82f6;
+    padding-left: 11px;
+    margin: 18px 0 10px;
+}
 .pfe-card-title {
     font-size: 15px;
-    font-weight: 600;
+    font-weight: 700;
     color: #1e293b;
-    margin: 6px 0 2px;
+    line-height: 1.25;
+    margin: 0;
 }
 .pfe-card-sub {
     font-size: 12px;
-    color: #64748b;
-    margin-bottom: 8px;
+    color: #475569;
+    line-height: 1.35;
+    margin: 2px 0 0;
 }
+.pfe-table-title {
+    font-size: 16px;
+    font-weight: 700;
+    color: #1e293b;
+    line-height: 1.25;
+    margin: 2px 0 12px;
+}
+.pfe-table-title span {
+    color: #64748b;
+    font-size: 13px;
+    font-weight: 600;
+}
+.pfe-table-head {
+    min-height: 24px;
+    display: flex;
+    align-items: center;
+    color: #64748b;
+    font-size: 11px;
+    font-weight: 700;
+    line-height: 1.2;
+}
+.pfe-table-cell {
+    min-height: 38px;
+    display: flex;
+    align-items: center;
+    color: #334155;
+    font-size: 12px;
+    line-height: 1.25;
+}
+.pfe-table-cell.mono {
+    font-family: 'JetBrains Mono', monospace;
+    font-variant-numeric: tabular-nums;
+}
+.pfe-table-cell.center {
+    justify-content: center;
+}
+.pfe-dir-long,
+.pfe-dir-short {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+}
+.pfe-dir-long { color: #16a34a; }
+.pfe-dir-short { color: #ef4444; }
 .pfe-run-banner {
     background: rgba(59,130,246,0.10);
     border: 1px solid rgba(59,130,246,0.25);
@@ -714,7 +818,9 @@ def card_title(title: str, subtitle: str = ""):
         if subtitle else ""
     )
     st.markdown(
-        f'<div class="pfe-card-title">{_html_escape(str(title))}</div>{sub_html}',
+        f'<div class="pfe-card-head">'
+        f'<div class="pfe-card-title">{_html_escape(str(title))}</div>{sub_html}'
+        f'</div>',
         unsafe_allow_html=True,
     )
 
@@ -960,7 +1066,8 @@ def corr_cell_html(value: float, is_diag: bool = False) -> str:
     near_zero = abs(value) < 0.005
     if is_diag or near_zero:
         return (
-            f'<div style="text-align:right;padding:6px 8px;color:#94a3b8;'
+            f'<div style="display:flex;align-items:center;justify-content:center;'
+            f'height:38px;padding:0 10px;color:#94a3b8;line-height:1;'
             f'font-family:\'JetBrains Mono\',monospace;font-variant-numeric:tabular-nums;'
             f'font-size:13px;">{value:.2f}</div>'
         )
@@ -972,7 +1079,8 @@ def corr_cell_html(value: float, is_diag: bool = False) -> str:
         bg = f"rgba(239,68,68,{intensity:.3f})"
         fg = "#b91c1c"
     return (
-        f'<div style="text-align:right;padding:6px 8px;background:{bg};'
+        f'<div style="display:flex;align-items:center;justify-content:center;'
+        f'height:38px;padding:0 10px;background:{bg};line-height:1;'
         f'color:{fg};font-family:\'JetBrains Mono\',monospace;'
         f'font-variant-numeric:tabular-nums;font-size:13px;border-radius:3px;">'
         f'{value:.2f}</div>'

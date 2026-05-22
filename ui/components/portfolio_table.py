@@ -19,13 +19,33 @@ _CAT_KIND = {
 }
 
 
+def _header(label: str):
+    return (
+        f'<div class="pfe-table-head">{escape(str(label), quote=True)}</div>'
+    )
+
+
+def _cell(content: str, *, mono: bool = False, center: bool = False):
+    classes = ["pfe-table-cell"]
+    if mono:
+        classes.append("mono")
+    if center:
+        classes.append("center")
+    return f'<div class="{" ".join(classes)}">{content}</div>'
+
+
 def render_portfolio_table(key_prefix: str = "pt"):
     """Render the portfolio table from session_state['portfolio'].
     Returns the index of a trade to edit (or None).
     """
     portfolio = st.session_state["portfolio"]
 
-    st.subheader(f"Portfolio ({len(portfolio)} trades)")
+    trade_word = "trade" if len(portfolio) == 1 else "trades"
+    st.markdown(
+        f'<div class="pfe-table-title">Portfolio '
+        f'<span>({len(portfolio)} {trade_word})</span></div>',
+        unsafe_allow_html=True,
+    )
 
     if not portfolio:
         st.info("No trades yet. Use the trade builder to add instruments.")
@@ -40,20 +60,20 @@ def render_portfolio_table(key_prefix: str = "pt"):
         cols = st.columns([2, 0.5, 1.8, 1.2, 1.2, 1.2, 0.8, 0.8, 0.8])
     else:
         cols = st.columns([2, 0.5, 2, 1.5, 1.5, 1, 1, 1])
-    cols[0].write("**Trade ID**")
-    cols[1].write("**Dir**")
-    cols[2].write("**Type**")
-    cols[3].write("**Maturity**")
-    cols[4].write("**Notional**")
+    cols[0].markdown(_header("Trade ID"), unsafe_allow_html=True)
+    cols[1].markdown(_header("Dir"), unsafe_allow_html=True)
+    cols[2].markdown(_header("Type"), unsafe_allow_html=True)
+    cols[3].markdown(_header("Maturity"), unsafe_allow_html=True)
+    cols[4].markdown(_header("Notional"), unsafe_allow_html=True)
     if has_t0:
-        cols[5].write("**t=0 MtM**")
-        cols[6].write("**Edit**")
-        cols[7].write("**Clone**")
-        cols[8].write("**Delete**")
+        cols[5].markdown(_header("t=0 MtM"), unsafe_allow_html=True)
+        cols[6].markdown(_header("Edit"), unsafe_allow_html=True)
+        cols[7].markdown(_header("Clone"), unsafe_allow_html=True)
+        cols[8].markdown(_header("Delete"), unsafe_allow_html=True)
     else:
-        cols[5].write("**Edit**")
-        cols[6].write("**Clone**")
-        cols[7].write("**Delete**")
+        cols[5].markdown(_header("Edit"), unsafe_allow_html=True)
+        cols[6].markdown(_header("Clone"), unsafe_allow_html=True)
+        cols[7].markdown(_header("Delete"), unsafe_allow_html=True)
 
     edit_idx = None
     for i, trade in enumerate(portfolio):
@@ -61,13 +81,22 @@ def render_portfolio_table(key_prefix: str = "pt"):
             cols = st.columns([2, 0.5, 1.8, 1.2, 1.2, 1.2, 0.8, 0.8, 0.8])
         else:
             cols = st.columns([2, 0.5, 2, 1.5, 1.5, 1, 1, 1])
-        cols[0].write(trade["trade_id"])
+        cols[0].markdown(
+            _cell(escape(str(trade["trade_id"]), quote=True), mono=True),
+            unsafe_allow_html=True,
+        )
 
         direction = trade.get("direction", "long")
         if direction == "short":
-            cols[1].write(":red[S]")
+            cols[1].markdown(
+                _cell('<span class="pfe-dir-short">S</span>', center=True),
+                unsafe_allow_html=True,
+            )
         else:
-            cols[1].write(":green[L]")
+            cols[1].markdown(
+                _cell('<span class="pfe-dir-long">L</span>', center=True),
+                unsafe_allow_html=True,
+            )
 
         inst_type = trade["instrument_type"]
         spec = INSTRUMENT_REGISTRY.get(inst_type, {})
@@ -82,21 +111,31 @@ def render_portfolio_table(key_prefix: str = "pt"):
                 + " \u2192 ".join(mod_names) + " \u2192</span>"
             )
         cols[2].markdown(
-            mod_suffix + " " + category_badge(cat_label.upper(), cat_kind)
-            + f' <span style="color:#475569;font-size:12px;margin-left:4px;">{inst_label}</span>',
+            _cell(
+                mod_suffix + " " + category_badge(cat_label.upper(), cat_kind)
+                + f' <span style="color:#475569;font-size:12px;margin-left:4px;">'
+                f'{escape(str(inst_label), quote=True)}</span>'
+            ),
             unsafe_allow_html=True,
         )
-        cols[3].write(f"{trade['params']['maturity']:.2f}Y")
-        cols[4].write(f"{trade['params']['notional']:,.0f}")
+        cols[3].markdown(
+            _cell(f"{trade['params']['maturity']:.2f}Y", mono=True),
+            unsafe_allow_html=True,
+        )
+        cols[4].markdown(
+            _cell(f"{trade['params']['notional']:,.0f}", mono=True),
+            unsafe_allow_html=True,
+        )
 
         if has_t0:
             mtm_val = t0_mtm_list[i]
             if mtm_val > 0:
-                cols[5].write(f":green[{mtm_val:,.0f}]")
+                mtm_html = f'<span class="pfe-pos">{mtm_val:,.0f}</span>'
             elif mtm_val < 0:
-                cols[5].write(f":red[{mtm_val:,.0f}]")
+                mtm_html = f'<span class="pfe-neg">{mtm_val:,.0f}</span>'
             else:
-                cols[5].write("0")
+                mtm_html = '<span class="pfe-num">0</span>'
+            cols[5].markdown(_cell(mtm_html), unsafe_allow_html=True)
             edit_col, clone_col, del_col = cols[6], cols[7], cols[8]
         else:
             edit_col, clone_col, del_col = cols[5], cols[6], cols[7]

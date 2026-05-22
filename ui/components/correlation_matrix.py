@@ -1,6 +1,7 @@
 """Interactive N x N correlation matrix editor with PSD validation."""
 
 from html import escape
+from typing import Optional
 
 import numpy as np
 import streamlit as st
@@ -25,6 +26,17 @@ def _nearest_psd(matrix: np.ndarray) -> np.ndarray:
     d = np.sqrt(np.diag(result))
     result = result / np.outer(d, d)
     return result
+
+
+def _parse_corr_value(raw_value: str) -> Optional[float]:
+    """Parse a correlation input and enforce [-1, 1]."""
+    try:
+        value = float(raw_value)
+    except (TypeError, ValueError):
+        return None
+    if value < -1.0 or value > 1.0:
+        return None
+    return value
 
 
 def render_correlation_matrix(asset_names: list[str], key_prefix: str = "corr"):
@@ -53,61 +65,70 @@ def render_correlation_matrix(asset_names: list[str], key_prefix: str = "corr"):
 
     card_title("Correlation matrix", "Must be positive semi-definite. Validated on save.")
 
-    # Editable upper-triangle inputs.
-    with st.expander("Edit correlations", expanded=False):
-        for i in range(n):
-            for j in range(i + 1, n):
-                col_label, col_input = st.columns([2, 1])
-                col_label.markdown(
-                    f'<div style="padding-top:8px;font-size:13px;color:#475569;">'
-                    f"{safe_names[i]} -> {safe_names[j]}</div>",
-                    unsafe_allow_html=True,
-                )
-                val = col_input.number_input(
-                    f"{asset_names[i]}-{asset_names[j]}",
-                    min_value=-1.0,
-                    max_value=1.0,
-                    value=float(corr[i][j]),
-                    step=0.05,
-                    key=f"{key_prefix}_{i}_{j}",
-                    label_visibility="collapsed",
-                )
-                corr[i][j] = val
-                corr[j][i] = val
+    grid = st.container(border=True)
+    invalid_pairs = []
+    with grid:
+        header_cols = st.columns([1.1] + [1] * n, gap="small")
+        header_cols[0].markdown("&nbsp;", unsafe_allow_html=True)
+        for i, name in enumerate(safe_names):
+            header_cols[i + 1].markdown(
+                f"<div style=\"padding:6px 0 2px;text-align:center;font-size:11px;"
+                f"font-weight:600;color:#94a3b8;text-transform:uppercase;"
+                f"letter-spacing:0.06em;font-family:'JetBrains Mono',monospace;\">"
+                f"{name}</div>",
+                unsafe_allow_html=True,
+            )
+
+        for i, row_name in enumerate(safe_names):
+            row_cols = st.columns([1.1] + [1] * n, gap="small")
+            row_cols[0].markdown(
+                f'<div style="min-height:38px;display:flex;align-items:center;'
+                f'font-weight:600;color:#1e293b;font-size:13px;white-space:nowrap;">'
+                f"{row_name}</div>",
+                unsafe_allow_html=True,
+            )
+            for j in range(n):
+                if j > i:
+                    row_cols[j + 1].markdown(
+                        '<div style="min-height:38px;"></div>',
+                        unsafe_allow_html=True,
+                    )
+                elif i == j:
+                    row_cols[j + 1].markdown(
+                        corr_cell_html(corr[i][j], is_diag=True),
+                        unsafe_allow_html=True,
+                    )
+                else:
+                    input_key = f"{key_prefix}_{j}_{i}_text"
+                    source_key = f"{input_key}_source"
+                    source_value = f"{float(corr[i][j]):.2f}"
+                    if (
+                        source_key not in st.session_state
+                        or st.session_state[source_key] != source_value
+                    ):
+                        st.session_state[input_key] = source_value
+                        st.session_state[source_key] = source_value
+
+                    raw_value = row_cols[j + 1].text_input(
+                        f"{asset_names[i]}-{asset_names[j]} correlation",
+                        key=input_key,
+                        label_visibility="collapsed",
+                    )
+                    val = _parse_corr_value(raw_value)
+                    if val is None:
+                        invalid_pairs.append(f"{asset_names[i]}-{asset_names[j]}")
+                    else:
+                        corr[i][j] = val
+                        corr[j][i] = val
+                        st.session_state[source_key] = f"{val:.2f}"
 
     market["corr_matrix"] = corr
 
-    header_cells = (
-        '<th style="padding:6px 8px;"></th>'
-        + "".join(
-            f'<th style="padding:6px 8px;text-align:right;font-size:11px;'
-            f"font-weight:600;color:#94a3b8;text-transform:uppercase;"
-            f"letter-spacing:0.06em;font-family:'JetBrains Mono',monospace;\">{name}</th>"
-            for name in safe_names
+    if invalid_pairs:
+        st.warning(
+            "Correlation values must be numbers between -1.00 and 1.00: "
+            + ", ".join(invalid_pairs)
         )
-    )
-    body_rows = []
-    for i in range(n):
-        row_cells = (
-            f'<td style="padding:6px 10px 6px 0;font-weight:500;color:#1e293b;'
-            f'font-size:13px;white-space:nowrap;">{safe_names[i]}</td>'
-        )
-        for j in range(n):
-            row_cells += (
-                f'<td style="padding:2px;">{corr_cell_html(corr[i][j], is_diag=(i == j))}</td>'
-            )
-        body_rows.append(f"<tr>{row_cells}</tr>")
-
-    st.markdown(
-        '<table style="border-collapse:separate;border-spacing:2px;'
-        "background:#ffffff;border:1px solid #e2e8f0;border-radius:8px;"
-        "padding:8px 12px;box-shadow:0 1px 3px rgba(0,0,0,0.04);"
-        'margin:4px 0 8px 0;">'
-        f"<thead><tr>{header_cells}</tr></thead>"
-        f'<tbody>{"".join(body_rows)}</tbody>'
-        "</table>",
-        unsafe_allow_html=True,
-    )
 
     matrix = np.array(corr, dtype=float)
     is_valid = _is_positive_semidefinite(matrix)
