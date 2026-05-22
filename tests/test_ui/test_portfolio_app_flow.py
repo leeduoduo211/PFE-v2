@@ -39,3 +39,15 @@ def test_loading_preset_portfolio_keeps_builder_closed():
     assert len(app.session_state.filtered_state["portfolio"]) == 2
     assert app.session_state.filtered_state["tab_portfolio_builder_open"] is False
     assert _trade_id_values(app) == []
+
+
+def test_add_trade_button_reopens_builder_after_preset():
+    app = AppTest.from_file(APP_PATH, default_timeout=10).run()
+
+    _click_button(app, "Equity — 2 assets")
+    app = app.run()
+    _click_button(app, "Add Trade")
+    app = app.run()
+
+    assert app.session_state.filtered_state["tab_portfolio_builder_open"] is True
+    assert _trade_id_values(app)

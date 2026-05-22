@@ -37,7 +37,8 @@ from ui.theme import (
     workflow_steps,
 )
 from ui.utils.runner import run_pfe_calculation
-from ui.utils.session import init_session_state, invalidate_results
+from ui.utils.navigation import tab_switch_script
+from ui.utils.session import init_session_state, invalidate_results, request_portfolio_tab
 
 apply_theme()
 init_session_state()
@@ -324,6 +325,18 @@ with tab_portfolio:
     render_portfolio_table(key_prefix="tab_pt", builder_open_key=builder_open_key)
 
     builder_expanded = bool(st.session_state.get(builder_open_key, False))
+    add_trade_cols = st.columns([0.78, 0.22])
+    if add_trade_cols[1].button(
+        "Add Trade",
+        key="tab_pt_add_trade",
+        type="primary",
+        disabled=builder_open_key is None,
+        use_container_width=True,
+    ):
+        st.session_state[builder_open_key] = True
+        request_portfolio_tab()
+        st.rerun()
+
     with st.expander("Add / edit trade", expanded=builder_expanded):
         if not builder_expanded:
             # Avoid rendering hidden widgets that can submit stale values when
@@ -338,7 +351,7 @@ with tab_portfolio:
             st.session_state["tab_pt_selected_trade_id"] = trade_spec["trade_id"]
             st.session_state["tab_tb_modifier_count"] = 0
             st.session_state[builder_open_key] = False
-            st.session_state["_switch_to_portfolio"] = True
+            request_portfolio_tab()
 
             # Auto-increment trade ID for the next trade. Parses a trailing
             # numeric suffix (e.g. "TRD_001" -> "TRD_002"). If no suffix is
@@ -416,19 +429,7 @@ with tab_results:
 # ---------------------------------------------------------------------------
 
 if st.session_state.pop("_switch_to_results", False):
-    _js = """
-    <script>
-    const tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-    if (tabs.length >= 4) { tabs[3].click(); }
-    </script>
-    """
-    st.components.v1.html(_js, height=0)
+    st.components.v1.html(tab_switch_script(tab_index=3, minimum_tabs=4), height=0)
 
 if st.session_state.pop("_switch_to_portfolio", False):
-    _js = """
-    <script>
-    const tabs = window.parent.document.querySelectorAll('button[data-baseweb="tab"]');
-    if (tabs.length >= 2) { tabs[1].click(); }
-    </script>
-    """
-    st.components.v1.html(_js, height=0)
+    st.components.v1.html(tab_switch_script(tab_index=1, minimum_tabs=2), height=0)

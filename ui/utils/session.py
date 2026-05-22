@@ -2,6 +2,8 @@
 
 import streamlit as st
 
+from ui.utils.session_keys import SK
+
 MAX_RUNS = 5
 
 
@@ -53,6 +55,11 @@ def invalidate_results():
     st.session_state.pop("latest_result", None)
     if "runs" in st.session_state:
         st.session_state["runs"] = []
+
+
+def request_portfolio_tab():
+    """Request switching back to the Portfolio tab after Streamlit reruns."""
+    st.session_state[SK.SWITCH_TO_PORTFOLIO] = True
 
 
 def get_asset_names():

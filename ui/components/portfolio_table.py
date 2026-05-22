@@ -9,7 +9,7 @@ import streamlit as st
 from ui.components.term_sheet import render_term_sheet
 from ui.theme import category_badge
 from ui.utils.registry import INSTRUMENT_REGISTRY
-from ui.utils.session import invalidate_results
+from ui.utils.session import invalidate_results, request_portfolio_tab
 
 _CAT_KIND = {
     "European": "european",
@@ -174,23 +174,11 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
     _render_summary_strip(portfolio, latest)
 
     trade_word = "trade" if len(portfolio) == 1 else "trades"
-    toolbar_cols = st.columns([0.75, 0.25])
-    toolbar_cols[0].markdown(
+    st.markdown(
         '<div class="pfe-portfolio-toolbar-title">Portfolio Review</div>'
         f'<div class="pfe-portfolio-toolbar-sub">{len(portfolio)} {trade_word}</div>',
         unsafe_allow_html=True,
     )
-    if toolbar_cols[1].button(
-        "Add Trade",
-        key=f"{key_prefix}_add_trade",
-        type="primary",
-        disabled=builder_open_key is None,
-        use_container_width=True,
-    ):
-        if builder_open_key:
-            st.session_state[builder_open_key] = True
-            st.session_state["_switch_to_portfolio"] = True
-            st.rerun()
 
     if not portfolio:
         st.markdown(
@@ -211,9 +199,9 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
     st.session_state[selected_key] = selected_trade_id
 
     if has_t0:
-        widths = [1.45, 0.35, 1.7, 0.85, 1.0, 1.0, 0.95, 0.95, 1.0, 0.95]
+        widths = [1.45, 0.35, 1.95, 0.85, 1.0, 1.0, 0.68, 0.68, 0.78, 0.68]
     else:
-        widths = [1.45, 0.35, 1.95, 0.9, 1.05, 0.95, 0.95, 1.0, 0.95]
+        widths = [1.45, 0.35, 2.2, 0.9, 1.05, 0.68, 0.68, 0.78, 0.68]
 
     cols = st.columns(widths)
     cols[0].markdown(_header("Trade ID"), unsafe_allow_html=True)
@@ -303,6 +291,7 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
             disabled=is_selected,
         ):
             st.session_state[selected_key] = trade_id
+            request_portfolio_tab()
             st.rerun()
 
         if edit_col.button("Edit", key=f"{key_prefix}_edit_{i}"):
@@ -316,7 +305,7 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
                 selected_trade_id,
             )
             invalidate_results()
-            st.session_state["_switch_to_portfolio"] = True
+            request_portfolio_tab()
             st.rerun()
 
         if clone_col.button("Clone", key=f"{key_prefix}_clone_{i}"):
@@ -325,6 +314,7 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
             portfolio.append(clone)
             st.session_state[selected_key] = str(clone["trade_id"])
             invalidate_results()
+            request_portfolio_tab()
             st.rerun()
 
         if del_col.button("Del", key=f"{key_prefix}_del_{i}"):
@@ -334,6 +324,7 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
                 selected_trade_id,
             )
             invalidate_results()
+            request_portfolio_tab()
             st.rerun()
 
     selected = _selected_trade(portfolio, selected_trade_id)

@@ -653,6 +653,25 @@ hr {
     color: #64748b;
     line-height: 1.35;
     margin-top: 2px;
+    margin-bottom: 8px;
+}
+.st-key-tab_pt_add_trade button[kind="primary"] {
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 12px !important;
+    font-size: 0.8rem !important;
+    border-radius: 6px !important;
+}
+div[class*="st-key-tab_pt_view_"] button,
+div[class*="st-key-tab_pt_edit_"] button,
+div[class*="st-key-tab_pt_clone_"] button,
+div[class*="st-key-tab_pt_del_"] button {
+    min-height: 28px !important;
+    height: 28px !important;
+    padding: 0 8px !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
 }
 .pfe-portfolio-summary {
     display: grid;
