@@ -211,9 +211,9 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
     st.session_state[selected_key] = selected_trade_id
 
     if has_t0:
-        widths = [2, 0.5, 1.8, 1.1, 1.1, 1.1, 0.7, 0.7, 0.8, 0.7]
+        widths = [1.45, 0.35, 1.7, 0.85, 1.0, 1.0, 0.95, 0.95, 1.0, 0.95]
     else:
-        widths = [2, 0.5, 2, 1.2, 1.2, 0.7, 0.7, 0.8, 0.7]
+        widths = [1.45, 0.35, 1.95, 0.9, 1.05, 0.95, 0.95, 1.0, 0.95]
 
     cols = st.columns(widths)
     cols[0].markdown(_header("Trade ID"), unsafe_allow_html=True)

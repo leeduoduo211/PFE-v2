@@ -193,6 +193,7 @@ button[kind="primary"],
     border: none !important;
     border-radius: 7px !important;
     font-size: 0.85rem !important;
+    white-space: nowrap !important;
     transition: all 0.15s ease !important;
 }
 
@@ -209,7 +210,8 @@ button[kind="secondary"],
     font-size: 0.8rem !important;
     min-height: 36px !important;
     height: 36px !important;
-    padding: 0 12px !important;
+    padding: 0 10px !important;
+    white-space: nowrap !important;
     transition: all 0.15s ease !important;
 }
 

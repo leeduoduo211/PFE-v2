@@ -324,7 +324,14 @@ with tab_portfolio:
 
     builder_expanded = bool(st.session_state.get(builder_open_key, False))
     with st.expander("Add / edit trade", expanded=builder_expanded):
-        trade_spec = render_trade_builder(key_prefix="tab_tb")
+        if not builder_expanded:
+            # Avoid rendering hidden widgets that can submit stale values when
+            # the builder is reopened; pending edit/next-id state stays queued.
+            st.caption("Use Add Trade or Edit to open the trade builder.")
+            trade_spec = None
+        else:
+            trade_spec = render_trade_builder(key_prefix="tab_tb")
+
         if trade_spec is not None:
             st.session_state["portfolio"].append(trade_spec)
             st.session_state["tab_pt_selected_trade_id"] = trade_spec["trade_id"]
