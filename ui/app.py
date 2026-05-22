@@ -299,6 +299,7 @@ with tab_market:
                         )
                         st.session_state["market"] = market
                         st.session_state["portfolio"] = portfolio
+                        st.session_state["tab_portfolio_builder_open"] = False
                         invalidate_results()
                         st.rerun()
                 st.caption(desc)

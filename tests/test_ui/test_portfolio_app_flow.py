@@ -28,3 +28,14 @@ def test_add_trade_closes_builder_without_rendering_stale_fields():
 
     assert _trade_id_values(app) == []
     assert app.session_state.filtered_state["_pending_next_trade_id"] == "TRD_002"
+
+
+def test_loading_preset_portfolio_keeps_builder_closed():
+    app = AppTest.from_file(APP_PATH, default_timeout=10).run()
+
+    _click_button(app, "Equity — 2 assets")
+    app = app.run()
+
+    assert len(app.session_state.filtered_state["portfolio"]) == 2
+    assert app.session_state.filtered_state["tab_portfolio_builder_open"] is False
+    assert _trade_id_values(app) == []
