@@ -92,6 +92,17 @@ def _resolve_selected_trade_id(portfolio, selected_trade_id):
     return None
 
 
+def _next_clone_trade_id(portfolio, trade_id):
+    existing = {str(trade.get("trade_id", "")) for trade in portfolio}
+    base = f"{trade_id}_copy"
+    if base not in existing:
+        return base
+    suffix = 2
+    while f"{base}_{suffix}" in existing:
+        suffix += 1
+    return f"{base}_{suffix}"
+
+
 def _header(label: str):
     return (
         f'<div class="pfe-table-head">{escape(str(label), quote=True)}</div>'
@@ -173,6 +184,7 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
         "Add Trade",
         key=f"{key_prefix}_add_trade",
         type="primary",
+        disabled=builder_open_key is None,
         use_container_width=True,
     ):
         if builder_open_key:
@@ -309,7 +321,7 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
 
         if clone_col.button("Clone", key=f"{key_prefix}_clone_{i}"):
             clone = copy.deepcopy(trade)
-            clone["trade_id"] = f"{trade_id}_copy"
+            clone["trade_id"] = _next_clone_trade_id(portfolio, trade_id)
             portfolio.append(clone)
             st.session_state[selected_key] = str(clone["trade_id"])
             invalidate_results()

@@ -1,5 +1,6 @@
 from ui.components.portfolio_table import (
     _format_notional,
+    _next_clone_trade_id,
     _portfolio_summary_rows,
     _resolve_selected_trade_id,
 )
@@ -82,3 +83,13 @@ def test_resolve_selected_trade_id_falls_back_to_first_trade():
 
 def test_resolve_selected_trade_id_returns_none_for_empty_portfolio():
     assert _resolve_selected_trade_id([], "TRD_001") is None
+
+
+def test_next_clone_trade_id_uses_available_suffix():
+    portfolio = [
+        _trade("TRD_001"),
+        _trade("TRD_001_copy"),
+        _trade("TRD_001_copy_2"),
+    ]
+
+    assert _next_clone_trade_id(portfolio, "TRD_001") == "TRD_001_copy_3"
