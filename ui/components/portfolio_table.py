@@ -19,6 +19,79 @@ _CAT_KIND = {
 }
 
 
+def _format_notional(value, *, compact=False, signed=False):
+    """Format a monetary/notional value for compact portfolio display."""
+    amount = float(value or 0.0)
+    absolute = abs(amount)
+
+    if compact and absolute >= 1_000_000_000:
+        body = f"{absolute / 1_000_000_000:.2f}B"
+    elif compact and absolute >= 1_000_000:
+        body = f"{absolute / 1_000_000:.2f}M"
+    elif compact and absolute >= 1_000:
+        body = f"{absolute / 1_000:.0f}K"
+    else:
+        body = f"{absolute:,.0f}"
+
+    if amount < 0:
+        return f"-{body}"
+    if signed and amount > 0:
+        return f"+{body}"
+    return body
+
+
+def _trade_notional(trade):
+    params = trade.get("params", {}) or {}
+    return float(params.get("notional", 0.0) or 0.0)
+
+
+def _trade_signed_notional(trade):
+    sign = -1.0 if trade.get("direction") == "short" else 1.0
+    return _trade_notional(trade) * sign
+
+
+def _portfolio_summary_rows(portfolio, latest_result=None):
+    """Return portfolio summary rows as (label, value) pairs."""
+    gross = sum(abs(_trade_notional(trade)) for trade in portfolio)
+    net = sum(_trade_signed_notional(trade) for trade in portfolio)
+    max_maturity = max(
+        (
+            float((trade.get("params", {}) or {}).get("maturity", 0.0) or 0.0)
+            for trade in portfolio
+        ),
+        default=0.0,
+    )
+
+    t0_status = "No run"
+    if latest_result:
+        t0_values = latest_result.get("per_trade_t0_mtm", []) or []
+        if len(t0_values) == len(portfolio) and portfolio:
+            t0_status = _format_notional(
+                sum(float(v) for v in t0_values),
+                compact=True,
+                signed=True,
+            )
+        else:
+            t0_status = "Run stale"
+
+    return [
+        ("Trades", str(len(portfolio))),
+        ("Gross notional", _format_notional(gross, compact=True)),
+        ("Net notional", _format_notional(net, compact=True, signed=True)),
+        ("Max maturity", f"{max_maturity:.2f}y"),
+        ("t=0 MtM", t0_status),
+    ]
+
+
+def _resolve_selected_trade_id(portfolio, selected_trade_id):
+    trade_ids = [str(trade.get("trade_id", "")) for trade in portfolio]
+    if selected_trade_id in trade_ids:
+        return selected_trade_id
+    if trade_ids:
+        return trade_ids[0]
+    return None
+
+
 def _header(label: str):
     return (
         f'<div class="pfe-table-head">{escape(str(label), quote=True)}</div>'
