@@ -39,6 +39,7 @@ from ui.theme import (
 from ui.utils.navigation import tab_switch_script
 from ui.utils.runner import run_pfe_calculation
 from ui.utils.session import init_session_state, invalidate_results, request_portfolio_tab
+from ui.utils.t0_mtm import get_cached_t0_mtm_preview, resolve_t0_mtm_values
 
 apply_theme()
 init_session_state()
@@ -53,7 +54,8 @@ with st.sidebar:
     # Portfolio summary
     portfolio = st.session_state["portfolio"]
     latest = st.session_state.get("latest_result")
-    t0_mtm_list = latest.get("per_trade_t0_mtm", []) if latest else []
+    t0_preview = get_cached_t0_mtm_preview(st.session_state)
+    t0_mtm_list, _ = resolve_t0_mtm_values(portfolio, latest, t0_preview)
 
     sidebar_overline(f"Portfolio ({len(portfolio)} trades)")
 
@@ -322,7 +324,12 @@ with tab_portfolio:
     if not st.session_state["portfolio"] or st.session_state.get("_pending_edit_trade") is not None:
         st.session_state[builder_open_key] = True
 
-    render_portfolio_table(key_prefix="tab_pt", builder_open_key=builder_open_key)
+    t0_preview = get_cached_t0_mtm_preview(st.session_state)
+    render_portfolio_table(
+        key_prefix="tab_pt",
+        builder_open_key=builder_open_key,
+        t0_preview=t0_preview,
+    )
 
     builder_expanded = bool(st.session_state.get(builder_open_key, False))
     add_trade_cols = st.columns([0.78, 0.22])

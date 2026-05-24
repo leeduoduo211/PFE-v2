@@ -10,6 +10,7 @@ from ui.components.term_sheet import render_term_sheet
 from ui.theme import category_badge
 from ui.utils.registry import INSTRUMENT_REGISTRY
 from ui.utils.session import invalidate_results, request_portfolio_tab
+from ui.utils.t0_mtm import resolve_t0_mtm_values as _resolve_t0_mtm_values
 
 _CAT_KIND = {
     "European": "european",
@@ -50,7 +51,7 @@ def _trade_signed_notional(trade):
     return _trade_notional(trade) * sign
 
 
-def _portfolio_summary_rows(portfolio, latest_result=None):
+def _portfolio_summary_rows(portfolio, latest_result=None, t0_preview=None):
     """Return portfolio summary rows as (label, value) pairs."""
     gross = sum(abs(_trade_notional(trade)) for trade in portfolio)
     net = sum(_trade_signed_notional(trade) for trade in portfolio)
@@ -62,17 +63,17 @@ def _portfolio_summary_rows(portfolio, latest_result=None):
         default=0.0,
     )
 
-    t0_status = "No run"
-    if latest_result:
-        t0_values = latest_result.get("per_trade_t0_mtm", []) or []
-        if len(t0_values) == len(portfolio) and portfolio:
-            t0_status = _format_notional(
-                sum(float(v) for v in t0_values),
-                compact=True,
-                signed=True,
-            )
-        else:
-            t0_status = "Run stale"
+    t0_values, t0_source = _resolve_t0_mtm_values(portfolio, latest_result, t0_preview)
+    if t0_values:
+        t0_status = _format_notional(
+            sum(float(v) for v in t0_values),
+            compact=True,
+            signed=True,
+        )
+    elif latest_result and not t0_source:
+        t0_status = "Run stale"
+    else:
+        t0_status = "No run"
 
     return [
         ("Trades", str(len(portfolio))),
@@ -103,6 +104,16 @@ def _next_clone_trade_id(portfolio, trade_id):
     return f"{base}_{suffix}"
 
 
+def _portfolio_column_widths(has_t0: bool):
+    """Column ratios for a dense portfolio table.
+
+    Keep row actions compact so the data columns remain visually dominant.
+    """
+    if has_t0:
+        return [1.45, 0.32, 2.25, 0.72, 0.88, 0.88, 0.46, 0.44, 0.54, 0.42]
+    return [1.45, 0.32, 2.45, 0.78, 0.95, 0.46, 0.44, 0.54, 0.42]
+
+
 def _header(label: str):
     return (
         f'<div class="pfe-table-head">{escape(str(label), quote=True)}</div>'
@@ -118,9 +129,9 @@ def _cell(content: str, *, mono: bool = False, center: bool = False):
     return f'<div class="{" ".join(classes)}">{content}</div>'
 
 
-def _render_summary_strip(portfolio, latest_result):
+def _render_summary_strip(portfolio, latest_result, t0_preview=None):
     items = []
-    for label, value in _portfolio_summary_rows(portfolio, latest_result):
+    for label, value in _portfolio_summary_rows(portfolio, latest_result, t0_preview):
         items.append(
             '<div class="pfe-portfolio-kpi">'
             f'<div class="pfe-portfolio-kpi-label">{escape(label, quote=True)}</div>'
@@ -166,12 +177,12 @@ def _render_detail_panel(trade):
         st.caption("Add market data to see term-sheet details.")
 
 
-def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
+def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None, t0_preview=None):
     """Render the portfolio table from session_state['portfolio']."""
     portfolio = st.session_state["portfolio"]
     latest = st.session_state.get("latest_result") or {}
 
-    _render_summary_strip(portfolio, latest)
+    _render_summary_strip(portfolio, latest, t0_preview)
 
     trade_word = "trade" if len(portfolio) == 1 else "trades"
     st.markdown(
@@ -189,7 +200,7 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
         )
         return None
 
-    t0_mtm_list = latest.get("per_trade_t0_mtm", [])
+    t0_mtm_list, _ = _resolve_t0_mtm_values(portfolio, latest, t0_preview)
     has_t0 = len(t0_mtm_list) == len(portfolio)
     selected_key = f"{key_prefix}_selected_trade_id"
     selected_trade_id = _resolve_selected_trade_id(
@@ -198,10 +209,7 @@ def render_portfolio_table(key_prefix: str = "pt", builder_open_key=None):
     )
     st.session_state[selected_key] = selected_trade_id
 
-    if has_t0:
-        widths = [1.45, 0.35, 1.95, 0.85, 1.0, 1.0, 0.68, 0.68, 0.78, 0.68]
-    else:
-        widths = [1.45, 0.35, 2.2, 0.9, 1.05, 0.68, 0.68, 0.78, 0.68]
+    widths = _portfolio_column_widths(has_t0)
 
     cols = st.columns(widths)
     cols[0].markdown(_header("Trade ID"), unsafe_allow_html=True)

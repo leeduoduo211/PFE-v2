@@ -1,8 +1,10 @@
 from ui.components.portfolio_table import (
     _format_notional,
     _next_clone_trade_id,
+    _portfolio_column_widths,
     _portfolio_summary_rows,
     _resolve_selected_trade_id,
+    _resolve_t0_mtm_values,
 )
 
 
@@ -69,6 +71,40 @@ def test_portfolio_summary_rows_marks_missing_results():
     assert rows["t=0 MtM"] == "No run"
 
 
+def test_portfolio_summary_rows_uses_preview_t0_mtm_before_full_run():
+    portfolio = [
+        _trade("TRD_001", direction="long", notional=1_000_000, maturity=1.25),
+        _trade("TRD_002", direction="short", notional=2_000_000, maturity=3.5),
+    ]
+    preview = {"per_trade_t0_mtm": [10_000.0, -2_500.0]}
+
+    rows = dict(_portfolio_summary_rows(portfolio, None, preview))
+
+    assert rows["t=0 MtM"] == "+8K"
+
+
+def test_resolve_t0_mtm_values_prefers_full_run_over_preview():
+    portfolio = [_trade("TRD_001")]
+    latest = {"per_trade_t0_mtm": [12_000.0]}
+    preview = {"per_trade_t0_mtm": [9_000.0]}
+
+    values, source = _resolve_t0_mtm_values(portfolio, latest, preview)
+
+    assert values == [12_000.0]
+    assert source == "run"
+
+
+def test_resolve_t0_mtm_values_falls_back_to_preview_when_run_is_stale():
+    portfolio = [_trade("TRD_001"), _trade("TRD_002")]
+    latest = {"per_trade_t0_mtm": [12_000.0]}
+    preview = {"per_trade_t0_mtm": [9_000.0, -1_000.0]}
+
+    values, source = _resolve_t0_mtm_values(portfolio, latest, preview)
+
+    assert values == [9_000.0, -1_000.0]
+    assert source == "preview"
+
+
 def test_resolve_selected_trade_id_keeps_existing_selection():
     portfolio = [_trade("TRD_001"), _trade("TRD_002")]
 
@@ -93,3 +129,11 @@ def test_next_clone_trade_id_uses_available_suffix():
     ]
 
     assert _next_clone_trade_id(portfolio, "TRD_001") == "TRD_001_copy_3"
+
+
+def test_portfolio_column_widths_keep_action_columns_compact():
+    widths = _portfolio_column_widths(has_t0=True)
+
+    assert len(widths) == 10
+    assert sum(widths[6:]) < widths[2] + widths[5]
+    assert max(widths[6:]) <= 0.56

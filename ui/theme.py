@@ -191,8 +191,12 @@ button[kind="primary"],
     color: #ffffff !important;
     font-weight: 500 !important;
     border: none !important;
-    border-radius: 7px !important;
-    font-size: 0.85rem !important;
+    border-radius: 6px !important;
+    font-size: 0.82rem !important;
+    min-height: 32px !important;
+    height: 32px !important;
+    padding: 0 14px !important;
+    line-height: 1 !important;
     white-space: nowrap !important;
     transition: all 0.15s ease !important;
 }
@@ -201,24 +205,32 @@ button[kind="primary"]:hover {
     background: #2563eb !important;
 }
 
-button[kind="secondary"],
-.stButton > button:not([kind="primary"]) {
+button[kind="secondary"]:not([role="tab"]),
+.stButton > button:not([kind="primary"]):not([role="tab"]) {
     background: #ffffff !important;
     border: 1px solid #e2e8f0 !important;
     color: #475569 !important;
-    border-radius: 7px !important;
-    font-size: 0.8rem !important;
-    min-height: 36px !important;
-    height: 36px !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    min-width: 0 !important;
+    min-height: 30px !important;
+    height: 30px !important;
     padding: 0 10px !important;
+    line-height: 1 !important;
     white-space: nowrap !important;
     transition: all 0.15s ease !important;
 }
 
-button[kind="secondary"]:hover,
-.stButton > button:not([kind="primary"]):hover {
+button[kind="secondary"]:not([role="tab"]):hover,
+.stButton > button:not([kind="primary"]):not([role="tab"]):hover {
     border-color: #cbd5e1 !important;
     background: #f8fafc !important;
+}
+
+button[kind="secondary"]:not([role="tab"]) p,
+.stButton > button:not([kind="primary"]):not([role="tab"]) p {
+    font-size: 12px !important;
+    line-height: 1 !important;
 }
 
 /* ── Expanders ────────────────────────────────────────────────────── */
@@ -257,6 +269,13 @@ details[data-testid="stExpander"][open] {
     min-height: 36px !important;
     height: 36px !important;
     color: #334155 !important;
+}
+
+div[class*="st-key-tab_cfg_sampling_controls"] [data-testid="stWidgetLabel"],
+div[class*="st-key-tab-cfg-sampling-controls"] [data-testid="stWidgetLabel"] {
+    min-height: 36px !important;
+    display: flex !important;
+    align-items: center !important;
 }
 
 [data-testid="stNumberInput"] input:focus,
@@ -665,11 +684,36 @@ hr {
 div[class*="st-key-tab_pt_view_"] button,
 div[class*="st-key-tab_pt_edit_"] button,
 div[class*="st-key-tab_pt_clone_"] button,
-div[class*="st-key-tab_pt_del_"] button {
-    min-height: 28px !important;
-    height: 28px !important;
-    padding: 0 8px !important;
+div[class*="st-key-tab_pt_del_"] button,
+div[class*="st-key-tab-pt-view-"] button,
+div[class*="st-key-tab-pt-edit-"] button,
+div[class*="st-key-tab-pt-clone-"] button,
+div[class*="st-key-tab-pt-del-"] button {
+    min-width: 0 !important;
+    width: auto !important;
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 0 10px !important;
     border-radius: 6px !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.pfe-table-cell) div[data-testid="stButton"] {
+    width: auto !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.pfe-table-cell) button {
+    min-width: 0 !important;
+    width: auto !important;
+    min-height: 30px !important;
+    height: 30px !important;
+    padding: 0 10px !important;
+    border-radius: 6px !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+    white-space: nowrap !important;
+}
+div[data-testid="stHorizontalBlock"]:has(.pfe-table-cell) button p {
     font-size: 12px !important;
     line-height: 1 !important;
 }

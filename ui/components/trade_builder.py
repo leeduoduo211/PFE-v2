@@ -358,6 +358,10 @@ def _render_modifier_styled(idx, key_prefix, asset_names, n_trade_assets, maturi
 # Public API
 # ---------------------------------------------------------------------------
 
+def _portfolio_submit_column_widths():
+    return [0.78, 0.22]
+
+
 def render_trade_builder(key_prefix="tb"):
     """Render the full trade builder form.
 
@@ -644,16 +648,38 @@ def render_trade_builder(key_prefix="tb"):
     # 6. "Add to Portfolio" button
     # -----------------------------------------------------------------------
 
+    submit_cols = st.columns(_portfolio_submit_column_widths())
+
     if not asset_names:
-        st.button("Add to Portfolio", disabled=True, key=f"{key_prefix}_submit")
+        with submit_cols[1]:
+            st.button(
+                "Add to Portfolio",
+                disabled=True,
+                key=f"{key_prefix}_submit",
+                use_container_width=True,
+            )
         st.caption("Define market assets first.")
         return None
 
     if not assets_valid:
-        st.button("Add to Portfolio", disabled=True, key=f"{key_prefix}_submit")
+        with submit_cols[1]:
+            st.button(
+                "Add to Portfolio",
+                disabled=True,
+                key=f"{key_prefix}_submit",
+                use_container_width=True,
+            )
         return None
 
-    if st.button("Add to Portfolio", type="primary", key=f"{key_prefix}_submit"):
+    with submit_cols[1]:
+        submitted = st.button(
+            "Add to Portfolio",
+            type="primary",
+            key=f"{key_prefix}_submit",
+            use_container_width=True,
+        )
+
+    if submitted:
         # Assemble params dict
         params: dict = {
             "maturity":  maturity,
