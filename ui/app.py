@@ -36,8 +36,8 @@ from ui.theme import (
     sidebar_summary,
     workflow_steps,
 )
-from ui.utils.runner import run_pfe_calculation
 from ui.utils.navigation import tab_switch_script
+from ui.utils.runner import run_pfe_calculation
 from ui.utils.session import init_session_state, invalidate_results, request_portfolio_tab
 
 apply_theme()
