@@ -7,7 +7,7 @@ name = "pfev2"
 version = "0.1.0"
 description = "Nested Monte Carlo Potential Future Exposure (PFE) engine for exotic derivatives, with an interactive Streamlit UI."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
     { name = "Xuefeng Li", email = "lixuefeng1986@gmail.com" },
@@ -22,7 +22,6 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
     "Programming Language :: Python :: 3",
-    "Programming Language :: Python :: 3.9",
     "Programming Language :: Python :: 3.10",
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
@@ -40,13 +39,14 @@ Changelog = "https://github.com/leeduoduo211/PFE-v2/blob/master/CHANGELOG.md"
 [project.optional-dependencies]
 numba = ["numba>=0.59"]
 plot = ["matplotlib>=3.7"]
-ui = ["streamlit>=1.30", "plotly>=5.18"]
+ui = ["streamlit>=1.54", "plotly>=5.18"]
 dev = [
     "pytest>=7.0",
     "scipy>=1.10",
     "ruff>=0.5",
-    "streamlit>=1.30",
+    "streamlit>=1.54",
     "plotly>=5.18",
+    "tomli>=2.0; python_version<'3.11'",
 ]
 
 [tool.setuptools.packages.find]
@@ -62,7 +62,7 @@ addopts = "-p no:cacheprovider"
 # ---------------------------------------------------------------------------
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py310"
 extend-exclude = [
     "design/",
     ".claude/",

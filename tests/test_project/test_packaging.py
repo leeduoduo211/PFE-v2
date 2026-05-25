@@ -7,7 +7,7 @@ def test_dev_extra_includes_ui_test_dependencies():
     pyproject = (ROOT / "pyproject.toml").read_text(encoding="utf-8")
     dev_section = pyproject.split("dev = [", 1)[1].split("]", 1)[0]
 
-    assert '"streamlit>=1.30"' in dev_section
+    assert '"streamlit>=1.54"' in dev_section
     assert '"plotly>=5.18"' in dev_section
 
 

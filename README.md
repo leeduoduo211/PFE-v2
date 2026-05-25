@@ -1,6 +1,6 @@
 # PFE-v2
 
-[![Python 3.9+](https://img.shields.io/badge/python-3.9%2B-blue.svg)](https://www.python.org/downloads/)
+[![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
 [![Tests: 310](https://img.shields.io/badge/tests-310%20passing-brightgreen.svg)](#tests)
 
@@ -70,7 +70,7 @@ pip3 install -e ".[ui]"              # + Streamlit UI
 pip3 install -e ".[ui,numba,plot]"   # everything
 ```
 
-Requires Python 3.9 or newer.
+Requires Python 3.10 or newer.
 
 ## Quick start
 
