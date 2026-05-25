@@ -11,6 +11,14 @@ def test_dev_extra_includes_ui_test_dependencies():
     assert '"plotly>=5.18"' in dev_section
 
 
+def test_streamlit_cloud_requirements_install_ui_dependencies():
+    requirements = (ROOT / "requirements.txt").read_text(encoding="utf-8").splitlines()
+
+    assert "numpy>=1.24" in requirements
+    assert "streamlit>=1.54" in requirements
+    assert "plotly>=5.18" in requirements
+
+
 def test_devcontainer_installs_project_ui_extra():
     devcontainer = (ROOT / ".devcontainer" / "devcontainer.json").read_text(
         encoding="utf-8"
