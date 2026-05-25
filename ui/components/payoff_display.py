@@ -1,6 +1,6 @@
 """Payoff display: formula text and sparkline chart for trade specs."""
 
-from typing import Optional
+from __future__ import annotations
 
 import numpy as np
 import plotly.graph_objects as go
@@ -190,7 +190,7 @@ def _apply_non_path_modifier(mod_type: str, mod_params: dict, payoffs: np.ndarra
     return payoffs
 
 
-def payoff_sparkline(spec: dict, asset_names: list) -> Optional[go.Figure]:
+def payoff_sparkline(spec: dict, asset_names: list) -> go.Figure | None:
     """Generate a compact Plotly sparkline of the payoff profile.
 
     Returns None for instrument types that cannot be meaningfully represented

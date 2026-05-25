@@ -101,7 +101,7 @@ def render_t0_mtm_table(result: dict, trade_ids: list):
     total = sum(per_trade_t0)
 
     rows_html = ""
-    for tid, mtm in zip(trade_ids, per_trade_t0):
+    for tid, mtm in zip(trade_ids, per_trade_t0):  # noqa: B905
         safe_tid = escape(str(tid), quote=True)
         pct = mtm / abs(total) * 100 if total != 0 else 0.0
         if mtm > 0:
@@ -415,7 +415,7 @@ def _result_to_csv(result: dict) -> str:
     x, label = _time_axis(result)
     buf = io.StringIO()
     buf.write(f"time_years,time_{label},pfe,epe\n")
-    for ti, xi, pi, ei in zip(t, x, pfe, epe):
+    for ti, xi, pi, ei in zip(t, x, pfe, epe):  # noqa: B905
         buf.write(f"{ti:.6f},{xi:.3f},{pi:.6f},{ei:.6f}\n")
     return buf.getvalue()
 

@@ -7,7 +7,7 @@ straight into st.session_state.
 
 from __future__ import annotations
 
-from typing import Callable
+from collections.abc import Callable
 
 
 def _preset_eq_2asset():

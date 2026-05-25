@@ -14,7 +14,7 @@ _ASSET_CAP = 10
 def _table_header(labels_widths: list[tuple[str, float]]):
     """Render an overline-styled column header row."""
     cols = st.columns([w for _, w in labels_widths])
-    for col, (label, _) in zip(cols, labels_widths):
+    for col, (label, _) in zip(cols, labels_widths):  # noqa: B905
         col.markdown(
             f'<div style="font-size:10px;font-weight:600;color:#94a3b8;'
             f'text-transform:uppercase;letter-spacing:0.08em;'

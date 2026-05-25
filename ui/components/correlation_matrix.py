@@ -1,7 +1,8 @@
 """Interactive N x N correlation matrix editor with PSD validation."""
 
+from __future__ import annotations
+
 from html import escape
-from typing import Optional
 
 import numpy as np
 import streamlit as st
@@ -28,7 +29,7 @@ def _nearest_psd(matrix: np.ndarray) -> np.ndarray:
     return result
 
 
-def _parse_corr_value(raw_value: str) -> Optional[float]:
+def _parse_corr_value(raw_value: str) -> float | None:
     """Parse a correlation input and enforce [-1, 1]."""
     try:
         value = float(raw_value)

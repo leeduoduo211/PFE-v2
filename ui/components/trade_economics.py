@@ -515,7 +515,7 @@ def compute_scenarios(
     labels = ["Spot +20%", "Spot  \u00b10%", "Spot \u221220%"]
 
     results = []
-    for mult, label in zip(multipliers, labels):
+    for mult, label in zip(multipliers, labels):  # noqa: B905
         scenario_spot = spot * mult
         scenario_spots = np.array([scenario_spot])
 

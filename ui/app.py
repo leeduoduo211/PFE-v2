@@ -285,7 +285,7 @@ with tab_market:
             "mid-session \u2014 overwrites current market and portfolio."
         )
         cols = st.columns(len(PRESETS))
-        for col, (preset_key, (label, desc, _)) in zip(cols, PRESETS.items()):
+        for col, (preset_key, (label, desc, _)) in zip(cols, PRESETS.items()):  # noqa: B905
             with col:
                 if st.button(label, key=f"preset_{preset_key}",
                              use_container_width=True):
