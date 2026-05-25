@@ -84,7 +84,7 @@ def _time_axis(result: dict):
     return [t * factor for t in result["time_points"]], label
 
 
-def _render_main_chart(result: dict):
+def _render_main_chart(result: dict, key_prefix: str = "dash"):
     """PFE (red) and EPE (blue) over horizon — matches Dashboard.jsx layout."""
     periods, period_label = _time_axis(result)
     fig = go.Figure()
@@ -108,7 +108,7 @@ def _render_main_chart(result: dict):
         xaxis=dict(title=f"Time ({period_label})"),
         yaxis=dict(title="Exposure", tickformat=",.0f"),
     )
-    st.plotly_chart(fig, use_container_width=True, key="dash_main_chart")
+    st.plotly_chart(fig, use_container_width=True, key=f"{key_prefix}_main_chart")
 
 
 def _render_run_card(result: dict):
@@ -323,42 +323,9 @@ def _render_recent_runs():
     )
 
 
-def render_dashboard():
-    """Render the full single-page dashboard."""
-    latest = st.session_state.get("latest_result")
-
-    # Header
-    if latest is None:
-        st.markdown(
-            '<h1 style="font-size:24px;font-weight:700;letter-spacing:-0.01em;'
-            'color:#1e293b;margin:0;">Portfolio Credit Exposure</h1>'
-            '<div style="font-size:13px;color:#64748b;margin:4px 0 20px;">'
-            'No run yet — switch to Wizard, build a portfolio and run PFE.</div>',
-            unsafe_allow_html=True,
-        )
-        st.info(
-            "Dashboard view shows results once you have a completed PFE run. "
-            "Use the **Wizard** mode (top-right toggle) to set up market data, "
-            "build a portfolio, and run a calculation."
-        )
-        return
-
+def render_dashboard_result_body(latest: dict, key_prefix: str = "dash"):
+    """Render the reusable Dashboard metrics/charts body for a completed run."""
     conf = latest["config"]
-    label = escape(str(latest.get("label", "Run")), quote=True)
-    sub = (f"{label} · {conf['n_outer']:,} × {conf['n_inner']:,} · "
-           f"{conf['grid_frequency']} · {len(latest['time_points'])} steps · "
-           f"seed {conf.get('seed', '—')} · {latest.get('computation_time', 0):.1f}s")
-
-    st.markdown(
-        f'<div style="display:flex;justify-content:space-between;align-items:flex-start;'
-        f'margin-bottom:4px;">'
-        f'<div>'
-        f'<h1 style="font-size:24px;font-weight:700;letter-spacing:-0.01em;'
-        f'color:#1e293b;margin:0;">Portfolio Credit Exposure</h1>'
-        f'<div style="font-size:13px;color:#64748b;margin:4px 0 20px;">{sub}</div>'
-        f'</div></div>',
-        unsafe_allow_html=True,
-    )
 
     # KPI row
     pfe_curve = latest["pfe_curve"]
@@ -405,7 +372,7 @@ def render_dashboard():
             f'over the simulation horizon.</div>',
             unsafe_allow_html=True,
         )
-        _render_main_chart(latest)
+        _render_main_chart(latest, key_prefix=key_prefix)
         st.markdown('</div>', unsafe_allow_html=True)
     with col_run:
         _render_run_card(latest)
@@ -417,3 +384,43 @@ def render_dashboard():
 
     # Recent runs
     _render_recent_runs()
+
+
+def render_dashboard():
+    """Render the full single-page dashboard."""
+    latest = st.session_state.get("latest_result")
+
+    # Header
+    if latest is None:
+        st.markdown(
+            '<h1 style="font-size:24px;font-weight:700;letter-spacing:-0.01em;'
+            'color:#1e293b;margin:0;">Portfolio Credit Exposure</h1>'
+            '<div style="font-size:13px;color:#64748b;margin:4px 0 20px;">'
+            'No run yet — switch to Wizard, build a portfolio and run PFE.</div>',
+            unsafe_allow_html=True,
+        )
+        st.info(
+            "Dashboard view shows results once you have a completed PFE run. "
+            "Use the **Wizard** mode (top-right toggle) to set up market data, "
+            "build a portfolio, and run a calculation."
+        )
+        return
+
+    conf = latest["config"]
+    label = escape(str(latest.get("label", "Run")), quote=True)
+    sub = (f"{label} · {conf['n_outer']:,} × {conf['n_inner']:,} · "
+           f"{conf['grid_frequency']} · {len(latest['time_points'])} steps · "
+           f"seed {conf.get('seed', '—')} · {latest.get('computation_time', 0):.1f}s")
+
+    st.markdown(
+        f'<div style="display:flex;justify-content:space-between;align-items:flex-start;'
+        f'margin-bottom:4px;">'
+        f'<div>'
+        f'<h1 style="font-size:24px;font-weight:700;letter-spacing:-0.01em;'
+        f'color:#1e293b;margin:0;">Portfolio Credit Exposure</h1>'
+        f'<div style="font-size:13px;color:#64748b;margin:4px 0 20px;">{sub}</div>'
+        f'</div></div>',
+        unsafe_allow_html=True,
+    )
+
+    render_dashboard_result_body(latest, key_prefix="dash")

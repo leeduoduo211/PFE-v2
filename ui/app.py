@@ -15,14 +15,12 @@ st.set_page_config(
 )
 
 from ui.components.config_panel import render_config_panel
-from ui.components.dashboard_view import render_dashboard
+from ui.components.dashboard_view import render_dashboard, render_dashboard_result_body
 from ui.components.market_data_input import render_market_data_input
 from ui.components.portfolio_table import render_portfolio_table
 from ui.components.results_viewer import (
     render_result_exports,
-    render_results_summary,
     render_run_comparison,
-    render_t0_mtm_table,
 )
 from ui.components.trade_builder import render_trade_builder
 from ui.theme import (
@@ -420,10 +418,7 @@ with tab_results:
             ),
         )
 
-        render_results_summary(latest)
-
-        trade_ids = [t["trade_id"] for t in st.session_state["portfolio"]]
-        render_t0_mtm_table(latest, trade_ids)
+        render_dashboard_result_body(latest, key_prefix="tab_results")
 
         st.markdown('<hr style="margin:1rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
         render_result_exports(latest, key_prefix="tab_export")
