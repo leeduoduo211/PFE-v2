@@ -143,4 +143,4 @@ def render_config_panel(key_prefix: str = "cfg"):
         )
 
     if config != before:
-        invalidate_results()
+        invalidate_results(clear_runs=False)

@@ -12,7 +12,7 @@ from ui.utils.converters import build_config, build_market_data, build_portfolio
 from ui.utils.session import add_run
 
 
-def run_pfe_calculation():
+def run_pfe_calculation(run_label=None):
     """Run PFE computation using current session state.
     Shows progress bar, stores result in session state runs history.
     Returns the PFEResult or None on error.
@@ -129,8 +129,9 @@ def run_pfe_calculation():
     else:
         per_trade_t0_mtm = []
 
-    # Store summary for run comparison (only curves, not full matrices)
-    run_summary = {
+    # Store the full display payload in run history so older runs can be
+    # selected and rendered exactly like the latest run.
+    run_snapshot = {
         "time_points": pfe_result.time_points.tolist(),
         "pfe_curve": pfe_result.pfe_curve.tolist(),
         "epe_curve": pfe_result.epe_curve.tolist(),
@@ -154,19 +155,15 @@ def run_pfe_calculation():
         "n_trades": len(portfolio_specs),
         "n_assets": len(market_state["asset_names"]),
         "per_trade_t0_mtm": per_trade_t0_mtm,
+        "exposure_matrix": exposure.tolist(),
     }
-
-    add_run(run_summary)
-
-    # Store latest full result for display (includes heavy matrices for fan chart)
-    latest = dict(run_summary)
-    latest["exposure_matrix"] = exposure.tolist()
     if per_trade_pfe is not None:
-        latest["per_trade_pfe"] = per_trade_pfe.tolist()
-        latest["per_trade_pfe_label"] = (
+        run_snapshot["per_trade_pfe"] = per_trade_pfe.tolist()
+        run_snapshot["per_trade_pfe_label"] = (
             "Standalone margined PFE" if config.margined else "Standalone unmargined PFE"
         )
-    latest["per_trade_t0_mtm"] = per_trade_t0_mtm
-    st.session_state["latest_result"] = latest
+
+    stored_run = add_run(run_snapshot, label=run_label)
+    st.session_state["latest_result"] = stored_run
 
     return pfe_result

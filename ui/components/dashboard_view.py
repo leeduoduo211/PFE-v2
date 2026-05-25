@@ -262,9 +262,9 @@ def _render_recent_runs():
         return
 
     rows_html = ""
-    latest_idx = len(runs) - 1
+    latest_label = (st.session_state.get("latest_result") or {}).get("label")
     for i, run in enumerate(reversed(runs)):
-        is_current = (len(runs) - 1 - i) == latest_idx
+        is_current = latest_label is not None and run.get("label") == latest_label
         bg = "background:rgba(59,130,246,0.10);" if is_current else ""
         dot_color = "#3b82f6" if is_current else "#94a3b8"
         dot = "●" if is_current else "○"
@@ -400,7 +400,7 @@ def render_dashboard():
             unsafe_allow_html=True,
         )
         st.info(
-            "Dashboard view shows results once you have a completed PFE run. "
+            "Summary view shows results once you have a completed PFE run. "
             "Use the **Wizard** mode (top-right toggle) to set up market data, "
             "build a portfolio, and run a calculation."
         )

@@ -15,11 +15,12 @@ st.set_page_config(
 )
 
 from ui.components.config_panel import render_config_panel
-from ui.components.dashboard_view import render_dashboard, render_dashboard_result_body
+from ui.components.dashboard_view import render_dashboard
 from ui.components.market_data_input import render_market_data_input
 from ui.components.portfolio_table import render_portfolio_table
 from ui.components.results_viewer import (
     render_result_exports,
+    render_results_summary,
     render_run_comparison,
 )
 from ui.components.trade_builder import render_trade_builder
@@ -36,7 +37,12 @@ from ui.theme import (
 )
 from ui.utils.navigation import tab_switch_script
 from ui.utils.runner import run_pfe_calculation
-from ui.utils.session import init_session_state, invalidate_results, request_portfolio_tab
+from ui.utils.session import (
+    init_session_state,
+    invalidate_results,
+    request_portfolio_tab,
+    select_run,
+)
 from ui.utils.t0_mtm import get_cached_t0_mtm_preview, resolve_t0_mtm_values
 
 apply_theme()
@@ -100,21 +106,20 @@ with st.sidebar:
     sidebar_overline("Run history")
 
     if runs:
-        _bullet = "\u25cf"
-        for run in reversed(runs):
+        for i, run in enumerate(reversed(runs)):
             is_latest = latest and run.get("label") == latest.get("label")
-            bg = "background:#f0f7ff;border:1px solid #bfdbfe;border-radius:6px;" if is_latest else ""
-            dot = f"  {_bullet}" if is_latest else ""
-            st.markdown(
-                f'<div style="padding:4px 8px;font-size:0.72rem;margin-bottom:4px;{bg}">'
-                f'<div style="display:flex;justify-content:space-between;">'
-                f'<span style="color:#334155;font-weight:500;">{run["label"]}{dot}</span>'
-                f'</div>'
-                f'<div style="font-family:JetBrains Mono,monospace;font-size:0.68rem;color:#64748b;">'
-                f'Peak PFE: {run["peak_pfe"]:,.0f}</div>'
-                f'</div>',
-                unsafe_allow_html=True,
-            )
+            label = str(run.get("label", f"Run #{len(runs) - i}"))
+            prefix = "\u25cf " if is_latest else ""
+            if st.button(
+                f"{prefix}{label}",
+                key=f"sidebar_run_{i}_{label}",
+                disabled=bool(is_latest),
+                use_container_width=True,
+            ):
+                select_run(label)
+                st.session_state["_switch_to_results"] = True
+                st.rerun()
+            st.caption(f'Peak PFE: {run.get("peak_pfe", 0):,.0f}')
     else:
         st.caption("No runs yet.")
 
@@ -196,7 +201,7 @@ with st.sidebar:
             st.caption("Define assets first, then return here to save.")
 
 # ---------------------------------------------------------------------------
-# View mode toggle (Wizard / Dashboard) — top-right
+# View mode toggle (Wizard / Summary) — top-right
 # ---------------------------------------------------------------------------
 
 if "view_mode" not in st.session_state:
@@ -208,7 +213,7 @@ with _tog_right:
     _mode = st.radio(
         "View",
         options=["wizard", "dashboard"],
-        format_func=lambda v: "Wizard" if v == "wizard" else "Dashboard",
+        format_func=lambda v: "Wizard" if v == "wizard" else "Summary",
         index=0 if st.session_state["view_mode"] == "wizard" else 1,
         horizontal=True,
         label_visibility="collapsed",
@@ -396,8 +401,18 @@ with tab_config:
             f'{cfg["n_outer"]:,} outer x {steps} steps x {cfg["n_inner"]:,} inner x '
             f'{len(portfolio_specs)} trade{"s" if len(portfolio_specs) != 1 else ""}',
         )
-        if st.button("Run PFE", key="tab_run", type="primary"):
-            run_pfe_calculation()
+        with st.form("tab_run_form"):
+            st.text_input(
+                "Run scenario name",
+                key="run_scenario_name",
+                placeholder=(
+                    f'Run #{st.session_state.get("run_counter", len(st.session_state.get("runs", []))) + 1}'
+                ),
+                help="Optional. Reusing a name creates a numbered copy in run history.",
+            )
+            submitted = st.form_submit_button("Run PFE", type="primary")
+        if submitted:
+            run_pfe_calculation(run_label=st.session_state.get("run_scenario_name"))
             st.session_state["_switch_to_results"] = True
             st.rerun()
 
@@ -418,7 +433,7 @@ with tab_results:
             ),
         )
 
-        render_dashboard_result_body(latest, key_prefix="tab_results")
+        render_results_summary(latest)
 
         st.markdown('<hr style="margin:1rem 0;border-color:#f1f5f9;">', unsafe_allow_html=True)
         render_result_exports(latest, key_prefix="tab_export")
