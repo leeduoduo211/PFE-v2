@@ -40,17 +40,20 @@ Changelog = "https://github.com/leeduoduo211/PFE-v2/blob/master/CHANGELOG.md"
 numba = ["numba>=0.59"]
 plot = ["matplotlib>=3.7"]
 ui = ["streamlit>=1.54", "plotly>=5.18"]
+api = ["fastapi>=0.110", "uvicorn[standard]>=0.27"]
 dev = [
     "pytest>=7.0",
     "scipy>=1.10",
     "ruff>=0.5",
     "streamlit>=1.54",
     "plotly>=5.18",
+    "fastapi>=0.110",
+    "httpx>=0.27",
     "tomli>=2.0; python_version<'3.11'",
 ]
 
 [tool.setuptools.packages.find]
-include = ["pfev2*", "ui*"]
+include = ["pfev2*", "ui*", "api*"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
@@ -85,5 +88,8 @@ ignore = [
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["B011", "B017"]         # allow bare assert in tests
+# Pydantic evaluates annotations at runtime; typing.List/Optional (not PEP 604
+# unions) keep the request models importable on Python 3.9 dev machines.
+"api/schemas.py" = ["UP006", "UP035", "UP045"]
 "ui/**" = ["F401"]                    # streamlit pages often need "unused" imports
 "ui/app.py" = ["E402", "F401"]        # set_page_config MUST precede other imports

@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
-[![Tests: 321](https://img.shields.io/badge/tests-321%20passing-brightgreen.svg)](#tests)
+[![Tests: 330](https://img.shields.io/badge/tests-330%20passing-brightgreen.svg)](#tests)
 
 A Python engine for computing **Potential Future Exposure (PFE)** on exotic derivatives using nested Monte Carlo simulation. Ships with 18 instrument types, 9 composable modifiers, and an interactive Streamlit UI.
 
@@ -163,6 +163,25 @@ python3 -m streamlit run ui/app.py
 
 A 4-step wizard (**Market → Portfolio → Config → Results**) with a registry-driven form builder — add a new instrument to the registry and its trade-builder form, term sheet, and payoff display are generated automatically. There's also a single-page **Dashboard** mode for power users.
 
+## REST API
+
+```bash
+pip3 install -e ".[api]"
+python3 -m uvicorn api.app:app --reload   # interactive docs at /docs
+```
+
+A FastAPI layer over the same engine, intended as the backend for a future SPA frontend (the Streamlit app is unaffected):
+
+| Endpoint | What it does |
+|---|---|
+| `GET /registry` | Instrument + modifier field schemas — the same data that drives the Streamlit forms |
+| `POST /t0-mtm` | Synchronous per-trade t=0 MtM preview |
+| `POST /runs` | Validate inputs, queue a PFE run in a background thread, return `202` + run id |
+| `GET /runs`, `GET /runs/{id}` | Run history / status with live progress |
+| `GET /runs/{id}/result` | Full result (curves, EEPE, config echo; `?include_mtm=true` for the MtM matrix) |
+
+Request payloads use the same trade-spec dict format as the UI (`{trade_id, instrument_type, direction, params, modifiers}`); validation errors come back as specific `422`s at submission time.
+
 ## Documentation
 
 - **[Wiki — Home](https://github.com/leeduoduo211/PFE-v2/wiki)** — full documentation
@@ -178,7 +197,7 @@ A 4-step wizard (**Market → Portfolio → Config → Results**) with a registr
 python3 -m pytest tests/ -v
 ```
 
-321 tests covering instruments, modifiers, engine, risk aggregation, and UI converters. See [`CHANGELOG.md`](CHANGELOG.md) for change history.
+330 tests covering instruments, modifiers, engine, risk aggregation, UI converters, and the REST API. See [`CHANGELOG.md`](CHANGELOG.md) for change history.
 
 ## License
 

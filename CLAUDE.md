@@ -23,6 +23,9 @@ python3 -m pytest tests/test_ui/test_registry.py::TestInstrumentRegistry::test_v
 # Launch Streamlit UI
 python3 -m streamlit run ui/app.py
 
+# Launch REST API (requires ".[api]" extra; interactive docs at /docs)
+python3 -m uvicorn api.app:app --reload
+
 # Quick import sanity check
 python3 -c "from pfev2 import compute_pfe; print('OK')"
 ```
@@ -48,6 +51,10 @@ Key entry point: `pfev2.risk.pfe.compute_pfe(portfolio, market, config)` returns
 **Modifiers** (`pfev2/modifiers/`): 9 types inheriting from `BaseModifier`. Decorator pattern wrapping instruments. `_apply(raw_payoff, spots, path_history, t_grid)` transforms the payoff. Barrier modifiers support three observation styles: continuous, discrete, window.
 
 **Engine** (`pfev2/engine/`): `MultivariateGBM` generates correlated paths via Cholesky decomposition. Backends: `numpy` (default) and `numba` (optional JIT).
+
+### REST API (`api/`)
+
+FastAPI layer over the engine, the Phase-1 backend for a future SPA frontend. `api/schemas.py` (Pydantic models mirroring the UI trade-spec dicts) → `api/app.py` (endpoints; validates synchronously via `ui/utils/converters.py`, returns specific 422s) → `api/jobs.py` (`RunStore`: in-process thread pool running `compute_pfe` with progress tracking) → `api/serializers.py` (registry and `PFEResult` → JSON). Imports only Streamlit-free `ui.utils` modules (`converters`, `registry`, `t0_mtm`) — the API must not require streamlit. `api/schemas.py` deliberately uses `typing.List`/`Optional` (not PEP 604 unions) so pydantic can evaluate annotations on Python 3.9 dev machines; ruff per-file-ignores cover this.
 
 ### Streamlit UI (`ui/`)
 

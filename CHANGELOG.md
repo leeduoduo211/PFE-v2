@@ -4,6 +4,22 @@ All notable changes to this project are logged here (reverse chronological).
 
 ---
 
+## 2026-06-10 — REST API service (Phase 1 of the SPA migration)
+
+**Type**: Feature
+**Summary**: New `api/` package — a FastAPI layer over the engine intended as the backend for a future React frontend. The Streamlit app is untouched. 330 tests pass; ruff clean.
+
+- `api/schemas.py` **(new)** — Pydantic request models mirroring the UI trade-spec dict format (`{trade_id, instrument_type, direction, params, modifiers}`); structural validation only, deep validation stays in converters/pfev2. Uses `typing.List`/`Optional` instead of PEP 604 unions so pydantic can evaluate annotations on Python 3.9 dev machines (ruff per-file-ignore added).
+- `api/jobs.py` **(new)** — `RunStore`: in-process thread-pool job execution for `compute_pfe` with live progress (wired to the existing `on_progress` callback), status lifecycle (queued/running/completed/failed), and run history. Designed as the seam to swap for Celery/Redis if multi-user concurrency ever matters.
+- `api/serializers.py` **(new)** — registry → JSON schema (drives dynamic frontend forms the same way it drives Streamlit forms); `PFEResult` → JSON (curves + scalars; MtM matrix opt-in via `?include_mtm=true`).
+- `api/app.py` **(new)** — endpoints: `GET /health`, `GET /registry`, `POST /t0-mtm`, `POST /runs` (202 + run id), `GET /runs`, `GET /runs/{id}`, `GET /runs/{id}/result`. Inputs validated synchronously at submission via `ui/utils/converters.py`, with `PFEv2Error`/`KeyError`/`TypeError` mapped to specific 422s. CORS open for Phase-1 dev (restrict before shared deployment).
+- `tests/test_api/test_endpoints.py` **(new)** — 9 tests: registry schema (18 instruments / 9 modifiers, no `cls` leakage), T0 MtM preview + validation errors, full run lifecycle (submit → poll → result, including `include_mtm` and run-history listing), rejection paths (empty portfolio, unknown instrument, bad config), 404s.
+- `pyproject.toml` — new `api` extra (`fastapi`, `uvicorn`); `fastapi` + `httpx` added to dev extras so CI exercises the API tests; `api*` added to packages.
+- `.github/workflows/ci.yml` — ruff now lints `api/`.
+- `README.md` — REST API section with endpoint table; test badge 321 → 330.
+
+---
+
 ## 2026-06-10 — Payment-time discounting for periodic instruments + housekeeping
 
 **Type**: Fix
