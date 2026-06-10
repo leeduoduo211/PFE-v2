@@ -55,6 +55,17 @@ class BaseModifier:
         """
         return True
 
+    @property
+    def pays_before_maturity(self) -> bool:
+        """Always False — modifier-wrapped trades discount at maturity.
+
+        Modifiers transform the *aggregate* payoff (caps, floors, knock-outs),
+        which doesn't commute with discounting individual cashflows at their
+        own payment dates. Wrapping a periodic instrument therefore reverts it
+        to the single-cashflow-at-maturity discounting convention.
+        """
+        return False
+
     def is_alive(self, t: float) -> bool:
         return self._inner.is_alive(t)
 

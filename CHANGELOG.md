@@ -1,7 +1,28 @@
 # Changelog
 
 All notable changes to this project are logged here (reverse chronological).
-See [`/Users/xuefeng/.claude/CLAUDE.md`](file:///Users/xuefeng/.claude/CLAUDE.md) for the logging convention.
+
+---
+
+## 2026-06-10 — Payment-time discounting for periodic instruments + housekeeping
+
+**Type**: Fix
+**Summary**: Cashflows of periodic instruments are now discounted from their own payment dates instead of the trade's maturity, the inner-MC memory budget accounts for the full normals allocation, and several repo-hygiene gaps are closed (missing LICENSE, leaked local path, stale Python hints, undocumented modeling assumptions). 321 tests pass; ruff clean.
+
+**Engine**
+- `pfev2/instruments/{autocallable,tarf,accumulator}.py` — added `pv_payoff(spots, path_history, t_grid, rate)` and `pays_before_maturity=True`. An autocall coupon is discounted from its call date, and each TARF/Accumulator period PnL from its fixing date, rather than the whole payoff at `exp(-r*tau)`. `payoff()` semantics are unchanged (raw, undiscounted cashflow sum).
+- `pfev2/instruments/base.py` — `_resolve_obs_indices` gained `return_times=True` (observation times measured from the valuation node, aligned with indices); new `_time_to_maturity_from_grid` helper; `pays_before_maturity` property (default False).
+- `pfev2/pricing/inner_mc.py` — `price_trade` and `batch_price_path_dependent` call `pv_payoff` for `pays_before_maturity` trades and skip the blanket maturity discount.
+- `pfev2/modifiers/base.py` — explicit `pays_before_maturity=False`: modifiers transform the aggregate payoff, which doesn't commute with per-cashflow discounting, so wrapped trades keep the at-maturity convention.
+- `pfev2/pricing/inner_mc.py` — memory-budget chunking now sizes by `n_assets` instead of `n_trade_assets`: the correlated-normals array spans all market assets (correlation is applied before trade-asset selection), so the old estimate under-counted by `n_assets / n_trade_assets`.
+- `tests/test_pricing/test_payment_time_discounting.py` **(new)** — 11 tests: hand-computed PV checks per instrument, `rate=0` equivalence with raw payoff, and pricer-level checks that a deterministic always-calls autocallable is discounted from its call date through both `batch_price_path_dependent` and `price_trade`.
+
+**Housekeeping**
+- `LICENSE` **(new)** — MIT license text; README and pyproject already declared MIT but the file was missing.
+- `README.md` — new "Modeling assumptions" section (GBM with flat parameters, risk-neutral outer measure, discounting and settlement conventions); test badge 310 → 321.
+- `CHANGELOG.md` — removed a `file://` link to a machine-local path.
+- `CLAUDE.md` — removed machine-specific Windows conda commands.
+- `run_windows.bat` — Python version hint corrected to 3.10+ to match `requires-python`.
 
 ---
 

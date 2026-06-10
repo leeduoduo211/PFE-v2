@@ -53,29 +53,46 @@ class Accumulator(BaseInstrument):
     def requires_full_path(self) -> bool:
         return True
 
+    @property
+    def pays_before_maturity(self) -> bool:
+        return True
+
     def observation_dates(self) -> np.ndarray:
         return self.schedule
 
     def payoff(self, spots, path_history, t_grid=None):
+        return self._payoff_impl(spots, path_history, t_grid, rate=None)
+
+    def pv_payoff(self, spots, path_history, t_grid, rate):
+        """Payoff with each periodic settlement discounted from its own date."""
+        return self._payoff_impl(spots, path_history, t_grid, rate=rate)
+
+    def _payoff_impl(self, spots, path_history, t_grid, rate):
         prices = path_history[:, :, 0]
         n_paths, n_steps = prices.shape
 
-        obs_indices = self._resolve_obs_indices(
+        obs_indices, obs_times = self._resolve_obs_indices(
             self.schedule,
             n_steps,
             t_grid,
             include_past=False,
+            return_times=True,
         )
+
+        if rate is None:
+            obs_dfs = np.ones(obs_indices.size)
+        else:
+            obs_dfs = np.exp(-rate * np.maximum(obs_times, 0.0))
 
         sign = 1.0 if self.side == "buy" else -1.0
         total_pnl = np.zeros(n_paths)
 
-        for idx in obs_indices:
+        for i, idx in enumerate(obs_indices):
             s_obs = prices[:, idx]
             if self.side == "buy":
                 units = np.where(s_obs >= self.strike, 1.0, self.leverage)
             else:
                 units = np.where(s_obs <= self.strike, 1.0, self.leverage)
-            total_pnl += units * (s_obs - self.strike) * sign
+            total_pnl += units * (s_obs - self.strike) * sign * obs_dfs[i]
 
         return total_pnl

@@ -39,26 +39,39 @@ class TARF(BaseInstrument):
     def requires_full_path(self) -> bool:
         return True
 
+    @property
+    def pays_before_maturity(self) -> bool:
+        return True
+
     def observation_dates(self) -> np.ndarray:
         return self.schedule
 
     def payoff(self, spots, path_history, t_grid=None):
+        return self._payoff_impl(spots, path_history, t_grid, rate=None)
+
+    def pv_payoff(self, spots, path_history, t_grid, rate):
+        """Payoff with each period's PnL discounted from its fixing date."""
+        return self._payoff_impl(spots, path_history, t_grid, rate=rate)
+
+    def _payoff_impl(self, spots, path_history, t_grid, rate):
         prices = path_history[:, :, 0]
         n_paths, n_steps = prices.shape
 
-        obs_indices = self._resolve_obs_indices(self.schedule, n_steps, t_grid)
+        obs_indices, obs_times = self._resolve_obs_indices(
+            self.schedule, n_steps, t_grid, return_times=True
+        )
 
         # Past observations relative to the valuation node: paths that hit
         # the target in the past had their cashflow paid at termination —
         # MtM at any later node must be zero. (The accrued PnL of surviving
         # paths is left unchanged here; that's a related but separate
         # accrual-accounting question outside the scope of this fix.)
-        valuation_time = self._valuation_time_from_grid(t_grid)
-        schedule_arr = np.asarray(self.schedule, dtype=float)
-        if obs_indices.size == schedule_arr.size:
-            is_past_obs = schedule_arr <= valuation_time + 1e-12
+        is_past_obs = obs_times <= 1e-12
+
+        if rate is None:
+            obs_dfs = np.ones(obs_indices.size)
         else:
-            is_past_obs = np.zeros(obs_indices.size, dtype=bool)
+            obs_dfs = np.exp(-rate * np.maximum(obs_times, 0.0))
 
         sign = 1.0 if self.side == "buy" else -1.0
         cumulative = np.zeros(n_paths)
@@ -84,11 +97,11 @@ class TARF(BaseInstrument):
                 terminated |= hits_target
             else:
                 non_hit = active & ~hits_target
-                result[non_hit] += period_pnl[non_hit]
+                result[non_hit] += period_pnl[non_hit] * obs_dfs[i]
                 # Partial fill: only the residual target amount is still paid
                 # at the hit fixing, not the full target again.
                 residual = np.maximum(self.target - cumulative, 0.0)
-                result[hits_target] += residual[hits_target]
+                result[hits_target] += residual[hits_target] * obs_dfs[i]
                 terminated |= hits_target
 
             # Update cumulative for non-terminated paths

@@ -48,6 +48,14 @@ class InnerMCPricer:
 
         terminal_spots = trade_paths[:, -1, :]
         if trade.requires_full_path:
+            if getattr(trade, "pays_before_maturity", False):
+                # pv_payoff discounts each cashflow from its own payment
+                # date to the node — no blanket maturity discount on top.
+                payoffs = trade.pv_payoff(
+                    terminal_spots, trade_paths, remaining_grid.dates,
+                    market.domestic_rate,
+                )
+                return float(trade.notional * np.mean(payoffs))
             payoffs = trade.payoff(terminal_spots, trade_paths, remaining_grid.dates)
         else:
             payoffs = trade.payoff(terminal_spots, None)
@@ -93,10 +101,12 @@ class InnerMCPricer:
         if L is None:
             L = CholeskyDecomposer.decompose(market.corr_matrix)
 
-        # Memory budget: process in chunks to stay under ~200MB
+        # Memory budget: process in chunks to stay under ~200MB. The normals
+        # array spans ALL market assets (correlation is applied before
+        # trade-asset selection), so size with n_assets, not n_trade_assets.
         bytes_per_element = 8
         target_bytes = self._mem_budget
-        elements_per_outer = n_inner * n_trade_assets
+        elements_per_outer = n_inner * n_assets
         chunk_size = max(1, target_bytes // (elements_per_outer * bytes_per_element))
         chunk_size = min(chunk_size, n_outer)
 
@@ -187,15 +197,18 @@ class InnerMCPricer:
         drift = (market.rates[asset_pos] - 0.5 * market.vols[asset_pos] ** 2)  # (n_trade_assets,)
         diffusion_scale = market.vols[asset_pos]  # (n_trade_assets,)
         discount = np.exp(-market.domestic_rate * tau)
+        pays_early = getattr(trade, "pays_before_maturity", False)
 
         # Antithetic: generate n_inner/2 normals, mirror to -Z
         n_half = n_inner // 2 if self._antithetic else n_inner
         n_eff = n_half * 2 if self._antithetic else n_inner
 
-        # Memory budget: paths array is (chunk_n * n_eff, n_steps_gen+1, n_trade_assets)
+        # Memory budget: the dominant allocation is the correlated-normals
+        # array, which spans ALL market assets (correlation is applied before
+        # trade-asset selection) — size with n_assets, not n_trade_assets.
         bytes_per_element = 8
         target_bytes = self._mem_budget
-        elements_per_outer = n_eff * n_steps_gen * n_trade_assets
+        elements_per_outer = n_eff * n_steps_gen * n_assets
         chunk_size = max(1, target_bytes // (elements_per_outer * bytes_per_element))
         chunk_size = min(chunk_size, n_outer)
 
@@ -249,11 +262,19 @@ class InnerMCPricer:
                 )
 
             terminal_spots = paths[:, -1, :]
-            payoffs = trade.payoff(terminal_spots, paths, payoff_grid)
+            if pays_early:
+                # pv_payoff discounts each cashflow from its own payment
+                # date to the valuation node — skip the maturity discount.
+                payoffs = trade.pv_payoff(
+                    terminal_spots, paths, payoff_grid, market.domestic_rate
+                )
+            else:
+                payoffs = trade.payoff(terminal_spots, paths, payoff_grid)
 
             payoffs_2d = payoffs.reshape(chunk_n, n_eff)
             mean_payoffs = np.mean(payoffs_2d, axis=1)
-            mtm_all[start:end] = trade.notional * discount * mean_payoffs
+            step_discount = 1.0 if pays_early else discount
+            mtm_all[start:end] = trade.notional * step_discount * mean_payoffs
 
         return mtm_all
 

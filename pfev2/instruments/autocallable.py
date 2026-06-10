@@ -32,15 +32,33 @@ class Autocallable(BaseInstrument):
     def requires_full_path(self) -> bool:
         return True
 
+    @property
+    def pays_before_maturity(self) -> bool:
+        return True
+
     def observation_dates(self) -> np.ndarray:
         return self.schedule
 
     def payoff(self, spots, path_history, t_grid=None):
+        return self._payoff_impl(spots, path_history, t_grid, rate=None)
+
+    def pv_payoff(self, spots, path_history, t_grid, rate):
+        """Payoff with the autocall coupon discounted from its call date.
+
+        A path that calls at observation ``t_i`` pays its coupon at ``t_i``,
+        not at maturity — discounting it over the full remaining horizon
+        understates its MtM.
+        """
+        return self._payoff_impl(spots, path_history, t_grid, rate=rate)
+
+    def _payoff_impl(self, spots, path_history, t_grid, rate):
         n_paths = path_history.shape[0]
         n_steps = path_history.shape[1]
         initial_prices = path_history[:, 0, :]  # (n_paths, n_assets)
 
-        obs_indices = self._resolve_obs_indices(self.schedule, n_steps, t_grid)
+        obs_indices, obs_times = self._resolve_obs_indices(
+            self.schedule, n_steps, t_grid, return_times=True
+        )
 
         # Identify observation dates that have already happened relative to
         # the valuation node. A path that autocalled in the past has no
@@ -48,13 +66,16 @@ class Autocallable(BaseInstrument):
         # maturity — so its MtM at any later node must be zero. The "called"
         # flag still propagates so future observations don't re-trigger and
         # the put-strike maturity check doesn't fire.
-        valuation_time = self._valuation_time_from_grid(t_grid)
-        schedule_arr = np.asarray(self.schedule, dtype=float)
-        if obs_indices.size == schedule_arr.size:
-            is_past_obs = schedule_arr < valuation_time - 1e-12
+        is_past_obs = obs_times < -1e-12
+
+        if rate is None:
+            obs_dfs = np.ones(obs_indices.size)
+            terminal_df = 1.0
         else:
-            # Legacy relative-grid path: helper already filtered past dates.
-            is_past_obs = np.zeros(obs_indices.size, dtype=bool)
+            obs_dfs = np.exp(-rate * np.maximum(obs_times, 0.0))
+            terminal_df = np.exp(
+                -rate * max(self._time_to_maturity_from_grid(t_grid), 0.0)
+            )
 
         result = np.zeros(n_paths)
         called = np.zeros(n_paths, dtype=bool)
@@ -66,7 +87,7 @@ class Autocallable(BaseInstrument):
 
             newly_called = (~called) & (worst_perf >= self.autocall_trigger)
             if not is_past_obs[i]:
-                result[newly_called] = self.coupon_rate * (i + 1)
+                result[newly_called] = self.coupon_rate * (i + 1) * obs_dfs[i]
             # else: past call — cashflow already paid at the call date, no MtM
             called |= newly_called
 
@@ -77,6 +98,6 @@ class Autocallable(BaseInstrument):
 
         uncalled = ~called
         put_loss = uncalled & (worst_terminal < self.put_strike)
-        result[put_loss] = worst_terminal[put_loss] - 1.0
+        result[put_loss] = (worst_terminal[put_loss] - 1.0) * terminal_df
 
         return result

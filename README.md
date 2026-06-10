@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
-[![Tests: 310](https://img.shields.io/badge/tests-310%20passing-brightgreen.svg)](#tests)
+[![Tests: 321](https://img.shields.io/badge/tests-321%20passing-brightgreen.svg)](#tests)
 
 A Python engine for computing **Potential Future Exposure (PFE)** on exotic derivatives using nested Monte Carlo simulation. Ships with 18 instrument types, 9 composable modifiers, and an interactive Streamlit UI.
 
@@ -61,6 +61,15 @@ flowchart TB
 The outer loop generates the *market* (what could happen). The inner loop prices the *book* in each of those markets. Correlation across assets is handled via Cholesky decomposition of the input correlation matrix.
 
 Because inner MC at every outer node is expensive, the engine vectorises European payoffs across all outer paths at once, falling back to per-path loops only for genuinely path-dependent instruments. At production scale (`5000 × 52 × 2000` = 260K inner invocations) a typical run takes ~60 seconds on one CPU. (The optional Numba backend currently only accelerates the outer GBM simulation; the inner MC chunked pricer uses NumPy directly. Wiring the backend through inner MC is a known follow-up.)
+
+### Modeling assumptions
+
+Deliberate simplifications a model-validation reviewer should know about:
+
+- **Dynamics**: multivariate geometric Brownian motion with flat (constant) vols, rates, and correlations. No stochastic vol, no local vol, no rate curves.
+- **Measure**: the *outer* scenarios are simulated under the risk-neutral measure (drift `r − σ²/2`), the same measure used for inner pricing. Production PFE engines typically simulate outer scenarios under the real-world measure with estimated drifts; using Q for both is a common simplification that avoids a drift-calibration step.
+- **Discounting**: all cashflows are discounted at the flat `domestic_rate`. Periodic instruments (`Autocallable`, `TARF`, `AccumulatorDecumulator`) discount each cashflow from its own payment date; everything else pays at maturity. Modifier-wrapped trades are valued as paying at maturity, since modifiers transform the aggregate payoff.
+- **Settlement**: a trade's exposure drops to zero after its maturity (or early-termination) date — settled cashflows are not carried as exposure.
 
 ## Install
 
@@ -169,7 +178,7 @@ A 4-step wizard (**Market → Portfolio → Config → Results**) with a registr
 python3 -m pytest tests/ -v
 ```
 
-310 tests covering instruments, modifiers, engine, risk aggregation, and UI converters. See [`CHANGELOG.md`](CHANGELOG.md) for change history.
+321 tests covering instruments, modifiers, engine, risk aggregation, and UI converters. See [`CHANGELOG.md`](CHANGELOG.md) for change history.
 
 ## License
 

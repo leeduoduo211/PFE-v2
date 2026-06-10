@@ -27,7 +27,7 @@ if defined PFE_PYTHON (
 "%PY_EXE%" -X utf8 --version >nul 2>&1
 if errorlevel 1 (
     echo [ERROR] Python is not available.
-    echo Set PFE_PYTHON to a Python 3.9+ executable, or install Python and add it to PATH.
+    echo Set PFE_PYTHON to a Python 3.10+ executable, or install Python and add it to PATH.
     pause
     exit /b 1
 )

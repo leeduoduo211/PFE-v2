@@ -67,6 +67,18 @@ class BaseInstrument(ABC):
     def requires_full_path(self) -> bool:
         return False
 
+    @property
+    def pays_before_maturity(self) -> bool:
+        """Whether some cashflows can settle before maturity.
+
+        Instruments returning True must implement
+        ``pv_payoff(spots, path_history, t_grid, rate)``, which returns the
+        per-path payoff with every cashflow discounted at ``rate`` from its
+        own payment date to the valuation time. The pricer then skips its
+        blanket ``exp(-r*tau)`` maturity discount for these trades.
+        """
+        return False
+
     def is_alive(self, t: float) -> bool:
         return t < self.maturity
 
@@ -84,7 +96,8 @@ class BaseInstrument(ABC):
         t_grid: np.ndarray | None,
         *,
         include_past: bool = True,
-    ) -> np.ndarray:
+        return_times: bool = False,
+    ):
         """Convert observation times in ``schedule`` to path indices.
 
         Common helper for Asian / Cliquet / RangeAccrual / Accumulator /
@@ -104,23 +117,35 @@ class BaseInstrument(ABC):
         include_past : bool
             Whether observations on or before the valuation time should be
             included when the path contains realized history.
+        return_times : bool
+            When True, also return the observation times measured from the
+            valuation node (negative for already-past observations), aligned
+            with ``obs_indices``. Used by ``pv_payoff`` to discount each
+            cashflow from its own payment date.
 
         Returns
         -------
         obs_indices : np.ndarray[int]
             Path-history indices at which to read spot prices, clipped to
-            ``[0, n_steps - 1]``.
+            ``[0, n_steps - 1]``. When ``return_times`` is True, a tuple
+            ``(obs_indices, obs_times)`` is returned instead.
         """
+        def _result(indices, times):
+            if return_times:
+                return indices, times
+            return indices
+
         schedule = np.asarray(schedule, dtype=float)
+        empty = (np.array([], dtype=int), np.array([], dtype=float))
         if schedule.size == 0:
-            return np.array([], dtype=int)
+            return _result(*empty)
 
         if t_grid is not None:
             valuation_time = self._valuation_time_from_grid(t_grid)
             has_explicit_valuation = hasattr(t_grid, "valuation_time")
             grid = np.asarray(t_grid, dtype=float)
             if grid.size == 0:
-                return np.array([], dtype=int)
+                return _result(*empty)
 
             # Full conditional paths are passed with an absolute grid from
             # inception. Legacy single-node pricing may pass only the remaining
@@ -136,17 +161,44 @@ class BaseInstrument(ABC):
                 schedule = schedule - valuation_time
                 schedule = schedule[schedule > 1e-12]
                 if schedule.size == 0:
-                    return np.array([], dtype=int)
+                    return _result(*empty)
+                obs_times = schedule  # already relative to the valuation node
             elif not include_past:
                 schedule = schedule[schedule > valuation_time + 1e-12]
                 if schedule.size == 0:
-                    return np.array([], dtype=int)
+                    return _result(*empty)
+                obs_times = schedule - valuation_time
+            else:
+                obs_times = schedule - valuation_time
 
             obs_indices = np.searchsorted(grid, schedule, side="right") - 1
         else:
             t_grid_full = np.linspace(0.0, self.maturity, n_steps)
             obs_indices = np.searchsorted(t_grid_full, schedule, side="right") - 1
-        return np.clip(obs_indices, 0, n_steps - 1)
+            obs_times = schedule
+        return _result(np.clip(obs_indices, 0, n_steps - 1), obs_times)
+
+    def _time_to_maturity_from_grid(self, t_grid: np.ndarray | None) -> float:
+        """Time from the valuation node to this trade's maturity.
+
+        Mirrors the absolute/relative grid detection in
+        ``_resolve_obs_indices`` so terminal cashflows can be discounted
+        consistently with scheduled ones.
+        """
+        if t_grid is None:
+            return float(self.maturity)
+        grid = np.asarray(t_grid, dtype=float)
+        if grid.size == 0:
+            return float(self.maturity)
+        has_explicit_valuation = hasattr(t_grid, "valuation_time")
+        is_relative_remaining = (
+            not has_explicit_valuation
+            and abs(float(grid[0])) <= 1e-12
+            and float(grid[-1]) < self.maturity - 1e-12
+        )
+        if is_relative_remaining:
+            return float(grid[-1])
+        return float(self.maturity) - self._valuation_time_from_grid(t_grid)
 
     def _resolve_event_index(
         self,
