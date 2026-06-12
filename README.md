@@ -182,6 +182,15 @@ A FastAPI layer over the same engine, intended as the backend for a future SPA f
 
 Request payloads use the same trade-spec dict format as the UI (`{trade_id, instrument_type, direction, params, modifiers}`); validation errors come back as specific `422`s at submission time.
 
+## React frontend
+
+```bash
+python3 -m uvicorn api.app:app           # terminal 1 — backend
+cd frontend && npm install && npm run dev # terminal 2 — http://localhost:5173
+```
+
+A Vite + React + TypeScript SPA over the REST API, with the visual design ported from the [design system](design/) (same tokens, same `pfe_light` chart styling). Trade forms for all 18 instruments and 9 modifiers are generated from `GET /registry` — adding an instrument to the Python registry lights it up here with no frontend change. Runs show live progress; results render KPI cards, the PFE/EPE profile, and per-trade MtM. See [`frontend/README.md`](frontend/README.md).
+
 ## Documentation
 
 - **[Wiki — Home](https://github.com/leeduoduo211/PFE-v2/wiki)** — full documentation

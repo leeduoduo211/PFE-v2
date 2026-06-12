@@ -26,6 +26,12 @@ python3 -m streamlit run ui/app.py
 # Launch REST API (requires ".[api]" extra; interactive docs at /docs)
 python3 -m uvicorn api.app:app --reload
 
+# Launch React frontend (requires the API running; http://localhost:5173)
+npm run dev --prefix frontend
+
+# Frontend type-check + production build (what CI runs)
+npm run build --prefix frontend
+
 # Quick import sanity check
 python3 -c "from pfev2 import compute_pfe; print('OK')"
 ```
@@ -55,6 +61,10 @@ Key entry point: `pfev2.risk.pfe.compute_pfe(portfolio, market, config)` returns
 ### REST API (`api/`)
 
 FastAPI layer over the engine, the Phase-1 backend for a future SPA frontend. `api/schemas.py` (Pydantic models mirroring the UI trade-spec dicts) → `api/app.py` (endpoints; validates synchronously via `ui/utils/converters.py`, returns specific 422s) → `api/jobs.py` (`RunStore`: in-process thread pool running `compute_pfe` with progress tracking) → `api/serializers.py` (registry and `PFEResult` → JSON). Imports only Streamlit-free `ui.utils` modules (`converters`, `registry`, `t0_mtm`) — the API must not require streamlit. `api/schemas.py` deliberately uses `typing.List`/`Optional` (not PEP 604 unions) so pydantic can evaluate annotations on Python 3.9 dev machines; ruff per-file-ignores cover this.
+
+### React frontend (`frontend/`)
+
+Vite + React + TypeScript SPA over the REST API; Phase 2 of the SPA migration. `src/api/types.ts` mirrors `api/schemas.py` — app state IS the wire format, no mapping layer. `src/components/TradeForm.tsx` renders all instrument/modifier forms from `GET /registry` (same registry-driven pattern as the Streamlit trade builder); field types float/select/float_list/select_list/schedule/asset_select/asset_select_optional each have a renderer there. `src/styles/tokens.css` is the design system verbatim (source: `design/`); don't edit colors inline — use the CSS variables. Plotly is lazy-loaded via React.lazy in ResultsTab (bundle size). Dev proxy: `/api/*` → `127.0.0.1:8000` (vite.config.ts). CI type-checks and builds via `npm run build --prefix frontend`.
 
 ### Streamlit UI (`ui/`)
 

@@ -4,6 +4,22 @@ All notable changes to this project are logged here (reverse chronological).
 
 ---
 
+## 2026-06-12 — React frontend (Phase 2 of the SPA migration)
+
+**Type**: Feature
+**Summary**: New `frontend/` package — a Vite + React + TypeScript SPA over the Phase-1 REST API, with the visual design ported from `design/preview/` (same tokens, same `pfe_light` chart styling). Streamlit app unaffected. Verified end-to-end in the browser: market editing → registry-driven trade builder → T0 MtM preview → run submission with live progress → KPI cards + Plotly exposure profile + per-trade table.
+
+- `frontend/src/api/` **(new)** — `types.ts` mirrors `api/schemas.py` and the result/run-summary payloads; `client.ts` is a small typed fetch wrapper with an `ApiError` carrying the server's 422 detail.
+- `frontend/src/components/TradeForm.tsx` **(new)** — registry-driven form builder: renders all 18 instruments and 9 modifiers from `GET /registry` with renderers for every field type (float, select, float_list, select_list, schedule, asset_select, asset_select_optional), variable asset counts ("1-5"/"2-5"), modifier stacking with group badges, and the wrap-chain display.
+- `frontend/src/components/` **(new)** — Sidebar (portfolio summary, trade list with T0 MtM, run history), MarketTab (editable assets + symmetric correlation editor with heatmap shading), ConfigTab (sampling, antithetic, margined/MPoR), ResultsTab (progress bar → KPI cards, lazy-loaded Plotly PFE/EPE chart, per-trade table, CSV export).
+- `frontend/src/App.tsx` **(new)** — wizard state + run polling (400ms while running, result fetch on completion); per-run trade-id snapshots so the per-trade table stays correct if the portfolio is edited mid-run.
+- `frontend/src/styles/tokens.css` — design tokens verbatim from `design/preview/tokens.css` (font paths adjusted); `app.css` ported from the UI-kit stylesheet with live-app additions (progress bar, error banner).
+- Plotly (~4.5MB) is code-split via `React.lazy` — the app shell is a 168KB chunk.
+- `.github/workflows/ci.yml` — new `frontend` job: `npm ci` + `npm run build` (tsc type-check + Vite build) on Node 22.
+- `README.md`, `CLAUDE.md`, `frontend/README.md` — run instructions and architecture notes.
+
+---
+
 ## 2026-06-10 — REST API service (Phase 1 of the SPA migration)
 
 **Type**: Feature
