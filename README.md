@@ -2,7 +2,7 @@
 
 [![Python 3.10+](https://img.shields.io/badge/python-3.10%2B-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](#license)
-[![Tests: 330](https://img.shields.io/badge/tests-330%20passing-brightgreen.svg)](#tests)
+[![Tests: 333](https://img.shields.io/badge/tests-333%20passing-brightgreen.svg)](#tests)
 
 A Python engine for computing **Potential Future Exposure (PFE)** on exotic derivatives using nested Monte Carlo simulation. Ships with 18 instrument types, 9 composable modifiers, and an interactive Streamlit UI.
 
@@ -170,17 +170,18 @@ pip3 install -e ".[api]"
 python3 -m uvicorn api.app:app --reload   # interactive docs at /docs
 ```
 
-A FastAPI layer over the same engine, intended as the backend for a future SPA frontend (the Streamlit app is unaffected):
+A FastAPI layer over the same engine, serving the React frontend (the Streamlit app is unaffected). All routes are under `/api`:
 
 | Endpoint | What it does |
 |---|---|
-| `GET /registry` | Instrument + modifier field schemas — the same data that drives the Streamlit forms |
-| `POST /t0-mtm` | Synchronous per-trade t=0 MtM preview |
-| `POST /runs` | Validate inputs, queue a PFE run in a background thread, return `202` + run id |
-| `GET /runs`, `GET /runs/{id}` | Run history / status with live progress |
-| `GET /runs/{id}/result` | Full result (curves, EEPE, config echo; `?include_mtm=true` for the MtM matrix) |
+| `GET /api/registry` | Instrument + modifier field schemas — the same data that drives the Streamlit forms |
+| `POST /api/t0-mtm` | Synchronous per-trade t=0 MtM preview |
+| `POST /api/runs` | Validate inputs, queue a PFE run in a background thread, return `202` + run id |
+| `GET /api/runs`, `GET /api/runs/{id}` | Run history / status |
+| `GET /api/runs/{id}/events` | Server-Sent Events stream of progress until the run is terminal |
+| `GET /api/runs/{id}/result` | Full result (curves, EEPE, config echo; `?include_mtm=true` for the MtM matrix) |
 
-Request payloads use the same trade-spec dict format as the UI (`{trade_id, instrument_type, direction, params, modifiers}`); validation errors come back as specific `422`s at submission time.
+Request payloads use the same trade-spec dict format as the UI (`{trade_id, instrument_type, direction, params, modifiers}`); validation errors come back as specific `422`s at submission time. Set `PFEV2_DB_PATH` to persist run history to SQLite — terminal runs reload on restart.
 
 ## React frontend
 
@@ -189,7 +190,18 @@ python3 -m uvicorn api.app:app           # terminal 1 — backend
 cd frontend && npm install && npm run dev # terminal 2 — http://localhost:5173
 ```
 
-A Vite + React + TypeScript SPA over the REST API, with the visual design ported from the [design system](design/) (same tokens, same `pfe_light` chart styling). Trade forms for all 18 instruments and 9 modifiers are generated from `GET /registry` — adding an instrument to the Python registry lights it up here with no frontend change. Runs show live progress; results render KPI cards, the PFE/EPE profile, and per-trade MtM. See [`frontend/README.md`](frontend/README.md).
+A Vite + React + TypeScript SPA over the REST API, with the visual design ported from the [design system](design/) (same tokens, same `pfe_light` chart styling). Trade forms for all 18 instruments and 9 modifiers are generated from `GET /api/registry` — adding an instrument to the Python registry lights it up here with no frontend change. Runs stream live progress over Server-Sent Events; results render KPI cards, the PFE/EPE profile, and per-trade MtM. See [`frontend/README.md`](frontend/README.md).
+
+## Docker
+
+A single container builds the SPA and serves it from FastAPI alongside the API:
+
+```bash
+docker build -t pfev2 .
+docker run -p 8000:8000 -v pfev2-data:/data pfev2   # app at http://localhost:8000
+```
+
+The image bundles the engine, the API, and the built frontend; run history persists to the `/data` volume. The Streamlit app is not part of the image.
 
 ## Documentation
 
@@ -206,7 +218,7 @@ A Vite + React + TypeScript SPA over the REST API, with the visual design ported
 python3 -m pytest tests/ -v
 ```
 
-330 tests covering instruments, modifiers, engine, risk aggregation, UI converters, and the REST API. See [`CHANGELOG.md`](CHANGELOG.md) for change history.
+333 tests covering instruments, modifiers, engine, risk aggregation, UI converters, and the REST API (including run persistence and the SSE stream). See [`CHANGELOG.md`](CHANGELOG.md) for change history.
 
 ## License
 

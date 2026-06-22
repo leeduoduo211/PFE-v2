@@ -22,7 +22,7 @@ npm run dev          # http://localhost:5173
 
 ## How it works
 
-- **Registry-driven forms** — `GET /registry` returns the same instrument and
+- **Registry-driven forms** — `GET /api/registry` returns the same instrument and
   modifier field schemas that drive the Streamlit trade builder.
   `src/components/TradeForm.tsx` renders all 18 instruments and 9 modifiers
   from that schema; new instruments added to the Python registry appear here
@@ -30,10 +30,10 @@ npm run dev          # http://localhost:5173
 - **Trade specs on the wire** — the app state *is* the API payload format
   (`{trade_id, instrument_type, direction, params, modifiers}`); there is no
   mapping layer.
-- **Runs** — `POST /runs` queues a computation; the Results tab polls
-  `GET /runs/{id}` for live progress (wired to the engine's `on_progress`
-  callback) and renders curves, KPI cards, and the per-trade table from
-  `GET /runs/{id}/result`.
+- **Runs** — `POST /api/runs` queues a computation; the app streams live
+  progress from `GET /api/runs/{id}/events` via `EventSource` (wired to the
+  engine's `on_progress` callback) and renders curves, KPI cards, and the
+  per-trade table from `GET /api/runs/{id}/result`.
 - **Plotly** is lazy-loaded (it dominates bundle size) only when a result is
   first displayed; the chart layout matches the `pfe_light` template from
   `ui/theme.py`.

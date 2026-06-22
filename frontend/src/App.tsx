@@ -65,33 +65,44 @@ export default function App() {
 
   const activeRun = runs.find((r) => r.run_id === activeRunId) ?? null
 
-  // Poll while the active run is queued/running; fetch result on completion.
+  // Stream progress via Server-Sent Events while a run is active; fetch the
+  // result on completion. Works for both in-flight and already-finished runs
+  // (a terminal run emits one event, then the stream closes).
   useEffect(() => {
     if (!activeRunId) return
+    const es = new EventSource(`/api/runs/${activeRunId}/events`)
     let cancelled = false
-    const tick = async () => {
-      try {
-        const status = await api.runStatus(activeRunId)
-        if (cancelled) return
-        setRuns((rs) => {
-          const others = rs.filter((r) => r.run_id !== status.run_id)
-          return [status, ...others].sort((a, b) => b.submitted_at - a.submitted_at)
-        })
+
+    es.onmessage = async (ev) => {
+      if (cancelled) return
+      // The stream emits run summaries, or {error} for an unknown id. Both
+      // shapes carry an `error` key, so discriminate on `status` instead.
+      const payload = JSON.parse(ev.data) as Record<string, unknown>
+      if (typeof payload.status !== 'string') {
+        es.close()
+        return
+      }
+      const status = payload as unknown as RunSummary
+      setRuns((rs) => {
+        const others = rs.filter((r) => r.run_id !== status.run_id)
+        return [status, ...others].sort((a, b) => b.submitted_at - a.submitted_at)
+      })
+      if (status.status === 'completed' || status.status === 'failed') {
+        es.close() // terminal — stop the browser from auto-reconnecting
         if (status.status === 'completed') {
-          const res = await api.runResult(activeRunId)
-          if (!cancelled) setResult(res)
-        } else if (status.status !== 'failed') {
-          timer = window.setTimeout(tick, 400)
+          try {
+            const res = await api.runResult(activeRunId)
+            if (!cancelled) setResult(res)
+          } catch {
+            /* result fetch failed; the status still shows completed */
+          }
         }
-      } catch {
-        // transient — retry on next tick
-        if (!cancelled) timer = window.setTimeout(tick, 1000)
       }
     }
-    let timer = window.setTimeout(tick, 0)
+
     return () => {
       cancelled = true
-      window.clearTimeout(timer)
+      es.close()
     }
   }, [activeRunId])
 

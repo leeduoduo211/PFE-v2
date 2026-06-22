@@ -4,6 +4,22 @@ All notable changes to this project are logged here (reverse chronological).
 
 ---
 
+## 2026-06-14 — Production hardening (Phase 3 of the SPA migration)
+
+**Type**: Feature
+**Summary**: Durable run history (SQLite), live progress streaming (Server-Sent Events), and a single-container Docker image that serves the built SPA from FastAPI. Verified end-to-end in the browser (live SSE progress bar) and via the single-container code path (curl). 333 tests pass; ruff clean.
+
+- `api/db.py` **(new)** — tiny SQLite layer: one `runs` table, connection-per-operation in WAL mode (thread-safe across the RunStore pool without a shared connection). Only terminal runs are persisted, so a restart can't resurrect a stuck "running" row.
+- `api/jobs.py` — `RunStore` gains an optional `db_path`: persists terminal runs and reloads them on startup. `RunRecord` carries `result_json`/`peak_pfe`/`computation_time` so restored runs serve status and result without a live `PFEResult`. The MtM matrix is never persisted.
+- `api/app.py` — **all routes moved under `/api`** (one origin with the SPA in the Docker image). New `GET /api/runs/{id}/events` streams progress as SSE until terminal. The result endpoint serves the live result (supports `?include_mtm`) or, for restored runs, the persisted JSON. When `PFEV2_STATIC_DIR` is set the built SPA is served at `/` (mounted last, so `/api/*` and `/docs` win); `PFEV2_DB_PATH` enables persistence.
+- `frontend` — dev proxy no longer rewrites `/api` (backend owns the prefix); `App.tsx` consumes progress via `EventSource` instead of polling, closing the stream on a terminal status to prevent browser auto-reconnect.
+- `Dockerfile` + `.dockerignore` **(new)** — multi-stage: Node builds the SPA, Python serves it + the API in one image (`PFEV2_STATIC_DIR`/`PFEV2_DB_PATH` preset, `/data` volume for the SQLite file). Streamlit is not installed (the API imports only Streamlit-free `ui.utils`).
+- `tests/test_api/test_endpoints.py` — paths updated to `/api`; new tests for the SSE stream (reaches `completed`; emits an error event for an unknown id) and persistence (a completed run reloads into a fresh `RunStore` from the same DB file — restart simulation — with matching curves and no MtM matrix).
+- `.github/workflows/ci.yml` — new `docker` job builds the single-container image (with buildx GHA cache).
+- `README.md`, `CLAUDE.md`, `frontend/README.md` — `/api` prefix, SSE, persistence env vars, and Docker usage; test badge 330 → 333.
+
+---
+
 ## 2026-06-12 — React frontend (Phase 2 of the SPA migration)
 
 **Type**: Feature
